@@ -360,28 +360,30 @@ public class EndToEndSimulationRunner
 
         foreach (var parcel in allParcels)
         {
-            ChuteConfig? chuteConfig = null;
-            if (parcel.TargetChuteId.HasValue)
-            {
-                chuteConfig = _chuteConfigProvider.GetConfig(parcel.TargetChuteId.Value);
-            }
-
-            var isForceEject = chuteConfig?.IsForceEject ?? false || parcel.RouteState == ParcelRouteState.ForceEjected;
+            // 根据 RouteState 判断包裹分拣结果
             var isSuccess = parcel.RouteState == ParcelRouteState.Sorted;
+            var isForceEject = parcel.RouteState == ParcelRouteState.ForceEjected;
+            var isFailed = parcel.RouteState == ParcelRouteState.Failed;
             
-            // 如果分拣成功且目标格口存在，实际格口就是目标格口
-            // 如果强排，实际格口是强排口
+            // 确定实际格口ID
             int? actualChuteId = null;
-            if (parcel.SortedAt != null)
+            string? failureReason = null;
+            
+            if (isSuccess && parcel.TargetChuteId.HasValue)
             {
-                if (isForceEject)
-                {
-                    actualChuteId = _config.ForceEjectChuteId;
-                }
-                else if (parcel.TargetChuteId != null)
-                {
-                    actualChuteId = (int)parcel.TargetChuteId.Value.Value;
-                }
+                // 正常分拣：实际格口 = 目标格口
+                actualChuteId = (int)parcel.TargetChuteId.Value.Value;
+            }
+            else if (isForceEject)
+            {
+                // 强排：实际格口 = 强排口
+                actualChuteId = _config.ForceEjectChuteId;
+                failureReason = "强排";
+            }
+            else if (isFailed)
+            {
+                // 失败：没有实际格口
+                failureReason = "分拣失败";
             }
 
             details.Add(new ParcelDetail
@@ -392,7 +394,7 @@ public class EndToEndSimulationRunner
                 ActualChuteId = actualChuteId,
                 IsSuccess = isSuccess,
                 IsForceEject = isForceEject,
-                FailureReason = !isSuccess && parcel.SortedAt != null ? "强排" : null
+                FailureReason = failureReason
             });
         }
 
@@ -412,27 +414,23 @@ public class EndToEndSimulationRunner
 
         foreach (var parcel in allParcels)
         {
-            if (parcel.RouteState == ParcelRouteState.Sorted && parcel.TargetChuteId.HasValue)
+            // 根据包裹最终状态统计
+            // 1. 正常落格：RouteState.Sorted（已成功分拣到目标格口）
+            if (parcel.RouteState == ParcelRouteState.Sorted)
             {
-                var chuteConfig = _chuteConfigProvider.GetConfig(parcel.TargetChuteId.Value);
-                if (chuteConfig?.IsForceEject == true)
-                {
-                    forceEjects++;
-                }
-                else
-                {
-                    successful++;
-                }
+                successful++;
             }
+            // 2. 强排：RouteState.ForceEjected（被强制排出到强排口）
             else if (parcel.RouteState == ParcelRouteState.ForceEjected)
             {
                 forceEjects++;
             }
-            else if (parcel.SortedAt != null)
+            // 3. 误分/失败：RouteState.Failed（未能成功分拣或路由失败）
+            else if (parcel.RouteState == ParcelRouteState.Failed)
             {
-                // 已分拣但状态不对，可能是误分
                 missorts++;
             }
+            // 注意：其他状态（WaitingForRouting, Routed, Sorting）表示未完成，不计入统计
         }
 
         return new SimulationStatistics
