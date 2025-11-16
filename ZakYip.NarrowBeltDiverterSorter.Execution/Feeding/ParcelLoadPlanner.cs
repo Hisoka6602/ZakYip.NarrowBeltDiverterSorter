@@ -12,6 +12,7 @@ namespace ZakYip.NarrowBeltDiverterSorter.Execution.Feeding;
 public class ParcelLoadPlanner : IParcelLoadPlanner
 {
     private readonly ICartRingBuilder _cartRingBuilder;
+    private readonly ICartPositionTracker _cartPositionTracker;
     private readonly IMainLineFeedbackPort _mainLineFeedback;
     private readonly IInfeedConveyorPort _infeedConveyor;
     private readonly InfeedLayoutOptions _options;
@@ -21,11 +22,13 @@ public class ParcelLoadPlanner : IParcelLoadPlanner
     /// </summary>
     public ParcelLoadPlanner(
         ICartRingBuilder cartRingBuilder,
+        ICartPositionTracker cartPositionTracker,
         IMainLineFeedbackPort mainLineFeedback,
         IInfeedConveyorPort infeedConveyor,
         InfeedLayoutOptions options)
     {
         _cartRingBuilder = cartRingBuilder ?? throw new ArgumentNullException(nameof(cartRingBuilder));
+        _cartPositionTracker = cartPositionTracker ?? throw new ArgumentNullException(nameof(cartPositionTracker));
         _mainLineFeedback = mainLineFeedback ?? throw new ArgumentNullException(nameof(mainLineFeedback));
         _infeedConveyor = infeedConveyor ?? throw new ArgumentNullException(nameof(infeedConveyor));
         _options = options ?? throw new ArgumentNullException(nameof(options));
@@ -41,6 +44,12 @@ public class ParcelLoadPlanner : IParcelLoadPlanner
             return Task.FromResult<CartId?>(null);
         }
 
+        // 检查 CartPositionTracker 是否已初始化
+        if (_cartPositionTracker.CurrentOriginCartIndex == null)
+        {
+            return Task.FromResult<CartId?>(null);
+        }
+
         // 获取入口输送线速度
         var infeedSpeed = _infeedConveyor.GetCurrentSpeed();
         if (infeedSpeed <= 0)
@@ -50,7 +59,6 @@ public class ParcelLoadPlanner : IParcelLoadPlanner
 
         // 计算包裹从入口到主线落车点的时间
         var travelTimeSeconds = (double)_options.InfeedToMainLineDistanceMm / infeedSpeed;
-        var arrivalTime = infeedEdgeTime.AddSeconds(travelTimeSeconds);
 
         // 获取主线速度
         var mainLineSpeed = _mainLineFeedback.GetCurrentSpeed();
@@ -59,20 +67,18 @@ public class ParcelLoadPlanner : IParcelLoadPlanner
             return Task.FromResult<CartId?>(null);
         }
 
-        // 计算从当前时间到到达时间，主线移动的距离
-        var timeDiff = (arrivalTime - DateTimeOffset.UtcNow).TotalSeconds;
-        var distanceMoved = mainLineSpeed * timeDiff;
+        // 使用 CartPositionTracker 计算当前在落车点位置（CartOffsetCalibration）的小车
+        var cartIndexAtDropPoint = _cartPositionTracker.CalculateCartIndexAtOffset(
+            _options.CartOffsetCalibration, 
+            snapshot.RingLength);
 
-        // 估算小车环的周长（小车数量 * 小车间距）
-        // 注意：这是一个简化实现，实际应该从小车环配置中获取
-        var ringLength = snapshot.RingLength.Value;
-        
-        // 简化实现：假设当前零号小车在原点，根据移动距离和小车间距计算到达时哪个小车在落车点
-        // 这个实现需要根据实际系统的小车环配置和传感器位置进行调整
-        
-        // 应用偏移校准
-        var predictedCartIndex = _options.CartOffsetCalibration % ringLength;
-        var predictedCartId = new CartId(predictedCartIndex);
+        if (cartIndexAtDropPoint == null)
+        {
+            return Task.FromResult<CartId?>(null);
+        }
+
+        // 获取该索引对应的 CartId
+        var predictedCartId = snapshot.CartIds[cartIndexAtDropPoint.Value.Value];
 
         return Task.FromResult<CartId?>(predictedCartId);
     }

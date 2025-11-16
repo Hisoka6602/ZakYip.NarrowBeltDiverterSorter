@@ -136,6 +136,9 @@ builder.Services.AddSingleton<IChuteConfigProvider, RepositoryBackedChuteConfigP
 // 注册小车环构建器
 builder.Services.AddSingleton<ICartRingBuilder, CartRingBuilder>();
 
+// 注册小车位置跟踪器
+builder.Services.AddSingleton<ICartPositionTracker, CartPositionTracker>();
+
 // 注册包裹生命周期服务（单例，内存存储）
 builder.Services.AddSingleton<IParcelLifecycleService, ParcelLifecycleService>();
 
