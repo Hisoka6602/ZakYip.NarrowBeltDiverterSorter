@@ -29,6 +29,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZakYip.NarrowBeltDiverterSo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZakYip.NarrowBeltDiverterSorter.UpstreamContracts", "ZakYip.NarrowBeltDiverterSorter.UpstreamContracts\ZakYip.NarrowBeltDiverterSorter.UpstreamContracts.csproj", "{CF6BC91F-778F-4988-B475-07D85DC6F5A7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZakYip.NarrowBeltDiverterSorter.Drivers.Tests", "ZakYip.NarrowBeltDiverterSorter.Drivers.Tests\ZakYip.NarrowBeltDiverterSorter.Drivers.Tests.csproj", "{DF727D72-1917-4911-B527-1B862BA918BF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -195,6 +197,18 @@ Global
 		{CF6BC91F-778F-4988-B475-07D85DC6F5A7}.Release|x64.Build.0 = Release|Any CPU
 		{CF6BC91F-778F-4988-B475-07D85DC6F5A7}.Release|x86.ActiveCfg = Release|Any CPU
 		{CF6BC91F-778F-4988-B475-07D85DC6F5A7}.Release|x86.Build.0 = Release|Any CPU
+		{DF727D72-1917-4911-B527-1B862BA918BF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DF727D72-1917-4911-B527-1B862BA918BF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DF727D72-1917-4911-B527-1B862BA918BF}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{DF727D72-1917-4911-B527-1B862BA918BF}.Debug|x64.Build.0 = Debug|Any CPU
+		{DF727D72-1917-4911-B527-1B862BA918BF}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{DF727D72-1917-4911-B527-1B862BA918BF}.Debug|x86.Build.0 = Debug|Any CPU
+		{DF727D72-1917-4911-B527-1B862BA918BF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DF727D72-1917-4911-B527-1B862BA918BF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DF727D72-1917-4911-B527-1B862BA918BF}.Release|x64.ActiveCfg = Release|Any CPU
+		{DF727D72-1917-4911-B527-1B862BA918BF}.Release|x64.Build.0 = Release|Any CPU
+		{DF727D72-1917-4911-B527-1B862BA918BF}.Release|x86.ActiveCfg = Release|Any CPU
+		{DF727D72-1917-4911-B527-1B862BA918BF}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
