@@ -310,7 +310,7 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
                 parcelLifecycleService.UpdateRouteState(args.ParcelId, ParcelRouteState.Routed);
                 
                 logger.LogInformation(
-                    "包裹 {ParcelId} 已装载到小车 {CartId}",
+                    "[上车确认] 包裹 {ParcelId} 已上车到小车 {CartId}",
                     args.ParcelId.Value,
                     args.CartId.Value);
             }

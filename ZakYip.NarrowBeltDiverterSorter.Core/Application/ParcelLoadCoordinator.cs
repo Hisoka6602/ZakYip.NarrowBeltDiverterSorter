@@ -55,8 +55,6 @@ public class ParcelLoadCoordinator
 
     private async void OnParcelCreatedFromInfeed(object? sender, ParcelCreatedFromInfeedEventArgs e)
     {
-        _logAction?.Invoke($"[上车规划] 开始为包裹 {e.ParcelId.Value} 规划目标小车");
-        
         // 调用装载计划器预测小车
         var predictedCartId = await _loadPlanner.PredictLoadedCartAsync(e.InfeedTriggerTime, CancellationToken.None);
 
@@ -78,7 +76,7 @@ public class ParcelLoadCoordinator
 
         var loadedTime = DateTimeOffset.UtcNow;
 
-        _logAction?.Invoke($"[上车规划成功] 包裹 {e.ParcelId.Value} -> 小车 {predictedCartId.Value.Value}, 预计到达时间: {loadedTime:o}");
+        _logAction?.Invoke($"[上车规划] 包裹 {e.ParcelId.Value} 预测上车小车 {predictedCartId.Value.Value}");
 
         // 创建装载的包裹快照
         var snapshot = new ParcelSnapshot
@@ -100,7 +98,5 @@ public class ParcelLoadCoordinator
             CartId = predictedCartId.Value,
             LoadedTime = loadedTime
         });
-        
-        _logAction?.Invoke($"[上车完成] 包裹 {e.ParcelId.Value} 已标记为在小车 {predictedCartId.Value.Value} 上");
     }
 }
