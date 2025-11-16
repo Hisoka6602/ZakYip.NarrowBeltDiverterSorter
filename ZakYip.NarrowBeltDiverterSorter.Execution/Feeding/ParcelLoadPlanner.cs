@@ -37,15 +37,15 @@ public class ParcelLoadPlanner : IParcelLoadPlanner
     /// <inheritdoc/>
     public Task<CartId?> PredictLoadedCartAsync(DateTimeOffset infeedEdgeTime, CancellationToken ct)
     {
-        // 获取小车环快照
-        var snapshot = _cartRingBuilder.CurrentSnapshot;
-        if (snapshot == null)
+        // 检查小车环是否已就绪
+        if (!_cartPositionTracker.IsRingReady)
         {
             return Task.FromResult<CartId?>(null);
         }
 
-        // 检查 CartPositionTracker 是否已初始化
-        if (_cartPositionTracker.CurrentOriginCartIndex == null)
+        // 获取小车环快照
+        var snapshot = _cartRingBuilder.CurrentSnapshot;
+        if (snapshot == null)
         {
             return Task.FromResult<CartId?>(null);
         }

@@ -9,6 +9,7 @@ public class CartPositionTracker : ICartPositionTracker
     private CartIndex? _currentOriginCartIndex;
     private RingLength? _ringLength;
     private bool _isInitialized;
+    private bool _isRingReady;
 
     public CartPositionTracker(ICartRingBuilder cartRingBuilder)
     {
@@ -17,6 +18,9 @@ public class CartPositionTracker : ICartPositionTracker
 
     /// <inheritdoc/>
     public bool IsInitialized => _isInitialized;
+
+    /// <inheritdoc/>
+    public bool IsRingReady => _isRingReady;
 
     /// <inheritdoc/>
     public CartIndex? CurrentOriginCartIndex => _currentOriginCartIndex;
@@ -38,6 +42,8 @@ public class CartPositionTracker : ICartPositionTracker
             _currentOriginCartIndex = snapshot.ZeroIndex;
             _ringLength = snapshot.RingLength;
             _isInitialized = true;
+            // Mark ring as ready: cart ring is built and first cart has passed origin
+            _isRingReady = true;
         }
         else
         {
