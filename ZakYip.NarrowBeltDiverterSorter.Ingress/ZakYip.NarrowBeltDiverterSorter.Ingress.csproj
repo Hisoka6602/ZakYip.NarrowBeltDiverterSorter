@@ -1,5 +1,7 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk"><!-- Properties inherited from Directory.Build.props -->
 
-  <!-- Properties inherited from Directory.Build.props -->
 
+  <ItemGroup>
+    <ProjectReference Include="..\ZakYip.NarrowBeltDiverterSorter.Core\ZakYip.NarrowBeltDiverterSorter.Core.csproj" />
+  </ItemGroup>
 </Project>
