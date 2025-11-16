@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
+using ZakYip.NarrowBeltDiverterSorter.Core.Domain.MainLine;
+using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Tracking;
 using ZakYip.NarrowBeltDiverterSorter.Ingress.Infeed;
 using ZakYip.NarrowBeltDiverterSorter.Ingress.Origin;
 using ZakYip.NarrowBeltDiverterSorter.Simulation.Fakes;
@@ -20,6 +22,10 @@ public class SimulationOrchestrator : BackgroundService
     private readonly FakeFieldBusClient _fieldBus;
     private readonly OriginSensorMonitor _originMonitor;
     private readonly InfeedSensorMonitor _infeedMonitor;
+    private readonly ICartRingBuilder _cartRingBuilder;
+    private readonly ICartPositionTracker _cartPositionTracker;
+    private readonly IMainLineControlService _mainLineControl;
+    private readonly IMainLineSpeedProvider _speedProvider;
     private readonly ILogger<SimulationOrchestrator> _logger;
 
     public SimulationOrchestrator(
@@ -30,6 +36,10 @@ public class SimulationOrchestrator : BackgroundService
         FakeFieldBusClient fieldBus,
         OriginSensorMonitor originMonitor,
         InfeedSensorMonitor infeedMonitor,
+        ICartRingBuilder cartRingBuilder,
+        ICartPositionTracker cartPositionTracker,
+        IMainLineControlService mainLineControl,
+        IMainLineSpeedProvider speedProvider,
         ILogger<SimulationOrchestrator> logger)
     {
         _config = config;
@@ -39,6 +49,10 @@ public class SimulationOrchestrator : BackgroundService
         _fieldBus = fieldBus;
         _originMonitor = originMonitor;
         _infeedMonitor = infeedMonitor;
+        _cartRingBuilder = cartRingBuilder;
+        _cartPositionTracker = cartPositionTracker;
+        _mainLineControl = mainLineControl;
+        _speedProvider = speedProvider;
         _logger = logger;
     }
 
@@ -49,35 +63,57 @@ public class SimulationOrchestrator : BackgroundService
         try
         {
             // 1. 连接现场总线
-            Console.WriteLine("[仿真启动] 步骤 1/6: 连接现场总线...");
+            Console.WriteLine("[仿真启动] 步骤 1/7: 连接现场总线...");
             await _fieldBus.ConnectAsync(stoppingToken);
             await Task.Delay(500, stoppingToken);
 
             // 2. 启动入口输送线
-            Console.WriteLine("[仿真启动] 步骤 2/6: 启动入口输送线...");
+            Console.WriteLine("[仿真启动] 步骤 2/7: 启动入口输送线...");
             await _infeedConveyor.SetSpeedAsync(_config.InfeedConveyorSpeedMmPerSec, stoppingToken);
             await _infeedConveyor.StartAsync(stoppingToken);
             await Task.Delay(500, stoppingToken);
 
             // 3. 启动入口传感器监听
-            Console.WriteLine("[仿真启动] 步骤 3/6: 启动入口传感器监听...");
+            Console.WriteLine("[仿真启动] 步骤 3/7: 启动入口传感器监听...");
             await _infeedSensor.StartMonitoringAsync(stoppingToken);
             await _infeedMonitor.StartAsync(stoppingToken);
             await Task.Delay(500, stoppingToken);
 
             // 4. 启动原点传感器监听
-            Console.WriteLine("[仿真启动] 步骤 4/6: 启动原点传感器监听...");
+            Console.WriteLine("[仿真启动] 步骤 4/7: 启动原点传感器监听...");
             _originMonitor.Start();
             await Task.Delay(500, stoppingToken);
 
-            // 5. 启动主线
-            Console.WriteLine("[仿真启动] 步骤 5/6: 设置主线速度并启动...");
+            // 5. 启动主线并等待速度稳定
+            Console.WriteLine("[仿真启动] 步骤 5/7: 设置主线速度并启动...");
             await _mainLineDrive.SetTargetSpeedAsync(_config.MainLineSpeedMmPerSec, stoppingToken);
             await _mainLineDrive.StartAsync(stoppingToken);
-            await Task.Delay(500, stoppingToken);
+            
+            // 等待主线速度稳定
+            Console.WriteLine("[仿真预热] 等待主线速度稳定...");
+            await WaitForMainLineStableAsync(stoppingToken);
+            _logger.LogInformation("主线已启动并稳定，当前速度: {Speed:F1} mm/s", _speedProvider.CurrentMmps);
 
-            // 6. 系统就绪
-            Console.WriteLine("[仿真启动] 步骤 6/6: 系统就绪\n");
+            // 6. 等待小车环构建完成
+            Console.WriteLine("[仿真启动] 步骤 6/7: 等待小车环构建完成...");
+            var warmupStart = DateTimeOffset.UtcNow;
+            await WaitForCartRingReadyAsync(stoppingToken);
+            var warmupDuration = (DateTimeOffset.UtcNow - warmupStart).TotalSeconds;
+            
+            var snapshot = _cartRingBuilder.CurrentSnapshot;
+            if (snapshot != null)
+            {
+                _logger.LogInformation(
+                    "[CartRing] 小车环已就绪，长度={CartCount}，节距={SpacingMm}mm",
+                    snapshot.RingLength.Value,
+                    _config.CartSpacingMm);
+                _logger.LogInformation("[Simulation] 小车环预热完成，耗时 {WarmupDuration:F2} 秒", warmupDuration);
+                
+                Console.WriteLine($"[仿真预热] 小车环已就绪 - 小车数量: {snapshot.RingLength.Value}, 耗时: {warmupDuration:F2}秒");
+            }
+
+            // 7. 系统就绪
+            Console.WriteLine("[仿真启动] 步骤 7/7: 系统就绪\n");
             Console.WriteLine("════════════════════════════════════════");
             Console.WriteLine("  仿真系统运行中...");
             Console.WriteLine("════════════════════════════════════════\n");
@@ -128,5 +164,60 @@ public class SimulationOrchestrator : BackgroundService
         await _fieldBus.DisconnectAsync();
         
         Console.WriteLine("[仿真停止] 系统已停止");
+    }
+
+    /// <summary>
+    /// 等待主线控制启动并速度稳定
+    /// </summary>
+    private async Task WaitForMainLineStableAsync(CancellationToken cancellationToken)
+    {
+        const int maxWaitSeconds = 10;
+        var timeout = DateTimeOffset.UtcNow.AddSeconds(maxWaitSeconds);
+
+        while (DateTimeOffset.UtcNow < timeout && !cancellationToken.IsCancellationRequested)
+        {
+            if (_mainLineControl.IsRunning && _speedProvider.IsSpeedStable)
+            {
+                return;
+            }
+
+            await Task.Delay(100, cancellationToken);
+        }
+
+        _logger.LogWarning("主线未能在 {MaxWaitSeconds} 秒内稳定，继续执行", maxWaitSeconds);
+    }
+
+    /// <summary>
+    /// 等待小车环构建完成
+    /// </summary>
+    private async Task WaitForCartRingReadyAsync(CancellationToken cancellationToken)
+    {
+        const int maxWaitSeconds = 30;
+        var timeout = DateTimeOffset.UtcNow.AddSeconds(maxWaitSeconds);
+        var lastLogTime = DateTimeOffset.UtcNow;
+
+        while (DateTimeOffset.UtcNow < timeout && !cancellationToken.IsCancellationRequested)
+        {
+            // 检查小车环是否已构建完成
+            var snapshot = _cartRingBuilder.CurrentSnapshot;
+            if (snapshot != null && _cartPositionTracker.IsInitialized)
+            {
+                return;
+            }
+
+            // 每5秒输出一次等待日志
+            if ((DateTimeOffset.UtcNow - lastLogTime).TotalSeconds >= 5)
+            {
+                _logger.LogDebug(
+                    "等待小车环就绪... (快照: {HasSnapshot}, 跟踪器初始化: {IsInitialized})",
+                    snapshot != null,
+                    _cartPositionTracker.IsInitialized);
+                lastLogTime = DateTimeOffset.UtcNow;
+            }
+
+            await Task.Delay(200, cancellationToken);
+        }
+
+        _logger.LogWarning("小车环未能在 {MaxWaitSeconds} 秒内完成构建", maxWaitSeconds);
     }
 }
