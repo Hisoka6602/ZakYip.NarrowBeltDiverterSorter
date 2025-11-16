@@ -125,6 +125,9 @@ builder.Services.AddSingleton<RemaMainLineDrive>();
 builder.Services.AddSingleton<IMainLineDrivePort>(sp => sp.GetRequiredService<RemaMainLineDrive>());
 builder.Services.AddSingleton<IMainLineFeedbackPort>(sp => sp.GetRequiredService<RemaMainLineDrive>());
 
+// 注册 ProductionMainLineDrive（IMainLineDrive 实现）
+builder.Services.AddSingleton<IMainLineDrive, ProductionMainLineDrive>();
+
 // 注册小车参数驱动
 builder.Services.AddSingleton<ICartParameterPort, CartParameterDriver>();
 

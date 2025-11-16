@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.MainLine;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Tracking;
+using ZakYip.NarrowBeltDiverterSorter.Execution.MainLine;
 using ZakYip.NarrowBeltDiverterSorter.Ingress.Infeed;
 using ZakYip.NarrowBeltDiverterSorter.Ingress.Origin;
 using ZakYip.NarrowBeltDiverterSorter.Simulation.Fakes;
@@ -16,7 +17,8 @@ namespace ZakYip.NarrowBeltDiverterSorter.Simulation;
 public class SimulationOrchestrator : BackgroundService
 {
     private readonly SimulationConfiguration _config;
-    private readonly FakeMainLineDrivePort _mainLineDrive;
+    private readonly IMainLineDrive _mainLineDrive;
+    private readonly FakeMainLineDrivePort _fakeMainLineDrivePort;
     private readonly FakeInfeedConveyorPort _infeedConveyor;
     private readonly FakeInfeedSensorPort _infeedSensor;
     private readonly FakeFieldBusClient _fieldBus;
@@ -25,13 +27,13 @@ public class SimulationOrchestrator : BackgroundService
     private readonly ICartRingBuilder _cartRingBuilder;
     private readonly ICartPositionTracker _cartPositionTracker;
     private readonly IMainLineControlService _mainLineControl;
-    private readonly IMainLineSpeedProvider _speedProvider;
     private readonly SimulationMainLineSetpoint _setpointProvider;
     private readonly ILogger<SimulationOrchestrator> _logger;
 
     public SimulationOrchestrator(
         SimulationConfiguration config,
-        FakeMainLineDrivePort mainLineDrive,
+        IMainLineDrive mainLineDrive,
+        FakeMainLineDrivePort fakeMainLineDrivePort,
         FakeInfeedConveyorPort infeedConveyor,
         FakeInfeedSensorPort infeedSensor,
         FakeFieldBusClient fieldBus,
@@ -40,12 +42,12 @@ public class SimulationOrchestrator : BackgroundService
         ICartRingBuilder cartRingBuilder,
         ICartPositionTracker cartPositionTracker,
         IMainLineControlService mainLineControl,
-        IMainLineSpeedProvider speedProvider,
         SimulationMainLineSetpoint setpointProvider,
         ILogger<SimulationOrchestrator> logger)
     {
         _config = config;
         _mainLineDrive = mainLineDrive;
+        _fakeMainLineDrivePort = fakeMainLineDrivePort;
         _infeedConveyor = infeedConveyor;
         _infeedSensor = infeedSensor;
         _fieldBus = fieldBus;
@@ -54,7 +56,6 @@ public class SimulationOrchestrator : BackgroundService
         _cartRingBuilder = cartRingBuilder;
         _cartPositionTracker = cartPositionTracker;
         _mainLineControl = mainLineControl;
-        _speedProvider = speedProvider;
         _setpointProvider = setpointProvider;
         _logger = logger;
     }
@@ -90,12 +91,12 @@ public class SimulationOrchestrator : BackgroundService
             // 5. 启动主线并等待速度稳定
             Console.WriteLine("[仿真启动] 步骤 5/7: 设置主线速度并启动...");
             _setpointProvider.SetSetpoint(true, (decimal)_config.MainLineSpeedMmPerSec);
-            await _mainLineDrive.StartAsync(stoppingToken);
+            await _fakeMainLineDrivePort.StartAsync(stoppingToken);
             
             // 等待主线速度稳定
             Console.WriteLine("[仿真预热] 等待主线速度稳定...");
             await WaitForMainLineStableAsync(stoppingToken);
-            _logger.LogInformation("主线已启动并稳定，当前速度: {Speed:F1} mm/s", _speedProvider.CurrentMmps);
+            _logger.LogInformation("主线已启动并稳定，当前速度: {Speed:F1} mm/s", _mainLineDrive.CurrentSpeedMmps);
 
             // 6. 等待小车环构建完成
             Console.WriteLine("[仿真启动] 步骤 6/7: 等待小车环构建完成...");
@@ -160,7 +161,7 @@ public class SimulationOrchestrator : BackgroundService
         Console.WriteLine("\n[仿真停止] 正在停止系统...");
         
         _setpointProvider.SetSetpoint(false, 0);
-        await _mainLineDrive.StopAsync();
+        await _fakeMainLineDrivePort.StopAsync();
         await _infeedConveyor.StopAsync();
         await _infeedSensor.StopMonitoringAsync();
         await _originMonitor.StopAsync();
@@ -180,7 +181,7 @@ public class SimulationOrchestrator : BackgroundService
 
         while (DateTimeOffset.UtcNow < timeout && !cancellationToken.IsCancellationRequested)
         {
-            if (_mainLineControl.IsRunning && _speedProvider.IsSpeedStable)
+            if (_mainLineControl.IsRunning && _mainLineDrive.IsSpeedStable)
             {
                 return;
             }
