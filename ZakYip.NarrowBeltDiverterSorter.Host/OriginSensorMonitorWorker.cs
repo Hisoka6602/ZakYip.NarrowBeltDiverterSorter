@@ -16,10 +16,11 @@ public class OriginSensorMonitorWorker : BackgroundService
     public OriginSensorMonitorWorker(
         ILogger<OriginSensorMonitorWorker> logger,
         IOriginSensorPort originSensorPort,
-        ICartRingBuilder cartRingBuilder)
+        ICartRingBuilder cartRingBuilder,
+        ICartPositionTracker cartPositionTracker)
     {
         _logger = logger;
-        _monitor = new OriginSensorMonitor(originSensorPort, cartRingBuilder);
+        _monitor = new OriginSensorMonitor(originSensorPort, cartRingBuilder, cartPositionTracker);
     }
 
     protected override Task ExecuteAsync(CancellationToken stoppingToken)

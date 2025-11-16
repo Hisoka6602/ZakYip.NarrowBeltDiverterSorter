@@ -11,6 +11,7 @@ public class OriginSensorMonitor
 {
     private readonly IOriginSensorPort _sensorPort;
     private readonly ICartRingBuilder _cartRingBuilder;
+    private readonly ICartPositionTracker _cartPositionTracker;
     private readonly TimeSpan _pollingInterval;
     
     private bool _previousSensor1State = false;
@@ -23,14 +24,17 @@ public class OriginSensorMonitor
     /// </summary>
     /// <param name="sensorPort">传感器端口</param>
     /// <param name="cartRingBuilder">小车环构建器</param>
+    /// <param name="cartPositionTracker">小车位置跟踪器</param>
     /// <param name="pollingInterval">轮询间隔（默认10ms）</param>
     public OriginSensorMonitor(
         IOriginSensorPort sensorPort,
         ICartRingBuilder cartRingBuilder,
+        ICartPositionTracker cartPositionTracker,
         TimeSpan? pollingInterval = null)
     {
         _sensorPort = sensorPort ?? throw new ArgumentNullException(nameof(sensorPort));
         _cartRingBuilder = cartRingBuilder ?? throw new ArgumentNullException(nameof(cartRingBuilder));
+        _cartPositionTracker = cartPositionTracker ?? throw new ArgumentNullException(nameof(cartPositionTracker));
         _pollingInterval = pollingInterval ?? TimeSpan.FromMilliseconds(10);
     }
 
@@ -78,6 +82,8 @@ public class OriginSensorMonitor
 
     private async Task MonitoringLoopAsync(CancellationToken cancellationToken)
     {
+        bool bothSensorsWereBlocked = false;
+        
         while (!cancellationToken.IsCancellationRequested)
         {
             try
@@ -106,6 +112,20 @@ public class OriginSensorMonitor
                         isRisingEdge: sensor2State,
                         timestamp: timestamp);
                     _previousSensor2State = sensor2State;
+                }
+
+                // Track when both sensors are blocked (cart is passing)
+                if (sensor1State && sensor2State)
+                {
+                    bothSensorsWereBlocked = true;
+                }
+
+                // Detect cart passage completion - when both sensors are unblocked after being blocked
+                if (!sensor1State && !sensor2State && bothSensorsWereBlocked)
+                {
+                    // A cart has completely passed the origin
+                    _cartPositionTracker.OnCartPassedOrigin(timestamp);
+                    bothSensorsWereBlocked = false;
                 }
 
                 await Task.Delay(_pollingInterval, cancellationToken);

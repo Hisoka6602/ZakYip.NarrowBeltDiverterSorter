@@ -19,6 +19,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\ZakYip.NarrowBeltDiverterSorter.Core\ZakYip.NarrowBeltDiverterSorter.Core.csproj" />
+    <ProjectReference Include="..\ZakYip.NarrowBeltDiverterSorter.Execution\ZakYip.NarrowBeltDiverterSorter.Execution.csproj" />
     <ProjectReference Include="..\ZakYip.NarrowBeltDiverterSorter.Host\ZakYip.NarrowBeltDiverterSorter.Host.csproj" />
   </ItemGroup>
 

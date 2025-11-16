@@ -31,9 +31,11 @@ public class OriginSensorMonitorTests
         // Arrange
         var mockPort = new MockOriginSensorPort();
         var builder = new CartRingBuilder();
+        var tracker = new CartPositionTracker();
         var monitor = new OriginSensorMonitor(
             mockPort,
             builder,
+            tracker,
             TimeSpan.FromMilliseconds(5));
 
         // Start monitoring
@@ -100,9 +102,11 @@ public class OriginSensorMonitorTests
         // Arrange
         var mockPort = new MockOriginSensorPort();
         var builder = new CartRingBuilder();
+        var tracker = new CartPositionTracker();
         var monitor = new OriginSensorMonitor(
             mockPort,
             builder,
+            tracker,
             TimeSpan.FromMilliseconds(5));
 
         // Start monitoring
@@ -127,9 +131,11 @@ public class OriginSensorMonitorTests
         // Arrange
         var mockPort = new MockOriginSensorPort();
         var builder = new CartRingBuilder();
+        var tracker = new CartPositionTracker();
         var monitor = new OriginSensorMonitor(
             mockPort,
             builder,
+            tracker,
             TimeSpan.FromMilliseconds(5));
 
         // Act
@@ -146,7 +152,7 @@ public class OriginSensorMonitorTests
     {
         // Arrange & Act & Assert
         Assert.Throws<ArgumentNullException>(() => 
-            new OriginSensorMonitor(null!, new CartRingBuilder()));
+            new OriginSensorMonitor(null!, new CartRingBuilder(), new CartPositionTracker()));
     }
 
     [Fact]
@@ -155,7 +161,7 @@ public class OriginSensorMonitorTests
         // Arrange & Act & Assert
         var mockPort = new MockOriginSensorPort();
         Assert.Throws<ArgumentNullException>(() => 
-            new OriginSensorMonitor(mockPort, null!));
+            new OriginSensorMonitor(mockPort, null!, new CartPositionTracker()));
     }
 
     [Fact]
@@ -164,9 +170,11 @@ public class OriginSensorMonitorTests
         // Arrange
         var mockPort = new MockOriginSensorPort();
         var builder = new CartRingBuilder();
+        var tracker = new CartPositionTracker();
         var monitor = new OriginSensorMonitor(
             mockPort,
             builder,
+            tracker,
             TimeSpan.FromMilliseconds(5));
 
         // Act
