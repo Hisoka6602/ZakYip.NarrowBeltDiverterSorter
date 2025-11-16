@@ -29,8 +29,10 @@ public class ParcelGeneratorWorker : BackgroundService
     {
         _logger.LogInformation("包裹生成器已启动");
 
-        // 等待系统初始化
-        await Task.Delay(TimeSpan.FromSeconds(3), stoppingToken);
+        // 等待系统初始化 - E2E模式下等待更长时间确保小车环构建完成
+        // 给主线控制稳定（最多10秒）+ 小车环构建（约2秒）+ 缓冲时间
+        var initDelay = _config.SimulationDurationSeconds == 0 ? 15 : 3; // E2E模式用15秒，传统模式用3秒
+        await Task.Delay(TimeSpan.FromSeconds(initDelay), stoppingToken);
 
         var intervalMs = (int)(_config.ParcelGenerationIntervalSeconds * 1000);
         

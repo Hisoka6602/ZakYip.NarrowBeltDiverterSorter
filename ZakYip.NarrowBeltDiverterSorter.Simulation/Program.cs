@@ -241,7 +241,15 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
     // 注册 Ingress 监视器并连接事件
     // ============================================================================
 
-    builder.Services.AddSingleton<OriginSensorMonitor>();
+    // 注册 OriginSensorMonitor 并连接到 CartRingBuilder 和 CartPositionTracker
+    builder.Services.AddSingleton(sp =>
+    {
+        var originSensor = sp.GetRequiredService<IOriginSensorPort>();
+        var cartRingBuilder = sp.GetRequiredService<ICartRingBuilder>();
+        var cartPositionTracker = sp.GetRequiredService<ICartPositionTracker>();
+        
+        return new OriginSensorMonitor(originSensor, cartRingBuilder, cartPositionTracker);
+    });
     
     builder.Services.AddSingleton(sp =>
     {
@@ -310,7 +318,8 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
     builder.Services.AddHostedService<CartMovementSimulator>();
     builder.Services.AddHostedService<ParcelGeneratorWorker>();
     
-    // 添加 InfeedSensorMonitor 启动服务（使用简单的后台服务包装）
+    // 添加传感器监视器启动服务
+    builder.Services.AddHostedService<OriginSensorMonitorHostedService>();
     builder.Services.AddHostedService<InfeedSensorMonitorHostedService>();
 
     // ============================================================================
@@ -643,7 +652,16 @@ static async Task RunTraditionalSimulationAsync()
     // 注册 Ingress 监视器
     // ============================================================================
 
-    builder.Services.AddSingleton<OriginSensorMonitor>();
+    // 注册 OriginSensorMonitor 并连接到 CartRingBuilder 和 CartPositionTracker
+    builder.Services.AddSingleton(sp =>
+    {
+        var originSensor = sp.GetRequiredService<IOriginSensorPort>();
+        var cartRingBuilder = sp.GetRequiredService<ICartRingBuilder>();
+        var cartPositionTracker = sp.GetRequiredService<ICartPositionTracker>();
+        
+        return new OriginSensorMonitor(originSensor, cartRingBuilder, cartPositionTracker);
+    });
+    
     builder.Services.AddSingleton<InfeedSensorMonitor>();
 
     // ============================================================================
