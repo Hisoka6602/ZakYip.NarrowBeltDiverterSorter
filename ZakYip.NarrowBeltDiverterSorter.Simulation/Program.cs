@@ -130,6 +130,16 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
     builder.Services.AddSingleton(simulationConfig);
 
     // ============================================================================
+    // 注册启动模式配置（E2E 模式下使用 Normal 模式）
+    // ============================================================================
+    
+    builder.Services.AddSingleton(new StartupModeConfiguration 
+    { 
+        Mode = StartupMode.Normal,
+        EnableBringupLogging = false
+    });
+
+    // ============================================================================
     // 配置选项
     // ============================================================================
 
@@ -559,6 +569,16 @@ static async Task RunTraditionalSimulationAsync()
     Console.WriteLine($"  仿真时长: {simulationConfig.SimulationDurationSeconds} 秒\n");
 
     builder.Services.AddSingleton(simulationConfig);
+
+    // ============================================================================
+    // 注册启动模式配置（传统模式下使用 Normal 模式）
+    // ============================================================================
+    
+    builder.Services.AddSingleton(new StartupModeConfiguration 
+    { 
+        Mode = StartupMode.Normal,
+        EnableBringupLogging = false
+    });
 
     // ============================================================================
     // 配置选项
