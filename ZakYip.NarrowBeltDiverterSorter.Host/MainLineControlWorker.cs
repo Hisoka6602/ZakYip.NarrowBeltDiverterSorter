@@ -13,17 +13,21 @@ public class MainLineControlWorker : BackgroundService
     private readonly IMainLineControlService _controlService;
     private readonly IMainLineSpeedProvider _speedProvider;
     private readonly MainLineControlOptions _options;
+    private readonly bool _enableBringupLogging;
 
     public MainLineControlWorker(
         ILogger<MainLineControlWorker> logger,
         IMainLineControlService controlService,
         IMainLineSpeedProvider speedProvider,
-        IOptions<MainLineControlOptions> options)
+        IOptions<MainLineControlOptions> options,
+        StartupModeConfiguration startupConfig)
     {
         _logger = logger;
         _controlService = controlService;
         _speedProvider = speedProvider;
         _options = options.Value;
+        _enableBringupLogging = startupConfig.EnableBringupLogging && 
+                                startupConfig.Mode >= StartupMode.BringupMainline;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -40,7 +44,10 @@ public class MainLineControlWorker : BackgroundService
 
         var loopPeriod = _options.LoopPeriod;
         var logCounter = 0;
-        var logInterval = (int)(TimeSpan.FromSeconds(5).TotalMilliseconds / loopPeriod.TotalMilliseconds);
+        // Bring-up 模式：每秒输出，正常模式：每5秒输出
+        var logInterval = _enableBringupLogging 
+            ? (int)(TimeSpan.FromSeconds(1).TotalMilliseconds / loopPeriod.TotalMilliseconds)
+            : (int)(TimeSpan.FromSeconds(5).TotalMilliseconds / loopPeriod.TotalMilliseconds);
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -92,17 +99,28 @@ public class MainLineControlWorker : BackgroundService
         var isStable = _speedProvider.IsSpeedStable;
         var stableDuration = _speedProvider.StableDuration;
 
-        if (isStable)
+        if (_enableBringupLogging)
         {
+            // Bring-up 模式：每秒输出当前目标速度、实际速度、IsSpeedStable
             _logger.LogInformation(
-                "主线运行状态 - 当前速度: {CurrentSpeed:F1} mm/s, 目标速度: {TargetSpeed:F1} mm/s, 速度稳定: 是 (已稳定 {StableDuration:F1}秒)",
-                currentSpeed, targetSpeed, stableDuration.TotalSeconds);
+                "[主线状态] 目标速度: {TargetSpeed:F1} mm/s, 实际速度: {CurrentSpeed:F1} mm/s, 速度稳定: {IsStable}",
+                targetSpeed, currentSpeed, isStable ? "是" : "否");
         }
         else
         {
-            _logger.LogInformation(
-                "主线运行状态 - 当前速度: {CurrentSpeed:F1} mm/s, 目标速度: {TargetSpeed:F1} mm/s, 速度稳定: 否",
-                currentSpeed, targetSpeed);
+            // 正常模式：保持原有日志格式
+            if (isStable)
+            {
+                _logger.LogInformation(
+                    "主线运行状态 - 当前速度: {CurrentSpeed:F1} mm/s, 目标速度: {TargetSpeed:F1} mm/s, 速度稳定: 是 (已稳定 {StableDuration:F1}秒)",
+                    currentSpeed, targetSpeed, stableDuration.TotalSeconds);
+            }
+            else
+            {
+                _logger.LogInformation(
+                    "主线运行状态 - 当前速度: {CurrentSpeed:F1} mm/s, 目标速度: {TargetSpeed:F1} mm/s, 速度稳定: 否",
+                    currentSpeed, targetSpeed);
+            }
         }
     }
 }
