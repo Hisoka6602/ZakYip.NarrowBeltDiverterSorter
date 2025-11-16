@@ -157,12 +157,12 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
         ParcelGenerationIntervalSeconds = 0.8, // 0.8秒间隔，给包裹足够时间分拣
         SimulationDurationSeconds = 0, // E2E 模式下不使用时长限制
         ParcelCount = parcelCount, // 使用命令行参数指定的包裹数量
-        ParcelTimeToLiveSeconds = 25.0, // 25秒 TTL - 大部分能正常分拣，少量超时进入强排
+        ParcelTimeToLiveSeconds = isUnstableSpeedScenario ? 15.0 : 25.0, // 不稳定场景使用更短的 TTL
         SortingMode = sortingMode, // 使用命令行参数指定的分拣模式
         FixedChuteId = fixedChuteId, // 固定格口ID（仅在 FixedChute 模式下使用）
         Scenario = scenario, // 仿真场景类型
-        SpeedOscillationAmplitude = 500.0, // 速度波动幅度 ±500 mm/s
-        SpeedOscillationFrequency = 0.5 // 速度波动频率 0.5 Hz (每2秒一个周期)
+        SpeedOscillationAmplitude = 300.0, // 速度波动幅度 ±300 mm/s (30% of target speed)
+        SpeedOscillationFrequency = 1.0 // 速度波动频率 1.0 Hz (每秒一个周期)
     };
 
     builder.Services.AddSingleton(simulationConfig);
