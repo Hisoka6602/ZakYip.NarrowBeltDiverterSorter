@@ -2,7 +2,41 @@
 
 ## 概述
 
-本仿真系统提供了一个完整的端到端 (E2E) 仿真环境，用于验证窄带分拣机的三种分拣模式，而无需连接真实硬件。
+本仿真系统提供了一个完整的端到端 (E2E) 仿真环境，用于验证窄带分拣机的三种分拣模式和安全场景，而无需连接真实硬件。
+
+## 仿真场景
+
+### 安全场景 (safety-chute-reset)
+
+验证系统启动和停止时的格口安全行为。该场景确保：
+- 启动前自动关闭所有格口发信器
+- 运行期间格口正常开合
+- 停止后自动关闭所有格口发信器
+
+**使用方法：**
+```bash
+dotnet run --project ZakYip.NarrowBeltDiverterSorter.Simulation -- --scenario safety-chute-reset
+```
+
+**报告示例：**
+```
+════════════════════════════════════════
+║      安全场景验证报告 (Chute Safety) ║
+════════════════════════════════════════
+
+【格口状态】
+  总格口数:          10
+  启动前已清零:      ✓ 是
+  运行中曾触发开合:  ✓ 是 (3 个格口)
+  停止后全部关闭:    ✓ 是
+
+【异常情况】
+  启动时仍被检测为打开的格口: 0
+  启动安全关闭后仍打开的格口: 0
+  停止后仍被检测为打开的格口: 0
+
+安全检查结果:       ✓ 通过
+```
 
 ## 三种分拣模式
 
@@ -69,7 +103,7 @@ dotnet run --project ZakYip.NarrowBeltDiverterSorter.Simulation -- \
 
 | 参数 | 说明 | 默认值 | 示例 |
 |------|------|--------|------|
-| `--scenario` | 仿真场景：`legacy` 或 `e2e-report` | `legacy` | `--scenario e2e-report` |
+| `--scenario` | 仿真场景：`legacy`, `e2e-report`, `e2e-speed-unstable`, `safety-chute-reset` | `legacy` | `--scenario e2e-report` |
 | `--parcel-count` | 本次仿真包裹数量 | `20` | `--parcel-count 100` |
 | `--sorting-mode` | 分拣模式：`normal`, `fixed-chute`, `round-robin` | `normal` | `--sorting-mode fixed-chute` |
 | `--fixed-chute-id` | 固定格口 ID（仅 FixedChute 模式） | - | `--fixed-chute-id 5` |
