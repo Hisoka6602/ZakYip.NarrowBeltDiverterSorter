@@ -51,6 +51,14 @@ public interface IParcelLifecycleService
     void MarkSorted(ParcelId parcelId, DateTimeOffset sortedTime);
 
     /// <summary>
+    /// 更新包裹分拣结果
+    /// </summary>
+    /// <param name="parcelId">包裹ID</param>
+    /// <param name="outcome">分拣结果</param>
+    /// <param name="actualChuteId">实际格口ID（可选）</param>
+    void UpdateSortingOutcome(ParcelId parcelId, ParcelSortingOutcome outcome, ChuteId? actualChuteId = null);
+
+    /// <summary>
     /// 获取包裹快照
     /// </summary>
     /// <param name="parcelId">包裹ID</param>

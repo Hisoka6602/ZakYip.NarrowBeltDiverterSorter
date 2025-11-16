@@ -95,6 +95,19 @@ public class ParcelLifecycleService : IParcelLifecycleService
     }
 
     /// <inheritdoc/>
+    public void UpdateSortingOutcome(ParcelId parcelId, ParcelSortingOutcome outcome, ChuteId? actualChuteId = null)
+    {
+        _parcels.AddOrUpdate(
+            parcelId,
+            _ => throw new InvalidOperationException($"包裹 {parcelId.Value} 不存在"),
+            (_, existingParcel) => existingParcel with
+            {
+                SortingOutcome = outcome,
+                ActualChuteId = actualChuteId
+            });
+    }
+
+    /// <inheritdoc/>
     public ParcelSnapshot? Get(ParcelId parcelId)
     {
         return _parcels.TryGetValue(parcelId, out var parcel) ? parcel : null;
