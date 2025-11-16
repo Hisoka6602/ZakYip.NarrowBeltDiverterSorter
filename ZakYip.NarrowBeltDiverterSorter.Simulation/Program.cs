@@ -362,6 +362,13 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
     var e2eSetpointProvider = app.Services.GetRequiredService<SimulationMainLineSetpoint>();
     e2eSetpointProvider.SetSetpoint(true, (decimal)simulationConfig.MainLineSpeedMmPerSec);
     
+    // Start and configure fake infeed conveyor for E2E scenario
+    await fakeInfeedConveyor.StartAsync();
+    await fakeInfeedConveyor.SetSpeedAsync(simulationConfig.InfeedConveyorSpeedMmPerSec);
+    
+    // Start fake main line drive for E2E scenario
+    await fakeMainLineDrive.StartAsync();
+    
     Console.WriteLine("开始仿真...\n");
     
     // 创建一个超时的 CancellationTokenSource
