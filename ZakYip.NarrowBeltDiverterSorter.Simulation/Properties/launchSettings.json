@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "ZakYip.NarrowBeltDiverterSorter.Simulation": {
+      "commandName": "Project",
+      "commandLineArgs": "--scenario e2e-report --parcel-count 200 --output e2e-report-200.json --reset-config"
+    }
+  }
+}
