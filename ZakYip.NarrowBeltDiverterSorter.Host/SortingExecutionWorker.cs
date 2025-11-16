@@ -20,7 +20,9 @@ public class SortingExecutionWorker : BackgroundService
     private readonly ICartLifecycleService _cartLifecycleService;
     private readonly IParcelLifecycleService _parcelLifecycleService;
     private readonly IUpstreamSortingApiClient _upstreamApiClient;
+    private readonly IChuteConfigProvider _chuteConfigProvider;
     private readonly SortingExecutionOptions _options;
+    private readonly bool _enableBringupLogging;
 
     public SortingExecutionWorker(
         ILogger<SortingExecutionWorker> logger,
@@ -29,7 +31,9 @@ public class SortingExecutionWorker : BackgroundService
         ICartLifecycleService cartLifecycleService,
         IParcelLifecycleService parcelLifecycleService,
         IUpstreamSortingApiClient upstreamApiClient,
-        IOptions<SortingExecutionOptions> options)
+        IChuteConfigProvider chuteConfigProvider,
+        IOptions<SortingExecutionOptions> options,
+        StartupModeConfiguration startupConfig)
     {
         _logger = logger;
         _sortingPlanner = sortingPlanner;
@@ -37,7 +41,10 @@ public class SortingExecutionWorker : BackgroundService
         _cartLifecycleService = cartLifecycleService;
         _parcelLifecycleService = parcelLifecycleService;
         _upstreamApiClient = upstreamApiClient;
+        _chuteConfigProvider = chuteConfigProvider;
         _options = options.Value;
+        _enableBringupLogging = startupConfig.EnableBringupLogging && 
+                                startupConfig.Mode >= StartupMode.BringupChutes;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -102,6 +109,18 @@ public class SortingExecutionWorker : BackgroundService
     {
         try
         {
+            // Bring-up 模式：输出吐件计划执行信息
+            if (_enableBringupLogging)
+            {
+                _logger.LogInformation(
+                    "[吐件计划执行] ParcelId={ParcelId}, CartId={CartId}, 目标格口={TargetChute}, 当前格口={CurrentChute}, 是否强排={IsForceEject}",
+                    plan.ParcelId.Value,
+                    plan.CartId.Value,
+                    plan.ChuteId.Value,
+                    plan.ChuteId.Value, // 简化：使用格口ID作为当前格口
+                    plan.IsForceEject ? "是" : "否");
+            }
+            
             // Open chute window
             await _chuteTransmitterPort.OpenWindowAsync(
                 plan.ChuteId,

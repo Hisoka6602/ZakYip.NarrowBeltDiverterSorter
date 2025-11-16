@@ -21,7 +21,17 @@ using ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
 using ZakYip.NarrowBeltDiverterSorter.Communication.Upstream;
 using ZakYip.NarrowBeltDiverterSorter.Host;
 
+// ============================================================================
+// 解析启动模式参数
+// ============================================================================
+
+var startupConfig = StartupModeConfiguration.ParseFromArgs(args);
+Console.WriteLine($"启动模式: {startupConfig.GetModeDescription()}");
+
 var builder = Host.CreateApplicationBuilder(args);
+
+// 注册启动模式配置为单例
+builder.Services.AddSingleton(startupConfig);
 
 // ============================================================================
 // 配置选项
@@ -163,25 +173,76 @@ builder.Services.AddHealthChecks()
     .AddCheck<SystemHealthCheck>("system");
 
 // ============================================================================
-// 注册后台工作器
+// 根据启动模式注册后台工作器
 // ============================================================================
 
-// 注册主线控制工作器
-builder.Services.AddHostedService<MainLineControlWorker>();
+// 主线控制工作器（所有模式都需要）
+if (startupConfig.ShouldStartMainLineControl())
+{
+    builder.Services.AddHostedService<MainLineControlWorker>();
+}
 
-// 注册包裹路由工作器
-builder.Services.AddHostedService<ParcelRoutingWorker>();
+// 原点传感器监视器（所有模式都需要）
+if (startupConfig.ShouldStartOriginSensorMonitor())
+{
+    // builder.Services.AddHostedService<OriginSensorMonitorWorker>();
+    // TODO: 当 IOriginSensorPort 实现后启用
+}
 
-// 注册分拣执行工作器
-builder.Services.AddHostedService<SortingExecutionWorker>();
+// 入口传感器监视器（bringup-infeed 及以上模式）
+if (startupConfig.ShouldStartInfeedSensorMonitor())
+{
+    // builder.Services.AddHostedService<InfeedSensorMonitorWorker>();
+    // TODO: 当 IInfeedSensorPort 实现后启用
+}
 
-// 注册传感器监视器工作器（当传感器端口实现后启用）
-// builder.Services.AddHostedService<OriginSensorMonitorWorker>();
-// builder.Services.AddHostedService<InfeedSensorMonitorWorker>();
-// builder.Services.AddHostedService<ChuteIoMonitorWorker>();
+// 包裹装载协调器（bringup-infeed 及以上模式）
+if (startupConfig.ShouldStartParcelLoadCoordinator())
+{
+    builder.Services.AddHostedService<ParcelLoadCoordinatorWorker>();
+}
+
+// 分拣执行工作器（bringup-chutes 及以上模式）
+if (startupConfig.ShouldStartSortingExecutionWorker())
+{
+    builder.Services.AddHostedService<SortingExecutionWorker>();
+}
+
+// 格口IO监视器（bringup-chutes 及以上模式）
+if (startupConfig.ShouldStartChuteIoMonitor())
+{
+    // builder.Services.AddHostedService<ChuteIoMonitorWorker>();
+    // TODO: 当 FieldBusClient 实现后启用
+}
+
+// 包裹路由工作器（仅 normal 模式，上游相关）
+if (startupConfig.ShouldStartParcelRoutingWorker())
+{
+    builder.Services.AddHostedService<ParcelRoutingWorker>();
+}
 
 // 注册占位符工作器（可以移除）
 builder.Services.AddHostedService<Worker>();
 
 var host = builder.Build();
+
+// 输出启动信息
+var logger = host.Services.GetRequiredService<ILogger<Program>>();
+logger.LogInformation("=== 系统启动模式: {Mode} ===", startupConfig.GetModeDescription());
+logger.LogInformation("已启动服务:");
+if (startupConfig.ShouldStartMainLineControl())
+    logger.LogInformation("  - 主线控制工作器 (MainLineControlWorker)");
+if (startupConfig.ShouldStartOriginSensorMonitor())
+    logger.LogInformation("  - 原点传感器监控 (OriginSensorMonitor) [待实现]");
+if (startupConfig.ShouldStartInfeedSensorMonitor())
+    logger.LogInformation("  - 入口传感器监控 (InfeedSensorMonitor) [待实现]");
+if (startupConfig.ShouldStartParcelLoadCoordinator())
+    logger.LogInformation("  - 包裹装载协调器 (ParcelLoadCoordinator)");
+if (startupConfig.ShouldStartSortingExecutionWorker())
+    logger.LogInformation("  - 分拣执行工作器 (SortingExecutionWorker)");
+if (startupConfig.ShouldStartChuteIoMonitor())
+    logger.LogInformation("  - 格口IO监视器 (ChuteIoMonitor) [待实现]");
+if (startupConfig.ShouldStartParcelRoutingWorker())
+    logger.LogInformation("  - 包裹路由工作器 (ParcelRoutingWorker)");
+
 host.Run();
