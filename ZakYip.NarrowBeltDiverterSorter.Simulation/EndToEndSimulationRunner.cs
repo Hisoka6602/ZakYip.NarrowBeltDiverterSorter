@@ -22,6 +22,7 @@ public class EndToEndSimulationRunner
     private readonly SimulationConfiguration _config;
     private readonly ILogger<EndToEndSimulationRunner> _logger;
     private readonly ICartRingBuilder _cartRingBuilder;
+    private readonly ICartPositionTracker _cartPositionTracker;
     private readonly IParcelLifecycleService _parcelLifecycleService;
     private readonly ICartLifecycleService _cartLifecycleService;
     private readonly IParcelLoadPlanner _loadPlanner;
@@ -41,6 +42,7 @@ public class EndToEndSimulationRunner
         SimulationConfiguration config,
         ILogger<EndToEndSimulationRunner> logger,
         ICartRingBuilder cartRingBuilder,
+        ICartPositionTracker cartPositionTracker,
         IParcelLifecycleService parcelLifecycleService,
         ICartLifecycleService cartLifecycleService,
         IParcelLoadPlanner loadPlanner,
@@ -57,6 +59,7 @@ public class EndToEndSimulationRunner
         _config = config;
         _logger = logger;
         _cartRingBuilder = cartRingBuilder;
+        _cartPositionTracker = cartPositionTracker;
         _parcelLifecycleService = parcelLifecycleService;
         _cartLifecycleService = cartLifecycleService;
         _loadPlanner = loadPlanner;
@@ -339,6 +342,12 @@ public class EndToEndSimulationRunner
         _cartRingBuilder.OnOriginSensorTriggered(isFirstSensor: false, isRisingEdge: true, timestamp.AddMilliseconds(10));
         _cartRingBuilder.OnOriginSensorTriggered(isFirstSensor: true, isRisingEdge: false, timestamp.AddMilliseconds(50));
         _cartRingBuilder.OnOriginSensorTriggered(isFirstSensor: false, isRisingEdge: false, timestamp.AddMilliseconds(60));
+        
+        // 重要：初始化位置跟踪器，将零点车设为当前在原点的小车
+        // 这样 ParcelLoadPlanner 就能够预测落车位置
+        _cartPositionTracker.OnCartPassedOrigin(timestamp);
+        
+        _logger.LogInformation("小车环构建完成，CartPositionTracker 已初始化到零点车");
     }
 
     /// <summary>
