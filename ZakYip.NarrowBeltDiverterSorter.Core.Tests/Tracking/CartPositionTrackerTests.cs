@@ -157,4 +157,43 @@ public class CartPositionTrackerTests
         Assert.False(tracker.IsInitialized);
         Assert.Null(tracker.CurrentOriginCartIndex);
     }
+
+    [Fact]
+    public void IsRingReady_BeforeFirstCartPasses_ShouldBeFalse()
+    {
+        // Arrange
+        var (builder, tracker) = CreateTrackerWithRing(10);
+
+        // Assert
+        Assert.False(tracker.IsRingReady);
+    }
+
+    [Fact]
+    public void IsRingReady_AfterFirstCartPasses_ShouldBeTrue()
+    {
+        // Arrange
+        var (builder, tracker) = CreateTrackerWithRing(10);
+
+        // Act
+        tracker.OnCartPassedOrigin(DateTimeOffset.UtcNow);
+
+        // Assert
+        Assert.True(tracker.IsRingReady);
+        Assert.True(tracker.IsInitialized);
+    }
+
+    [Fact]
+    public void IsRingReady_WithoutCartRing_ShouldBeFalse()
+    {
+        // Arrange
+        var builder = new CartRingBuilder();
+        var tracker = new CartPositionTracker(builder);
+
+        // Act
+        tracker.OnCartPassedOrigin(DateTimeOffset.UtcNow);
+
+        // Assert
+        Assert.False(tracker.IsRingReady);
+        Assert.False(tracker.IsInitialized);
+    }
 }
