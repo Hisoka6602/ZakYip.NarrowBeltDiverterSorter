@@ -232,6 +232,9 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
     builder.Services.AddSingleton(fakeMainLineFeedback);
     builder.Services.AddSingleton<IMainLineFeedbackPort>(fakeMainLineFeedback);
 
+    // 注册 SimulatedMainLineDrive（IMainLineDrive 实现）
+    builder.Services.AddSingleton<IMainLineDrive, SimulatedMainLineDrive>();
+
     var fakeFieldBus = new FakeFieldBusClient();
     builder.Services.AddSingleton(fakeFieldBus);
     builder.Services.AddSingleton<IFieldBusClient>(fakeFieldBus);
@@ -703,6 +706,9 @@ static async Task RunTraditionalSimulationAsync()
     var fakeMainLineFeedback = new FakeMainLineFeedbackPort(fakeMainLineDrive);
     builder.Services.AddSingleton(fakeMainLineFeedback);
     builder.Services.AddSingleton<IMainLineFeedbackPort>(fakeMainLineFeedback);
+
+    // 注册 SimulatedMainLineDrive（IMainLineDrive 实现）
+    builder.Services.AddSingleton<IMainLineDrive, SimulatedMainLineDrive>();
 
     var fakeFieldBus = new FakeFieldBusClient();
     builder.Services.AddSingleton(fakeFieldBus);

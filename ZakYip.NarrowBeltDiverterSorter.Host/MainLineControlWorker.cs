@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Options;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.MainLine;
+using ZakYip.NarrowBeltDiverterSorter.Execution.MainLine;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Host;
 
@@ -11,7 +12,7 @@ public class MainLineControlWorker : BackgroundService
 {
     private readonly ILogger<MainLineControlWorker> _logger;
     private readonly IMainLineControlService _controlService;
-    private readonly IMainLineSpeedProvider _speedProvider;
+    private readonly IMainLineDrive _mainLineDrive;
     private readonly IMainLineSetpointProvider _setpointProvider;
     private readonly MainLineControlOptions _options;
     private readonly bool _enableBringupLogging;
@@ -19,14 +20,14 @@ public class MainLineControlWorker : BackgroundService
     public MainLineControlWorker(
         ILogger<MainLineControlWorker> logger,
         IMainLineControlService controlService,
-        IMainLineSpeedProvider speedProvider,
+        IMainLineDrive mainLineDrive,
         IMainLineSetpointProvider setpointProvider,
         IOptions<MainLineControlOptions> options,
         StartupModeConfiguration startupConfig)
     {
         _logger = logger;
         _controlService = controlService;
-        _speedProvider = speedProvider;
+        _mainLineDrive = mainLineDrive;
         _setpointProvider = setpointProvider;
         _options = options.Value;
         _enableBringupLogging = startupConfig.EnableBringupLogging && 
@@ -58,7 +59,7 @@ public class MainLineControlWorker : BackgroundService
             {
                 // 读取设定点并更新目标速度
                 var setpoint = _setpointProvider.IsEnabled ? _setpointProvider.TargetMmps : 0m;
-                _controlService.SetTargetSpeed(setpoint);
+                await _mainLineDrive.SetTargetSpeedAsync(setpoint, stoppingToken);
 
                 // 执行控制循环
                 var success = await _controlService.ExecuteControlLoopAsync(stoppingToken);
@@ -101,10 +102,9 @@ public class MainLineControlWorker : BackgroundService
     /// </summary>
     private void LogCurrentStatus()
     {
-        var currentSpeed = _speedProvider.CurrentMmps;
-        var targetSpeed = _controlService.GetTargetSpeed();
-        var isStable = _speedProvider.IsSpeedStable;
-        var stableDuration = _speedProvider.StableDuration;
+        var currentSpeed = _mainLineDrive.CurrentSpeedMmps;
+        var targetSpeed = _mainLineDrive.TargetSpeedMmps;
+        var isStable = _mainLineDrive.IsSpeedStable;
 
         if (_enableBringupLogging)
         {
@@ -119,8 +119,8 @@ public class MainLineControlWorker : BackgroundService
             if (isStable)
             {
                 _logger.LogInformation(
-                    "主线运行状态 - 当前速度: {CurrentSpeed:F1} mm/s, 目标速度: {TargetSpeed:F1} mm/s, 速度稳定: 是 (已稳定 {StableDuration:F1}秒)",
-                    currentSpeed, targetSpeed, stableDuration.TotalSeconds);
+                    "主线运行状态 - 当前速度: {CurrentSpeed:F1} mm/s, 目标速度: {TargetSpeed:F1} mm/s, 速度稳定: 是",
+                    currentSpeed, targetSpeed);
             }
             else
             {
