@@ -56,13 +56,11 @@ public record class SimulationStatistics
     /// <summary>
     /// 仿真开始时间
     /// </summary>
-    [JsonConverter(typeof(JsonStringEnumConverter))]
     public DateTime StartTime { get; init; }
 
     /// <summary>
     /// 仿真结束时间
     /// </summary>
-    [JsonConverter(typeof(JsonStringEnumConverter))]
     public DateTime EndTime { get; init; }
 
     /// <summary>
