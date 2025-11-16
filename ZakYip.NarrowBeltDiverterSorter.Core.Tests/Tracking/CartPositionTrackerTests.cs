@@ -8,16 +8,49 @@ namespace ZakYip.NarrowBeltDiverterSorter.Core.Tests.Tracking;
 /// </summary>
 public class CartPositionTrackerTests
 {
+    private static (ICartRingBuilder, ICartPositionTracker) CreateTrackerWithRing(int cartCount)
+    {
+        var builder = new CartRingBuilder();
+        var tracker = new CartPositionTracker(builder);
+        
+        // Build a cart ring
+        var timestamp = DateTimeOffset.UtcNow;
+        
+        // First zero cart pass - start counting
+        builder.OnOriginSensorTriggered(true, true, timestamp);
+        builder.OnOriginSensorTriggered(false, true, timestamp.AddMilliseconds(10));
+        builder.OnOriginSensorTriggered(true, false, timestamp.AddMilliseconds(50));
+        builder.OnOriginSensorTriggered(false, false, timestamp.AddMilliseconds(60));
+        
+        // Simulate regular carts passing
+        for (int i = 1; i < cartCount; i++)
+        {
+            timestamp = timestamp.AddMilliseconds(100);
+            builder.OnOriginSensorTriggered(true, true, timestamp);
+            builder.OnOriginSensorTriggered(true, false, timestamp.AddMilliseconds(50));
+        }
+        
+        // Second zero cart pass - complete the ring
+        timestamp = timestamp.AddMilliseconds(100);
+        builder.OnOriginSensorTriggered(true, true, timestamp);
+        builder.OnOriginSensorTriggered(false, true, timestamp.AddMilliseconds(10));
+        builder.OnOriginSensorTriggered(true, false, timestamp.AddMilliseconds(50));
+        builder.OnOriginSensorTriggered(false, false, timestamp.AddMilliseconds(60));
+        
+        return (builder, tracker);
+    }
+
     [Fact]
-    public void OnCartPassedOrigin_FirstCall_ShouldSetCurrentOriginCartIndexToZero()
+    public void OnCartPassedOrigin_FirstCall_ShouldInitializeTracker()
     {
         // Arrange
-        var tracker = new CartPositionTracker();
+        var (builder, tracker) = CreateTrackerWithRing(10);
 
         // Act
         tracker.OnCartPassedOrigin(DateTimeOffset.UtcNow);
 
         // Assert
+        Assert.True(tracker.IsInitialized);
         Assert.NotNull(tracker.CurrentOriginCartIndex);
         Assert.Equal(0, tracker.CurrentOriginCartIndex.Value.Value);
     }
@@ -26,7 +59,7 @@ public class CartPositionTrackerTests
     public void OnCartPassedOrigin_MultipleCalls_ShouldIncrementCartIndex()
     {
         // Arrange
-        var tracker = new CartPositionTracker();
+        var (builder, tracker) = CreateTrackerWithRing(10);
 
         // Act
         tracker.OnCartPassedOrigin(DateTimeOffset.UtcNow);
@@ -42,7 +75,7 @@ public class CartPositionTrackerTests
     public void CalculateCartIndexAtOffset_WithZeroOffset_ShouldReturnCurrentOriginCart()
     {
         // Arrange
-        var tracker = new CartPositionTracker();
+        var (builder, tracker) = CreateTrackerWithRing(10);
         tracker.OnCartPassedOrigin(DateTimeOffset.UtcNow);
         tracker.OnCartPassedOrigin(DateTimeOffset.UtcNow);
         var ringLength = new RingLength(10);
@@ -59,7 +92,7 @@ public class CartPositionTrackerTests
     public void CalculateCartIndexAtOffset_WithPositiveOffset_ShouldCalculateCorrectIndex()
     {
         // Arrange
-        var tracker = new CartPositionTracker();
+        var (builder, tracker) = CreateTrackerWithRing(10);
         tracker.OnCartPassedOrigin(DateTimeOffset.UtcNow); // Cart 0
         var ringLength = new RingLength(10);
 
@@ -75,7 +108,7 @@ public class CartPositionTrackerTests
     public void CalculateCartIndexAtOffset_WithWrapAround_ShouldWrapCorrectly()
     {
         // Arrange
-        var tracker = new CartPositionTracker();
+        var (builder, tracker) = CreateTrackerWithRing(10);
         tracker.OnCartPassedOrigin(DateTimeOffset.UtcNow); // Cart 0
         tracker.OnCartPassedOrigin(DateTimeOffset.UtcNow); // Cart 1
         tracker.OnCartPassedOrigin(DateTimeOffset.UtcNow); // Cart 2
@@ -99,7 +132,8 @@ public class CartPositionTrackerTests
     public void CalculateCartIndexAtOffset_BeforeFirstCart_ShouldReturnNull()
     {
         // Arrange
-        var tracker = new CartPositionTracker();
+        var builder = new CartRingBuilder();
+        var tracker = new CartPositionTracker(builder);
         var ringLength = new RingLength(10);
 
         // Act
@@ -107,5 +141,20 @@ public class CartPositionTrackerTests
 
         // Assert
         Assert.Null(cartIndex);
+    }
+    
+    [Fact]
+    public void OnCartPassedOrigin_WithoutCartRing_ShouldNotInitialize()
+    {
+        // Arrange
+        var builder = new CartRingBuilder();
+        var tracker = new CartPositionTracker(builder);
+
+        // Act
+        tracker.OnCartPassedOrigin(DateTimeOffset.UtcNow);
+
+        // Assert
+        Assert.False(tracker.IsInitialized);
+        Assert.Null(tracker.CurrentOriginCartIndex);
     }
 }

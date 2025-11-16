@@ -90,8 +90,9 @@ public class EndToEndSimulationRunner
 
         // 步骤 2: 等待小车环自然构建完成（通过 CartMovementSimulator + OriginSensorMonitor）
         _logger.LogInformation("步骤 2/4: 等待小车环构建完成");
-        var cartRingReadyTime = DateTime.UtcNow;
+        var cartRingStartTime = DateTime.UtcNow;
         await WaitForCartRingReadyAsync(cancellationToken);
+        var cartRingWarmupDuration = (DateTime.UtcNow - cartRingStartTime).TotalSeconds;
 
         var cartRingSnapshot = _cartRingBuilder.CurrentSnapshot;
         if (cartRingSnapshot == null)
@@ -103,7 +104,7 @@ public class EndToEndSimulationRunner
             "[CartRing] 小车环已就绪，长度={CartCount}，节距={SpacingMm}mm，耗时={WarmupDuration:F2}秒",
             cartRingSnapshot.RingLength.Value,
             _config.CartSpacingMm,
-            (DateTime.UtcNow - cartRingReadyTime).TotalSeconds);
+            cartRingWarmupDuration);
 
         // 初始化小车到 CartLifecycleService
         for (int i = 0; i < cartRingSnapshot.RingLength.Value; i++)
@@ -125,7 +126,9 @@ public class EndToEndSimulationRunner
             Length = cartRingSnapshot.RingLength.Value,
             ZeroCartId = (int)cartRingSnapshot.ZeroCartId.Value,
             ZeroIndex = cartRingSnapshot.ZeroIndex.Value,
-            CartSpacingMm = _config.CartSpacingMm
+            CartSpacingMm = _config.CartSpacingMm,
+            IsReady = true,
+            WarmupDurationSeconds = cartRingWarmupDuration
         };
 
         var mainDriveInfo = CalculateMainDriveInfo();
@@ -226,8 +229,6 @@ public class EndToEndSimulationRunner
         
         _logger.LogInformation("开始等待包裹处理完成，目标包裹数: {ExpectedCount}", expectedParcelCount);
 
-        bool timedOut = false;
-
         while (DateTime.UtcNow < endTime && !cancellationToken.IsCancellationRequested)
         {
             // 定期采样主线速度
@@ -303,7 +304,6 @@ public class EndToEndSimulationRunner
         }
 
         // 兜底：超时后强制结束
-        timedOut = true;
         var finalProgress = GetSimulationProgress();
         
         _logger.LogWarning(

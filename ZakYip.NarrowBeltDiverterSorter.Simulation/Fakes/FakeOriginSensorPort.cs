@@ -20,28 +20,26 @@ public class FakeOriginSensorPort : IOriginSensorPort
         return _secondSensorState;
     }
 
-    public void SimulateCartPassing(bool isCartZero)
+    public async Task SimulateCartPassingAsync(bool isCartZero)
     {
         if (isCartZero)
         {
             // 0号车：双IO都触发
             _firstSensorState = true;
             _secondSensorState = true;
-            Console.WriteLine($"[原点传感器] 0号车通过 - 双IO触发");
         }
         else
         {
             // 普通车：只触发单个IO
             _firstSensorState = true;
             _secondSensorState = false;
-            Console.WriteLine($"[原点传感器] 普通车通过 - 单IO触发");
         }
 
-        // 模拟传感器恢复
-        Task.Delay(50).ContinueWith(_ =>
-        {
-            _firstSensorState = false;
-            _secondSensorState = false;
-        });
+        // Hold sensor state for enough time for OriginSensorMonitor to detect (at least 3 polling cycles)
+        await Task.Delay(35);
+        
+        // Reset sensor state
+        _firstSensorState = false;
+        _secondSensorState = false;
     }
 }

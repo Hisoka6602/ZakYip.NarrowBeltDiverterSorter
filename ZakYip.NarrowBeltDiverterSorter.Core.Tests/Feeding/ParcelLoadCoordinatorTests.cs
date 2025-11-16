@@ -53,7 +53,7 @@ public class ParcelLoadCoordinatorTests
     }
 
     [Fact]
-    public async Task Coordinator_Should_Create_Failed_Snapshot_When_Prediction_Fails()
+    public async Task Coordinator_Should_Create_WaitingForRouting_Snapshot_When_Prediction_Fails()
     {
         // Arrange
         var mockPlanner = new MockParcelLoadPlanner(null); // No cart predicted
@@ -77,7 +77,7 @@ public class ParcelLoadCoordinatorTests
         coordinator.HandleParcelCreatedFromInfeed(null, eventArgs);
         await Task.Delay(100); // Give async event handler time to complete
 
-        // Assert
+        // Assert - 包裹应该保持在等待状态，而不是失败状态
         var snapshots = coordinator.GetParcelSnapshots();
         Assert.Single(snapshots);
         Assert.True(snapshots.ContainsKey(parcelId));
@@ -85,9 +85,9 @@ public class ParcelLoadCoordinatorTests
         var snapshot = snapshots[parcelId];
         Assert.Equal(parcelId, snapshot.ParcelId);
         Assert.Null(snapshot.BoundCartId);
-        Assert.Equal(ParcelRouteState.Failed, snapshot.RouteState);
+        Assert.Equal(ParcelRouteState.WaitingForRouting, snapshot.RouteState); // 保持等待状态
 
-        // Event should not be published for failed predictions
+        // Event should not be published when cart ring is not ready
         Assert.Null(capturedEvent);
     }
 

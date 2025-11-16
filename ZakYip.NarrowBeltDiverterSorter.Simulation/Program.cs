@@ -363,6 +363,13 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
                 ? (double)(report.Statistics.SuccessfulSorts + report.Statistics.ForceEjects + report.Statistics.Missorts) / report.Statistics.TotalParcels * 100.0
                 : 0.0;
             
+            // 计算已分拣包裹数
+            int sortedParcels = report.Statistics.SuccessfulSorts + report.Statistics.ForceEjects + report.Statistics.Missorts;
+            
+            // 验证数据一致性
+            bool hasDataConsistency = (sortedParcels <= report.Statistics.TotalParcels);
+            bool hasNonZeroSpeed = report.MainDrive.AverageSpeedMmps > 0;
+            
             // 检查是否因超时提前结束
             bool isIncomplete = completionRate < 95.0;
             
@@ -376,6 +383,7 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
             Console.WriteLine($"  正常落格:    {report.Statistics.SuccessfulSorts,6} 个");
             Console.WriteLine($"  强制排出:    {report.Statistics.ForceEjects,6} 个");
             Console.WriteLine($"  误分/失败:   {report.Statistics.Missorts,6} 个");
+            Console.WriteLine($"  已分拣数:    {sortedParcels,6} 个");
             Console.WriteLine($"  完成率:      {completionRate,6:F1} %");
             
             if (isIncomplete)
@@ -390,6 +398,8 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
             Console.WriteLine("【小车环配置】");
             Console.WriteLine($"  小车数量:    {report.CartRing.Length,6} 辆");
             Console.WriteLine($"  小车间距:    {report.CartRing.CartSpacingMm,6:F1} mm");
+            Console.WriteLine($"  状态:        {(report.CartRing.IsReady ? "已就绪" : "未就绪"),6}");
+            Console.WriteLine($"  预热耗时:    {report.CartRing.WarmupDurationSeconds,6:F2} 秒");
             
             Console.WriteLine();
             Console.WriteLine("【主线速度统计】");
@@ -407,6 +417,11 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
                 double throughput = report.Statistics.TotalParcels / report.Statistics.DurationSeconds;
                 Console.WriteLine($"  吞吐量:      {throughput,6:F1} 件/秒");
             }
+            
+            Console.WriteLine();
+            Console.WriteLine("【数据验证】");
+            Console.WriteLine($"  数据一致性:  {(hasDataConsistency ? "✓ 通过" : "✗ 失败"),6}");
+            Console.WriteLine($"  速度非零:    {(hasNonZeroSpeed ? "✓ 通过" : "✗ 失败"),6}");
             
             Console.WriteLine();
             Console.WriteLine("════════════════════════════════════════\n");
