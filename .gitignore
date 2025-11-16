@@ -366,3 +366,8 @@ FodyWeavers.xsd
 *.config.db
 *.config.db-shm
 *.config.db-wal
+
+# Simulation database files
+simulation.db
+simulation.db-shm
+simulation.db-wal
