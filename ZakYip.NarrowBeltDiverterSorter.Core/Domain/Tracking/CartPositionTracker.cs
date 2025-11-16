@@ -6,6 +6,10 @@ namespace ZakYip.NarrowBeltDiverterSorter.Core.Domain.Tracking;
 public class CartPositionTracker : ICartPositionTracker
 {
     private CartIndex? _currentOriginCartIndex;
+    private bool _isInitialized;
+
+    /// <inheritdoc/>
+    public bool IsInitialized => _isInitialized;
 
     /// <inheritdoc/>
     public CartIndex? CurrentOriginCartIndex => _currentOriginCartIndex;
@@ -17,6 +21,7 @@ public class CartPositionTracker : ICartPositionTracker
         {
             // First cart detection - assume it's cart 0
             _currentOriginCartIndex = new CartIndex(0);
+            _isInitialized = true; // Mark as initialized on first cart detection
         }
         else
         {
@@ -28,7 +33,7 @@ public class CartPositionTracker : ICartPositionTracker
     /// <inheritdoc/>
     public CartIndex? CalculateCartIndexAtOffset(int offset, RingLength ringLength)
     {
-        if (_currentOriginCartIndex == null || ringLength.Value <= 0)
+        if (!_isInitialized || _currentOriginCartIndex == null || ringLength.Value <= 0)
         {
             return null;
         }

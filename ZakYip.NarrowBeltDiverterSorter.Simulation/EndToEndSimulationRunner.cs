@@ -88,9 +88,10 @@ public class EndToEndSimulationRunner
         _logger.LogInformation("步骤 1/4: 等待主线控制启动并稳定");
         await WaitForMainLineStableAsync(cancellationToken);
 
-        // 步骤 2: 构建小车环
-        _logger.LogInformation("步骤 2/4: 构建小车环");
-        BuildCartRing();
+        // 步骤 2: 等待小车环自然构建完成（通过 CartMovementSimulator + OriginSensorMonitor）
+        _logger.LogInformation("步骤 2/4: 等待小车环构建完成");
+        var cartRingReadyTime = DateTime.UtcNow;
+        await WaitForCartRingReadyAsync(cancellationToken);
 
         var cartRingSnapshot = _cartRingBuilder.CurrentSnapshot;
         if (cartRingSnapshot == null)
@@ -98,7 +99,11 @@ public class EndToEndSimulationRunner
             throw new InvalidOperationException("小车环构建失败");
         }
 
-        _logger.LogInformation("小车环构建完成，长度: {RingLength}", cartRingSnapshot.RingLength.Value);
+        _logger.LogInformation(
+            "[CartRing] 小车环已就绪，长度={CartCount}，节距={SpacingMm}mm，耗时={WarmupDuration:F2}秒",
+            cartRingSnapshot.RingLength.Value,
+            _config.CartSpacingMm,
+            (DateTime.UtcNow - cartRingReadyTime).TotalSeconds);
 
         // 初始化小车到 CartLifecycleService
         for (int i = 0; i < cartRingSnapshot.RingLength.Value; i++)
@@ -138,7 +143,7 @@ public class EndToEndSimulationRunner
             ParcelDetails = parcelDetails
         };
 
-        _logger.LogInformation("仿真完成，耗时: {Duration:F2} 秒", stopwatch.Elapsed.TotalSeconds);
+        _logger.LogInformation("[Simulation] 仿真完成，耗时: {Duration:F2} 秒", stopwatch.Elapsed.TotalSeconds);
 
         return report;
     }
@@ -163,6 +168,46 @@ public class EndToEndSimulationRunner
         }
 
         _logger.LogWarning("主线未能在 {MaxWaitSeconds} 秒内稳定，继续执行", maxWaitSeconds);
+    }
+
+    /// <summary>
+    /// 等待小车环构建完成（通过 CartMovementSimulator 和 OriginSensorMonitor 自然构建）
+    /// </summary>
+    private async Task WaitForCartRingReadyAsync(CancellationToken cancellationToken)
+    {
+        const int maxWaitSeconds = 30;
+        var timeout = DateTime.UtcNow.AddSeconds(maxWaitSeconds);
+        var lastLogTime = DateTime.UtcNow;
+
+        _logger.LogInformation("等待小车环构建...");
+
+        while (DateTime.UtcNow < timeout && !cancellationToken.IsCancellationRequested)
+        {
+            // 检查小车环是否已构建完成
+            var snapshot = _cartRingBuilder.CurrentSnapshot;
+            if (snapshot != null && _cartPositionTracker.IsInitialized)
+            {
+                _logger.LogInformation(
+                    "小车环构建完成 - 小车数量: {CartCount}, 零点车ID: {ZeroCartId}",
+                    snapshot.RingLength.Value,
+                    snapshot.ZeroCartId.Value);
+                return;
+            }
+
+            // 每5秒输出一次等待日志
+            if ((DateTime.UtcNow - lastLogTime).TotalSeconds >= 5)
+            {
+                _logger.LogDebug(
+                    "等待小车环就绪... (快照: {HasSnapshot}, 跟踪器初始化: {IsInitialized})",
+                    snapshot != null,
+                    _cartPositionTracker.IsInitialized);
+                lastLogTime = DateTime.UtcNow;
+            }
+
+            await Task.Delay(100, cancellationToken);
+        }
+
+        throw new TimeoutException($"小车环未能在 {maxWaitSeconds} 秒内完成构建");
     }
 
     /// <summary>
@@ -310,44 +355,6 @@ public class EndToEndSimulationRunner
         public int SortedCount { get; set; }
         public int ForceEjectedCount { get; set; }
         public int FailedCount { get; set; }
-    }
-
-    /// <summary>
-    /// 构建小车环（通过模拟原点传感器事件）
-    /// </summary>
-    private void BuildCartRing()
-    {
-        var timestamp = DateTimeOffset.UtcNow;
-
-        // 第一次：模拟零点小车通过（触发两个传感器）
-        _originSensor.SimulateCartPassing(isCartZero: true);
-        _cartRingBuilder.OnOriginSensorTriggered(isFirstSensor: true, isRisingEdge: true, timestamp);
-        _cartRingBuilder.OnOriginSensorTriggered(isFirstSensor: false, isRisingEdge: true, timestamp.AddMilliseconds(10));
-        _cartRingBuilder.OnOriginSensorTriggered(isFirstSensor: true, isRisingEdge: false, timestamp.AddMilliseconds(50));
-        _cartRingBuilder.OnOriginSensorTriggered(isFirstSensor: false, isRisingEdge: false, timestamp.AddMilliseconds(60));
-
-        // 模拟其他小车通过（仅触发第一个传感器）
-        for (int i = 1; i < _config.NumberOfCarts; i++)
-        {
-            timestamp = timestamp.AddMilliseconds(100);
-            _originSensor.SimulateCartPassing(isCartZero: false);
-            _cartRingBuilder.OnOriginSensorTriggered(isFirstSensor: true, isRisingEdge: true, timestamp);
-            _cartRingBuilder.OnOriginSensorTriggered(isFirstSensor: true, isRisingEdge: false, timestamp.AddMilliseconds(50));
-        }
-
-        // 第二次：零点小车通过完成环
-        timestamp = timestamp.AddMilliseconds(100);
-        _originSensor.SimulateCartPassing(isCartZero: true);
-        _cartRingBuilder.OnOriginSensorTriggered(isFirstSensor: true, isRisingEdge: true, timestamp);
-        _cartRingBuilder.OnOriginSensorTriggered(isFirstSensor: false, isRisingEdge: true, timestamp.AddMilliseconds(10));
-        _cartRingBuilder.OnOriginSensorTriggered(isFirstSensor: true, isRisingEdge: false, timestamp.AddMilliseconds(50));
-        _cartRingBuilder.OnOriginSensorTriggered(isFirstSensor: false, isRisingEdge: false, timestamp.AddMilliseconds(60));
-        
-        // 重要：初始化位置跟踪器，将零点车设为当前在原点的小车
-        // 这样 ParcelLoadPlanner 就能够预测落车位置
-        _cartPositionTracker.OnCartPassedOrigin(timestamp);
-        
-        _logger.LogInformation("小车环构建完成，CartPositionTracker 已初始化到零点车");
     }
 
     /// <summary>

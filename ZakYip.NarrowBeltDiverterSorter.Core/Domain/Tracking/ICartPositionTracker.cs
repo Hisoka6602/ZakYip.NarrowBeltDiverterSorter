@@ -7,6 +7,11 @@ namespace ZakYip.NarrowBeltDiverterSorter.Core.Domain.Tracking;
 public interface ICartPositionTracker
 {
     /// <summary>
+    /// 获取小车跟踪器是否已初始化
+    /// </summary>
+    bool IsInitialized { get; }
+
+    /// <summary>
     /// 获取当前原点位置的小车索引
     /// </summary>
     CartIndex? CurrentOriginCartIndex { get; }

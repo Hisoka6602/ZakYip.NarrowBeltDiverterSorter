@@ -62,22 +62,23 @@ public class ParcelLoadCoordinator
 
         if (predictedCartId == null)
         {
-            _logAction?.Invoke($"[上车规划失败] 包裹 {e.ParcelId.Value} 无法预测目标小车 - 原因: 小车环未就绪或位置跟踪器未初始化");
+            _logAction?.Invoke($"[上车规划等待] 包裹 {e.ParcelId.Value} 无法预测目标小车 - 小车环尚未就绪，包裹保持等待状态");
             
-            // 无法预测小车，创建失败状态的快照
-            var failedSnapshot = new ParcelSnapshot
+            // 不要将包裹标记为失败，保持在等待状态
+            // 创建等待状态的快照
+            var waitingSnapshot = new ParcelSnapshot
             {
                 ParcelId = e.ParcelId,
-                RouteState = ParcelRouteState.Failed,
+                RouteState = ParcelRouteState.WaitingForRouting,
                 CreatedAt = e.InfeedTriggerTime
             };
-            _parcelSnapshots[e.ParcelId] = failedSnapshot;
+            _parcelSnapshots[e.ParcelId] = waitingSnapshot;
             return;
         }
 
         var loadedTime = DateTimeOffset.UtcNow;
 
-        _logAction?.Invoke($"[上车规划] 包裹 {e.ParcelId.Value} 规划到小车 {predictedCartId.Value.Value}, 预计落车时间: {loadedTime:HH:mm:ss.fff}");
+        _logAction?.Invoke($"[上车规划成功] 包裹 {e.ParcelId.Value} -> 小车 {predictedCartId.Value.Value}, 预计到达时间: {loadedTime:o}");
 
         // 创建装载的包裹快照
         var snapshot = new ParcelSnapshot
