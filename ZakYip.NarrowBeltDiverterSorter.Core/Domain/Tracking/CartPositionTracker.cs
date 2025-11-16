@@ -11,6 +11,10 @@ public class CartPositionTracker : ICartPositionTracker
     private bool _isInitialized;
     private bool _isRingReady;
 
+    // TODO: Consider maintaining sliding average of mainline speed for future boarding prediction
+    // This could be useful for more accurate cart position prediction when the speed varies
+    // Reference: MainLineSpeedProvider already implements sliding average for mainline speed
+
     public CartPositionTracker(ICartRingBuilder cartRingBuilder)
     {
         _cartRingBuilder = cartRingBuilder ?? throw new ArgumentNullException(nameof(cartRingBuilder));
