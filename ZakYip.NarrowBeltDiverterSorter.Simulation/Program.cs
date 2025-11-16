@@ -246,6 +246,7 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
     builder.Services.AddSingleton<IEjectPlanner, EjectPlanner>();
     builder.Services.AddSingleton<IMainLineControlService, MainLineControlService>();
     builder.Services.AddSingleton<IMainLineSpeedProvider, MainLineSpeedProvider>();
+    builder.Services.AddSingleton<IMainLineStabilityProvider, MainLineStabilityProvider>();
     builder.Services.AddSingleton<ICartPositionTracker, CartPositionTracker>();
     builder.Services.AddSingleton<IChuteConfigProvider>(sp =>
     {
@@ -711,6 +712,7 @@ static async Task RunTraditionalSimulationAsync()
     builder.Services.AddSingleton<ISortingPlanner, SortingPlanner>();
     builder.Services.AddSingleton<IMainLineControlService, MainLineControlService>();
     builder.Services.AddSingleton<IMainLineSpeedProvider, MainLineSpeedProvider>();
+    builder.Services.AddSingleton<IMainLineStabilityProvider, MainLineStabilityProvider>();
     builder.Services.AddSingleton<ICartPositionTracker, CartPositionTracker>();
     builder.Services.AddSingleton<IChuteConfigProvider>(sp =>
     {

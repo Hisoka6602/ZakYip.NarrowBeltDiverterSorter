@@ -272,7 +272,7 @@ public class ParcelSortingSimulator : BackgroundService
     /// <summary>
     /// 强排包裹到强排口
     /// </summary>
-    private async Task ForceEjectParcelAsync(ParcelSnapshot parcel)
+    private async Task ForceEjectParcelAsync(ParcelSnapshot parcel, ParcelDiscardReason reason = ParcelDiscardReason.Timeout)
     {
         try
         {
@@ -289,12 +289,14 @@ public class ParcelSortingSimulator : BackgroundService
             _parcelLifecycleService.UpdateSortingOutcome(
                 parcel.ParcelId,
                 ParcelSortingOutcome.ForceEject,
-                forceEjectChuteId);
+                forceEjectChuteId,
+                reason);
 
             _logger.LogWarning(
-                "[强排] 包裹 {ParcelId} 超过 TTL，强制排出到格口 {ChuteId}",
+                "[强排] 包裹 {ParcelId} 强制排出到格口 {ChuteId}，原因: {Reason}",
                 parcel.ParcelId.Value,
-                forceEjectChuteId.Value);
+                forceEjectChuteId.Value,
+                reason);
 
             // Unload cart and unbind parcel
             if (parcel.BoundCartId.HasValue)

@@ -164,6 +164,7 @@ builder.Services.AddSingleton<ISortingPlanner, SortingPlanner>();
 // 注册主线控制服务和速度提供者
 builder.Services.AddSingleton<IMainLineControlService, MainLineControlService>();
 builder.Services.AddSingleton<IMainLineSpeedProvider, MainLineSpeedProvider>();
+builder.Services.AddSingleton<IMainLineStabilityProvider, MainLineStabilityProvider>();
 
 // ============================================================================
 // 注册健康检查

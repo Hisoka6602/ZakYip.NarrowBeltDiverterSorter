@@ -218,7 +218,8 @@ public class SortingPlannerTests
         ICartLifecycleService? cartLifecycleService = null,
         IParcelLifecycleService? parcelLifecycleService = null,
         IChuteConfigProvider? chuteConfigProvider = null,
-        IMainLineSpeedProvider? mainLineSpeedProvider = null)
+        IMainLineSpeedProvider? mainLineSpeedProvider = null,
+        IMainLineStabilityProvider? stabilityProvider = null)
     {
         return new SortingPlanner(
             cartRingBuilder ?? Mock.Of<ICartRingBuilder>(),
@@ -227,6 +228,7 @@ public class SortingPlannerTests
             parcelLifecycleService ?? new ParcelLifecycleService(),
             chuteConfigProvider ?? Mock.Of<IChuteConfigProvider>(),
             mainLineSpeedProvider ?? Mock.Of<IMainLineSpeedProvider>(),
+            stabilityProvider ?? Mock.Of<IMainLineStabilityProvider>(p => p.IsStable == true),
             new SortingPlannerOptions { CartSpacingMm = 500m }
         );
     }

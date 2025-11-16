@@ -19,6 +19,7 @@ public class SortingPlanner : ISortingPlanner
     private readonly IParcelLifecycleService _parcelLifecycleService;
     private readonly IChuteConfigProvider _chuteConfigProvider;
     private readonly IMainLineSpeedProvider _mainLineSpeedProvider;
+    private readonly IMainLineStabilityProvider _stabilityProvider;
     private readonly SortingPlannerOptions _options;
 
     public SortingPlanner(
@@ -28,6 +29,7 @@ public class SortingPlanner : ISortingPlanner
         IParcelLifecycleService parcelLifecycleService,
         IChuteConfigProvider chuteConfigProvider,
         IMainLineSpeedProvider mainLineSpeedProvider,
+        IMainLineStabilityProvider stabilityProvider,
         SortingPlannerOptions options)
     {
         _cartRingBuilder = cartRingBuilder;
@@ -36,6 +38,7 @@ public class SortingPlanner : ISortingPlanner
         _parcelLifecycleService = parcelLifecycleService;
         _chuteConfigProvider = chuteConfigProvider;
         _mainLineSpeedProvider = mainLineSpeedProvider;
+        _stabilityProvider = stabilityProvider;
         _options = options;
     }
 
@@ -52,7 +55,8 @@ public class SortingPlanner : ISortingPlanner
         }
 
         // Check if main line speed is stable
-        if (!_mainLineSpeedProvider.IsSpeedStable)
+        // Use the stability provider to determine if conditions are suitable for ejecting
+        if (!_stabilityProvider.IsStable)
         {
             return plans;
         }

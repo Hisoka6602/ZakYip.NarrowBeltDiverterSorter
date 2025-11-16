@@ -56,7 +56,8 @@ public interface IParcelLifecycleService
     /// <param name="parcelId">包裹ID</param>
     /// <param name="outcome">分拣结果</param>
     /// <param name="actualChuteId">实际格口ID（可选）</param>
-    void UpdateSortingOutcome(ParcelId parcelId, ParcelSortingOutcome outcome, ChuteId? actualChuteId = null);
+    /// <param name="discardReason">丢弃原因（可选，仅当强排时有效）</param>
+    void UpdateSortingOutcome(ParcelId parcelId, ParcelSortingOutcome outcome, ChuteId? actualChuteId = null, ParcelDiscardReason? discardReason = null);
 
     /// <summary>
     /// 获取包裹快照
