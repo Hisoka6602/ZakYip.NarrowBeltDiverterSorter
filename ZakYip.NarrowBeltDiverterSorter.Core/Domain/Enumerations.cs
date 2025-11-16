@@ -1,0 +1,105 @@
+using System.ComponentModel;
+
+namespace ZakYip.NarrowBeltDiverterSorter.Core.Domain;
+
+/// <summary>
+/// 包裹路由状态（语义对齐WheelDiverterSorter的Parcel状态）
+/// </summary>
+public enum ParcelRouteState
+{
+    /// <summary>
+    /// 等待路由分配
+    /// </summary>
+    [Description("等待路由分配")]
+    WaitingForRouting = 0,
+
+    /// <summary>
+    /// 已路由（已分配格口）
+    /// </summary>
+    [Description("已路由")]
+    Routed = 1,
+
+    /// <summary>
+    /// 分拣中
+    /// </summary>
+    [Description("分拣中")]
+    Sorting = 2,
+
+    /// <summary>
+    /// 已分拣
+    /// </summary>
+    [Description("已分拣")]
+    Sorted = 3,
+
+    /// <summary>
+    /// 强制弹出
+    /// </summary>
+    [Description("强制弹出")]
+    ForceEjected = 4,
+
+    /// <summary>
+    /// 失败
+    /// </summary>
+    [Description("失败")]
+    Failed = 5
+}
+
+/// <summary>
+/// 小车装载状态
+/// </summary>
+public enum CartLoadState
+{
+    /// <summary>
+    /// 空载
+    /// </summary>
+    [Description("空载")]
+    Empty = 0,
+
+    /// <summary>
+    /// 已装载
+    /// </summary>
+    [Description("已装载")]
+    Loaded = 1,
+
+    /// <summary>
+    /// 未知
+    /// </summary>
+    [Description("未知")]
+    Unknown = 2
+}
+
+/// <summary>
+/// 主线状态
+/// </summary>
+public enum MainLineStatus
+{
+    /// <summary>
+    /// 已停止
+    /// </summary>
+    [Description("已停止")]
+    Stopped = 0,
+
+    /// <summary>
+    /// 启动中
+    /// </summary>
+    [Description("启动中")]
+    Starting = 1,
+
+    /// <summary>
+    /// 运行中
+    /// </summary>
+    [Description("运行中")]
+    Running = 2,
+
+    /// <summary>
+    /// 停止中
+    /// </summary>
+    [Description("停止中")]
+    Stopping = 3,
+
+    /// <summary>
+    /// 故障
+    /// </summary>
+    [Description("故障")]
+    Fault = 4
+}
