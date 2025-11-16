@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Options;
 using ZakYip.NarrowBeltDiverterSorter.Communication;
 using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Core.Application;
@@ -15,7 +16,9 @@ using ZakYip.NarrowBeltDiverterSorter.Execution.Feeding;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Sorting;
 using ZakYip.NarrowBeltDiverterSorter.Observability;
 using ZakYip.NarrowBeltDiverterSorter.Ingress.Chute;
+using ZakYip.NarrowBeltDiverterSorter.Infrastructure;
 using ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
+using ZakYip.NarrowBeltDiverterSorter.Communication.Upstream;
 using ZakYip.NarrowBeltDiverterSorter.Host;
 
 var builder = Host.CreateApplicationBuilder(args);
@@ -24,25 +27,31 @@ var builder = Host.CreateApplicationBuilder(args);
 // 配置选项
 // ============================================================================
 
-// 配置上游分拣系统API选项
+// 注册配置仓储
+builder.Services.AddSingleton<IMainLineOptionsRepository, LiteDbMainLineOptionsRepository>();
+builder.Services.AddSingleton<IInfeedLayoutOptionsRepository, LiteDbInfeedLayoutOptionsRepository>();
+builder.Services.AddSingleton<IChuteConfigRepository, LiteDbChuteConfigRepository>();
+builder.Services.AddSingleton<IUpstreamConnectionOptionsRepository, LiteDbUpstreamConnectionOptionsRepository>();
+
+// 配置上游分拣系统API选项（保留用于非核心配置）
 builder.Services.Configure<UpstreamSortingApiOptions>(
     builder.Configuration.GetSection(UpstreamSortingApiOptions.SectionName));
 
-// 配置主线控制选项
-builder.Services.Configure<MainLineControlOptions>(
-    builder.Configuration.GetSection("MainLineControl"));
+// 从数据库加载主线控制选项
+builder.Services.AddSingleton<IOptions<MainLineControlOptions>>(sp =>
+{
+    var repo = sp.GetRequiredService<IMainLineOptionsRepository>();
+    var options = repo.LoadAsync().GetAwaiter().GetResult();
+    return Options.Create(options);
+});
 
-// 配置分拣执行选项
-builder.Services.Configure<SortingExecutionOptions>(
-    builder.Configuration.GetSection("SortingExecution"));
-
-// 配置分拣计划器选项
-builder.Services.Configure<SortingPlannerOptions>(
-    builder.Configuration.GetSection("SortingPlanner"));
-
-// 配置入口布局选项
-builder.Services.Configure<InfeedLayoutOptions>(
-    builder.Configuration.GetSection("InfeedLayout"));
+// 从数据库加载入口布局选项  
+builder.Services.AddSingleton<IOptions<InfeedLayoutOptions>>(sp =>
+{
+    var repo = sp.GetRequiredService<IInfeedLayoutOptionsRepository>();
+    var options = repo.LoadAsync().GetAwaiter().GetResult();
+    return Options.Create(options);
+});
 
 // 配置格口IO监视器选项
 builder.Services.Configure<ChuteIoMonitorConfiguration>(
@@ -79,12 +88,18 @@ builder.Services.AddSingleton<IConfigStore, LiteDbConfigStore>();
 // 注册HttpClient for UpstreamSortingApiClient
 builder.Services.AddHttpClient<IUpstreamSortingApiClient, UpstreamSortingApiClient>((serviceProvider, client) =>
 {
-    var options = builder.Configuration
-        .GetSection(UpstreamSortingApiOptions.SectionName)
-        .Get<UpstreamSortingApiOptions>() ?? new UpstreamSortingApiOptions();
+    var repo = serviceProvider.GetRequiredService<IUpstreamConnectionOptionsRepository>();
+    var options = repo.LoadAsync().GetAwaiter().GetResult();
     
     client.BaseAddress = new Uri(options.BaseUrl);
-    client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
+    client.Timeout = TimeSpan.FromSeconds(options.RequestTimeoutSeconds);
+    
+    // 如果配置了认证令牌，添加到请求头
+    if (!string.IsNullOrWhiteSpace(options.AuthToken))
+    {
+        client.DefaultRequestHeaders.Authorization = 
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", options.AuthToken);
+    }
 });
 
 // ============================================================================
@@ -114,6 +129,9 @@ builder.Services.AddSingleton<IChuteTransmitterPort, ChuteTransmitterDriver>();
 // ============================================================================
 // 注册领域服务
 // ============================================================================
+
+// 注册格口配置提供者（从数据库加载）
+builder.Services.AddSingleton<IChuteConfigProvider, RepositoryBackedChuteConfigProvider>();
 
 // 注册小车环构建器
 builder.Services.AddSingleton<ICartRingBuilder, CartRingBuilder>();
