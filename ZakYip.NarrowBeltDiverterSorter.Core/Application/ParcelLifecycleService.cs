@@ -99,4 +99,10 @@ public class ParcelLifecycleService : IParcelLifecycleService
     {
         return _parcels.TryGetValue(parcelId, out var parcel) ? parcel : null;
     }
+
+    /// <inheritdoc/>
+    public IReadOnlyList<ParcelSnapshot> GetAll()
+    {
+        return _parcels.Values.ToList();
+    }
 }

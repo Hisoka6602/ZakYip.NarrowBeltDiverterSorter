@@ -56,4 +56,10 @@ public interface IParcelLifecycleService
     /// <param name="parcelId">包裹ID</param>
     /// <returns>包裹快照，如果不存在返回null</returns>
     ParcelSnapshot? Get(ParcelId parcelId);
+
+    /// <summary>
+    /// 获取所有包裹快照
+    /// </summary>
+    /// <returns>所有包裹快照列表</returns>
+    IReadOnlyList<ParcelSnapshot> GetAll();
 }

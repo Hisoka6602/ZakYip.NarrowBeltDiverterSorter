@@ -1,0 +1,203 @@
+using Microsoft.Extensions.Options;
+using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
+using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
+using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Carts;
+using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Parcels;
+using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Sorting;
+using ZakYip.NarrowBeltDiverterSorter.UpstreamContracts.Models;
+
+namespace ZakYip.NarrowBeltDiverterSorter.Host;
+
+/// <summary>
+/// 分拣执行工作器
+/// 周期性规划并执行吐件动作
+/// </summary>
+public class SortingExecutionWorker : BackgroundService
+{
+    private readonly ILogger<SortingExecutionWorker> _logger;
+    private readonly ISortingPlanner _sortingPlanner;
+    private readonly IChuteTransmitterPort _chuteTransmitterPort;
+    private readonly ICartLifecycleService _cartLifecycleService;
+    private readonly IParcelLifecycleService _parcelLifecycleService;
+    private readonly IUpstreamSortingApiClient _upstreamApiClient;
+    private readonly SortingExecutionOptions _options;
+
+    public SortingExecutionWorker(
+        ILogger<SortingExecutionWorker> logger,
+        ISortingPlanner sortingPlanner,
+        IChuteTransmitterPort chuteTransmitterPort,
+        ICartLifecycleService cartLifecycleService,
+        IParcelLifecycleService parcelLifecycleService,
+        IUpstreamSortingApiClient upstreamApiClient,
+        IOptions<SortingExecutionOptions> options)
+    {
+        _logger = logger;
+        _sortingPlanner = sortingPlanner;
+        _chuteTransmitterPort = chuteTransmitterPort;
+        _cartLifecycleService = cartLifecycleService;
+        _parcelLifecycleService = parcelLifecycleService;
+        _upstreamApiClient = upstreamApiClient;
+        _options = options.Value;
+    }
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        _logger.LogInformation("分拣执行工作器已启动");
+
+        var executionPeriod = _options.ExecutionPeriod;
+        var planningHorizon = _options.PlanningHorizon;
+
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            try
+            {
+                var now = DateTimeOffset.UtcNow;
+
+                // Plan ejects
+                var ejectPlans = _sortingPlanner.PlanEjects(now, planningHorizon);
+
+                if (ejectPlans.Count > 0)
+                {
+                    _logger.LogDebug("规划了 {Count} 个吐件计划", ejectPlans.Count);
+                }
+
+                // Execute plans
+                foreach (var plan in ejectPlans)
+                {
+                    await ExecuteEjectPlanAsync(plan, stoppingToken);
+                }
+
+                // Wait for next execution cycle
+                await Task.Delay(executionPeriod, stoppingToken);
+            }
+            catch (OperationCanceledException)
+            {
+                // Normal stop
+                break;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "分拣执行循环发生异常");
+                await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
+            }
+        }
+
+        _logger.LogInformation("分拣执行工作器已停止");
+    }
+
+    /// <summary>
+    /// 执行单个吐件计划
+    /// </summary>
+    private async Task ExecuteEjectPlanAsync(EjectPlan plan, CancellationToken cancellationToken)
+    {
+        try
+        {
+            // Open chute window
+            await _chuteTransmitterPort.OpenWindowAsync(
+                plan.ChuteId,
+                plan.OpenDuration,
+                cancellationToken);
+
+            if (plan.IsForceEject)
+            {
+                // Force eject: clear cart and update parcel state
+                _cartLifecycleService.UnloadCart(plan.CartId, DateTimeOffset.UtcNow);
+                
+                var parcel = _parcelLifecycleService.Get(plan.ParcelId);
+                if (parcel != null)
+                {
+                    _parcelLifecycleService.UpdateRouteState(plan.ParcelId, ParcelRouteState.ForceEjected);
+                    _parcelLifecycleService.UnbindCartId(plan.ParcelId);
+
+                    _logger.LogInformation(
+                        "强制吐件完成 - 包裹: {ParcelId}, 小车: {CartId}, 格口: {ChuteId}",
+                        plan.ParcelId.Value,
+                        plan.CartId.Value,
+                        plan.ChuteId.Value);
+
+                    // Report to upstream
+                    await ReportSortingResultAsync(
+                        plan.ParcelId,
+                        plan.ChuteId,
+                        isSuccess: false,
+                        failureReason: "ForceEjected",
+                        cancellationToken);
+                }
+            }
+            else
+            {
+                // Normal eject: mark parcel as sorted
+                _cartLifecycleService.UnloadCart(plan.CartId, DateTimeOffset.UtcNow);
+                _parcelLifecycleService.MarkSorted(plan.ParcelId, DateTimeOffset.UtcNow);
+                _parcelLifecycleService.UnbindCartId(plan.ParcelId);
+
+                _logger.LogInformation(
+                    "吐件完成 - 包裹: {ParcelId}, 小车: {CartId}, 格口: {ChuteId}",
+                    plan.ParcelId.Value,
+                    plan.CartId.Value,
+                    plan.ChuteId.Value);
+
+                // Report to upstream
+                await ReportSortingResultAsync(
+                    plan.ParcelId,
+                    plan.ChuteId,
+                    isSuccess: true,
+                    failureReason: null,
+                    cancellationToken);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "执行吐件计划失败 - 包裹: {ParcelId}, 小车: {CartId}, 格口: {ChuteId}",
+                plan.ParcelId.Value,
+                plan.CartId.Value,
+                plan.ChuteId.Value);
+
+            // Update parcel state to failed
+            _parcelLifecycleService.UpdateRouteState(plan.ParcelId, ParcelRouteState.Failed);
+
+            // Report failure to upstream
+            await ReportSortingResultAsync(
+                plan.ParcelId,
+                plan.ChuteId,
+                isSuccess: false,
+                failureReason: ex.Message,
+                cancellationToken);
+        }
+    }
+
+    /// <summary>
+    /// 上报分拣结果到上游
+    /// </summary>
+    private async Task ReportSortingResultAsync(
+        ParcelId parcelId,
+        ChuteId chuteId,
+        bool isSuccess,
+        string? failureReason,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var report = new SortingResultReportDto
+            {
+                ParcelId = parcelId.Value,
+                ChuteId = (int)chuteId.Value,
+                IsSuccess = isSuccess,
+                FailureReason = failureReason,
+                ReportTime = DateTimeOffset.UtcNow
+            };
+
+            await _upstreamApiClient.ReportSortingResultAsync(report, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "上报分拣结果失败 - 包裹: {ParcelId}, 格口: {ChuteId}",
+                parcelId.Value,
+                chuteId.Value);
+        }
+    }
+}
