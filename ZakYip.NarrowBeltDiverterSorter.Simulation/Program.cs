@@ -203,8 +203,13 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
     builder.Services.AddSingleton<IUpstreamSortingApiClient, FakeUpstreamSortingApiClient>();
 
     // ============================================================================
-    // 注册领域服务
+    // 注册领域服务 (E2E Scenario)
     // ============================================================================
+
+    // 注册仿真主线设定点提供者
+    var e2eSetpoint = new SimulationMainLineSetpoint();
+    builder.Services.AddSingleton(e2eSetpoint);
+    builder.Services.AddSingleton<IMainLineSetpointProvider>(e2eSetpoint);
 
     builder.Services.AddSingleton<ICartRingBuilder, CartRingBuilder>();
     builder.Services.AddSingleton<IParcelLifecycleService, ParcelLifecycleService>();
@@ -643,8 +648,13 @@ static async Task RunTraditionalSimulationAsync()
     builder.Services.AddSingleton<IUpstreamSortingApiClient, FakeUpstreamSortingApiClient>();
 
     // ============================================================================
-    // 注册领域服务
+    // 注册领域服务 (Traditional Simulation)
     // ============================================================================
+
+    // 注册仿真主线设定点提供者
+    var traditionalSetpoint = new SimulationMainLineSetpoint();
+    builder.Services.AddSingleton(traditionalSetpoint);
+    builder.Services.AddSingleton<IMainLineSetpointProvider>(traditionalSetpoint);
 
     builder.Services.AddSingleton<ICartRingBuilder, CartRingBuilder>();
     builder.Services.AddSingleton<IParcelLifecycleService, ParcelLifecycleService>();
