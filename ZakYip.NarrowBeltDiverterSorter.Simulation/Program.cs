@@ -99,7 +99,7 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
     }
 
     builder.Services.AddSingleton<IConfigStore>(sp =>
-        new LiteDbConfigStore(dbPath, sp.GetRequiredService<ILogger<LiteDbConfigStore>>()));
+        new LiteDbConfigStore(sp.GetRequiredService<ILogger<LiteDbConfigStore>>(), dbPath));
 
     // ============================================================================
     // 注册配置仓储

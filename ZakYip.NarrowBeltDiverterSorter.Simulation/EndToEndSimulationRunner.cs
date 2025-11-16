@@ -218,8 +218,8 @@ public class EndToEndSimulationRunner
 
                     _logger.LogDebug("包裹 {ParcelId} 装载到小车 {CartId}", parcelIdLong, predictedCartId.Value.Value);
 
-                    // 更新路由状态为已装载
-                    _parcelLifecycleService.UpdateRouteState(new ParcelId(parcelIdLong), ParcelRouteState.Loaded);
+                    // 更新路由状态为已路由（已装载到小车）
+                    _parcelLifecycleService.UpdateRouteState(new ParcelId(parcelIdLong), ParcelRouteState.Routed);
                 }
             }
 
@@ -246,11 +246,11 @@ public class EndToEndSimulationRunner
         // 获取所有包裹
         var allParcels = _parcelLifecycleService.GetAll();
         var loadedParcels = allParcels.Where(p => 
-            p.RouteState == ParcelRouteState.Loaded && 
+            p.RouteState == ParcelRouteState.Routed && 
             p.TargetChuteId != null && 
             p.BoundCartId != null).ToList();
 
-        _logger.LogInformation("开始执行分拣计划，已装载包裹数: {Count}", loadedParcels.Count);
+        _logger.LogInformation("开始执行分拣计划，已路由包裹数: {Count}", loadedParcels.Count);
 
         // 使用 SortingPlanner 生成吐件计划
         var now = DateTimeOffset.UtcNow;
@@ -269,6 +269,9 @@ public class EndToEndSimulationRunner
             var chuteConfig = _chuteConfigProvider.GetConfig(plan.ChuteId);
             var openDuration = chuteConfig?.MaxOpenDuration ?? TimeSpan.FromMilliseconds(300);
             await _chuteTransmitter.OpenWindowAsync(plan.ChuteId, openDuration, cancellationToken);
+
+            // 更新状态为分拣中
+            _parcelLifecycleService.UpdateRouteState(plan.ParcelId, ParcelRouteState.Sorting);
 
             // 标记包裹已分拣
             _parcelLifecycleService.MarkSorted(plan.ParcelId, DateTimeOffset.UtcNow);
@@ -308,8 +311,8 @@ public class EndToEndSimulationRunner
                 var forceEjectChute = new ChuteId(_config.ForceEjectChuteId);
                 await _chuteTransmitter.OpenWindowAsync(forceEjectChute, TimeSpan.FromMilliseconds(300), cancellationToken);
 
+                _parcelLifecycleService.UpdateRouteState(parcel.ParcelId, ParcelRouteState.ForceEjected);
                 _parcelLifecycleService.MarkSorted(parcel.ParcelId, DateTimeOffset.UtcNow);
-                _parcelLifecycleService.UpdateRouteState(parcel.ParcelId, ParcelRouteState.Sorted);
 
                 if (parcel.BoundCartId != null)
                 {
@@ -342,33 +345,35 @@ public class EndToEndSimulationRunner
 
         foreach (var parcel in allParcels)
         {
-            var chuteConfig = parcel.TargetChuteId != null 
-                ? _chuteConfigProvider.GetConfig(parcel.TargetChuteId) 
-                : null;
+            ChuteConfig? chuteConfig = null;
+            if (parcel.TargetChuteId.HasValue)
+            {
+                chuteConfig = _chuteConfigProvider.GetConfig(parcel.TargetChuteId.Value);
+            }
 
-            var isForceEject = chuteConfig?.IsForceEject ?? false;
+            var isForceEject = chuteConfig?.IsForceEject ?? false || parcel.RouteState == ParcelRouteState.ForceEjected;
             var isSuccess = parcel.RouteState == ParcelRouteState.Sorted;
             
             // 如果分拣成功且目标格口存在，实际格口就是目标格口
-            // 如果失败或强排，实际格口是强排口
+            // 如果强排，实际格口是强排口
             int? actualChuteId = null;
             if (parcel.SortedAt != null)
             {
-                if (isForceEject || !isSuccess)
+                if (isForceEject)
                 {
                     actualChuteId = _config.ForceEjectChuteId;
                 }
                 else if (parcel.TargetChuteId != null)
                 {
-                    actualChuteId = (int)parcel.TargetChuteId.Value;
+                    actualChuteId = (int)parcel.TargetChuteId.Value.Value;
                 }
             }
 
             details.Add(new ParcelDetail
             {
                 ParcelId = $"PKG{parcel.ParcelId.Value:D6}",
-                AssignedCartId = parcel.BoundCartId != null ? (int)parcel.BoundCartId.Value : null,
-                TargetChuteId = parcel.TargetChuteId != null ? (int)parcel.TargetChuteId.Value : null,
+                AssignedCartId = parcel.BoundCartId != null ? (int)parcel.BoundCartId.Value.Value : null,
+                TargetChuteId = parcel.TargetChuteId != null ? (int)parcel.TargetChuteId.Value.Value : null,
                 ActualChuteId = actualChuteId,
                 IsSuccess = isSuccess,
                 IsForceEject = isForceEject,
@@ -392,9 +397,9 @@ public class EndToEndSimulationRunner
 
         foreach (var parcel in allParcels)
         {
-            if (parcel.RouteState == ParcelRouteState.Sorted && parcel.TargetChuteId != null)
+            if (parcel.RouteState == ParcelRouteState.Sorted && parcel.TargetChuteId.HasValue)
             {
-                var chuteConfig = _chuteConfigProvider.GetConfig(parcel.TargetChuteId);
+                var chuteConfig = _chuteConfigProvider.GetConfig(parcel.TargetChuteId.Value);
                 if (chuteConfig?.IsForceEject == true)
                 {
                     forceEjects++;
@@ -403,6 +408,10 @@ public class EndToEndSimulationRunner
                 {
                     successful++;
                 }
+            }
+            else if (parcel.RouteState == ParcelRouteState.ForceEjected)
+            {
+                forceEjects++;
             }
             else if (parcel.SortedAt != null)
             {
