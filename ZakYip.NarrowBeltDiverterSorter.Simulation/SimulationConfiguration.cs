@@ -1,6 +1,27 @@
 namespace ZakYip.NarrowBeltDiverterSorter.Simulation;
 
 /// <summary>
+/// 分拣模式
+/// </summary>
+public enum SortingMode
+{
+    /// <summary>
+    /// 正式分拣模式：通过上游 RuleEngine 分配格口
+    /// </summary>
+    Normal,
+
+    /// <summary>
+    /// 指定落格模式：始终路由到固定格口
+    /// </summary>
+    FixedChute,
+
+    /// <summary>
+    /// 循环格口模式：按格口列表循环分配
+    /// </summary>
+    RoundRobin
+}
+
+/// <summary>
 /// 仿真配置
 /// </summary>
 public class SimulationConfiguration
@@ -59,4 +80,14 @@ public class SimulationConfiguration
     /// E2E 仿真包裹数量（仅在 E2E 模式下使用，0表示无限）
     /// </summary>
     public int ParcelCount { get; set; } = 0;
+
+    /// <summary>
+    /// 分拣模式（仅在仿真中使用）
+    /// </summary>
+    public SortingMode SortingMode { get; set; } = SortingMode.Normal;
+
+    /// <summary>
+    /// 固定格口ID（仅在 FixedChute 模式下使用）
+    /// </summary>
+    public int? FixedChuteId { get; set; } = null;
 }

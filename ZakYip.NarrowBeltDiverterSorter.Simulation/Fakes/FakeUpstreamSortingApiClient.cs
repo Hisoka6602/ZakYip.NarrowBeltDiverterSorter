@@ -5,7 +5,7 @@ namespace ZakYip.NarrowBeltDiverterSorter.Simulation.Fakes;
 
 /// <summary>
 /// 模拟上游分拣系统API客户端
-/// 自动为包裹分配格口（循环分配）
+/// 支持三种分拣模式：Normal、FixedChute、RoundRobin
 /// </summary>
 public class FakeUpstreamSortingApiClient : IUpstreamSortingApiClient
 {
@@ -21,15 +21,42 @@ public class FakeUpstreamSortingApiClient : IUpstreamSortingApiClient
         ParcelRoutingRequestDto request,
         CancellationToken cancellationToken = default)
     {
-        // 循环分配格口（跳过强排口）
-        var availableChutes = Enumerable.Range(1, _config.NumberOfChutes)
-            .Where(id => id != _config.ForceEjectChuteId)
-            .ToList();
+        int chuteId;
+        string modeDescription;
 
-        var chuteId = availableChutes[_nextChuteIndex % availableChutes.Count];
-        _nextChuteIndex++;
+        switch (_config.SortingMode)
+        {
+            case SortingMode.FixedChute:
+                // 指定落格模式：始终分配到固定格口
+                chuteId = _config.FixedChuteId ?? 1;
+                modeDescription = "FixedChute";
+                break;
 
-        Console.WriteLine($"[上游系统] 包裹 {request.ParcelId} 分配到格口 {chuteId}");
+            case SortingMode.RoundRobin:
+                // 循环格口模式：按格口列表循环分配（跳过强排口）
+                var availableChutes = Enumerable.Range(1, _config.NumberOfChutes)
+                    .Where(id => id != _config.ForceEjectChuteId)
+                    .ToList();
+
+                chuteId = availableChutes[_nextChuteIndex % availableChutes.Count];
+                _nextChuteIndex++;
+                modeDescription = "RoundRobin";
+                break;
+
+            case SortingMode.Normal:
+            default:
+                // Normal 模式：模拟真实的上游规则引擎（这里简化为循环分配）
+                var normalChutes = Enumerable.Range(1, _config.NumberOfChutes)
+                    .Where(id => id != _config.ForceEjectChuteId)
+                    .ToList();
+
+                chuteId = normalChutes[_nextChuteIndex % normalChutes.Count];
+                _nextChuteIndex++;
+                modeDescription = "Normal";
+                break;
+        }
+
+        Console.WriteLine($"[上游系统 - {modeDescription}] 包裹 {request.ParcelId} 分配到格口 {chuteId}");
 
         var response = new ParcelRoutingResponseDto
         {

@@ -139,6 +139,15 @@ public class EndToEndSimulationRunner
 
         var mainDriveInfo = CalculateMainDriveInfo();
 
+        // 收集分拣配置信息
+        var sortingConfigInfo = new SortingConfigInfo
+        {
+            SortingMode = _config.SortingMode.ToString(),
+            FixedChuteId = _config.SortingMode == SortingMode.FixedChute ? _config.FixedChuteId : null,
+            AvailableChutes = _config.NumberOfChutes - 1, // 排除强排口
+            ForceEjectChuteId = _config.ForceEjectChuteId
+        };
+
         // 收集包裹详情
         var parcelDetails = CollectParcelDetails();
 
@@ -149,6 +158,7 @@ public class EndToEndSimulationRunner
             Statistics = statistics,
             CartRing = cartRingInfo,
             MainDrive = mainDriveInfo,
+            SortingConfig = sortingConfigInfo,
             ParcelDetails = parcelDetails
         };
 
