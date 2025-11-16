@@ -51,27 +51,38 @@ var resetConfigOption = new Option<bool>(
     getDefaultValue: () => false,
     description: "仿真前清空 LiteDB 配置并写入默认配置");
 
+var sortingModeOption = new Option<string?>(
+    name: "--sorting-mode",
+    getDefaultValue: () => "normal",
+    description: "分拣模式：normal（正式分拣）、fixed-chute（指定落格）或 round-robin（循环格口）");
+
+var fixedChuteIdOption = new Option<int?>(
+    name: "--fixed-chute-id",
+    description: "固定格口ID（仅在 fixed-chute 模式下生效）");
+
 var rootCommand = new RootCommand("窄带分拣机仿真系统")
 {
     scenarioOption,
     parcelCountOption,
     outputOption,
-    resetConfigOption
+    resetConfigOption,
+    sortingModeOption,
+    fixedChuteIdOption
 };
 
-rootCommand.SetHandler(async (scenario, parcelCount, output, resetConfig) =>
+rootCommand.SetHandler(async (scenario, parcelCount, output, resetConfig, sortingMode, fixedChuteId) =>
 {
-    await RunSimulationAsync(scenario, parcelCount, output, resetConfig);
-}, scenarioOption, parcelCountOption, outputOption, resetConfigOption);
+    await RunSimulationAsync(scenario, parcelCount, output, resetConfig, sortingMode, fixedChuteId);
+}, scenarioOption, parcelCountOption, outputOption, resetConfigOption, sortingModeOption, fixedChuteIdOption);
 
 return await rootCommand.InvokeAsync(args);
 
-static async Task RunSimulationAsync(string? scenario, int parcelCount, string? output, bool resetConfig)
+static async Task RunSimulationAsync(string? scenario, int parcelCount, string? output, bool resetConfig, string? sortingMode, int? fixedChuteId)
 {
     // 如果指定了 E2E 报告场景，运行 E2E 模式
     if (scenario == "e2e-report")
     {
-        await RunE2EScenarioAsync(parcelCount, output, resetConfig);
+        await RunE2EScenarioAsync(parcelCount, output, resetConfig, sortingMode, fixedChuteId);
     }
     else
     {
@@ -80,10 +91,23 @@ static async Task RunSimulationAsync(string? scenario, int parcelCount, string? 
     }
 }
 
-static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool resetConfig)
+static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool resetConfig, string? sortingModeStr, int? fixedChuteId)
 {
+    // 解析分拣模式
+    SortingMode sortingMode = (sortingModeStr?.ToLowerInvariant()) switch
+    {
+        "fixed-chute" => SortingMode.FixedChute,
+        "round-robin" => SortingMode.RoundRobin,
+        "normal" or _ => SortingMode.Normal
+    };
+
     Console.WriteLine($"═══ 运行 E2E 场景 ═══");
     Console.WriteLine($"包裹数量: {parcelCount}");
+    Console.WriteLine($"分拣模式: {sortingMode}");
+    if (sortingMode == SortingMode.FixedChute)
+    {
+        Console.WriteLine($"固定格口: {fixedChuteId ?? 1}");
+    }
     Console.WriteLine($"输出路径: {outputPath ?? "(未指定)"}");
     Console.WriteLine($"重置配置: {(resetConfig ? "是" : "否")}\n");
 
@@ -125,7 +149,9 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
         ParcelGenerationIntervalSeconds = 0.8, // 0.8秒间隔，给包裹足够时间分拣
         SimulationDurationSeconds = 0, // E2E 模式下不使用时长限制
         ParcelCount = parcelCount, // 使用命令行参数指定的包裹数量
-        ParcelTimeToLiveSeconds = 25.0 // 25秒 TTL - 大部分能正常分拣，少量超时进入强排
+        ParcelTimeToLiveSeconds = 25.0, // 25秒 TTL - 大部分能正常分拣，少量超时进入强排
+        SortingMode = sortingMode, // 使用命令行参数指定的分拣模式
+        FixedChuteId = fixedChuteId // 固定格口ID（仅在 FixedChute 模式下使用）
     };
 
     builder.Services.AddSingleton(simulationConfig);
@@ -421,6 +447,16 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
                 Console.ResetColor();
             }
             
+            Console.WriteLine();
+            Console.WriteLine("【分拣配置】");
+            Console.WriteLine($"  分拣模式:    {report.SortingConfig.SortingMode,6}");
+            if (report.SortingConfig.FixedChuteId.HasValue)
+            {
+                Console.WriteLine($"  固定格口:    {report.SortingConfig.FixedChuteId.Value,6}");
+            }
+            Console.WriteLine($"  可用格口:    {report.SortingConfig.AvailableChutes,6} 个");
+            Console.WriteLine($"  强排口:      格口 {report.SortingConfig.ForceEjectChuteId,2}");
+
             Console.WriteLine();
             Console.WriteLine("【小车环配置】");
             Console.WriteLine($"  小车数量:    {report.CartRing.Length,6} 辆");

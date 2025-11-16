@@ -23,6 +23,11 @@ public record class SimulationReport
     public required MainDriveInfo MainDrive { get; init; }
 
     /// <summary>
+    /// 分拣配置信息
+    /// </summary>
+    public required SortingConfigInfo SortingConfig { get; init; }
+
+    /// <summary>
     /// 逐包裹详细信息（可选）
     /// </summary>
     public List<ParcelDetail>? ParcelDetails { get; init; }
@@ -159,6 +164,32 @@ public record class MainDriveInfo
     /// 最大速度（mm/s）
     /// </summary>
     public decimal MaxSpeedMmps { get; init; }
+}
+
+/// <summary>
+/// 分拣配置信息
+/// </summary>
+public record class SortingConfigInfo
+{
+    /// <summary>
+    /// 分拣模式
+    /// </summary>
+    public required string SortingMode { get; init; }
+
+    /// <summary>
+    /// 固定格口ID（仅在 FixedChute 模式下有效）
+    /// </summary>
+    public int? FixedChuteId { get; init; }
+
+    /// <summary>
+    /// 可用格口数量
+    /// </summary>
+    public int AvailableChutes { get; init; }
+
+    /// <summary>
+    /// 强排口ID
+    /// </summary>
+    public int ForceEjectChuteId { get; init; }
 }
 
 /// <summary>
