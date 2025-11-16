@@ -35,7 +35,7 @@ Console.WriteLine("════════════════════�
 var scenarioOption = new Option<string?>(
     name: "--scenario",
     getDefaultValue: () => "legacy",
-    description: "仿真场景：legacy（传统仿真，60秒持续运行）或 e2e-report（端到端仿真并输出报告）");
+    description: "仿真场景：legacy（传统仿真，60秒持续运行）、e2e-report（端到端仿真并输出报告）或 e2e-speed-unstable（端到端仿真，速度不稳定）");
 
 var parcelCountOption = new Option<int>(
     name: "--parcel-count",
@@ -79,10 +79,10 @@ return await rootCommand.InvokeAsync(args);
 
 static async Task RunSimulationAsync(string? scenario, int parcelCount, string? output, bool resetConfig, string? sortingMode, int? fixedChuteId)
 {
-    // 如果指定了 E2E 报告场景，运行 E2E 模式
-    if (scenario == "e2e-report")
+    // 如果指定了 E2E 报告场景或不稳定速度场景，运行 E2E 模式
+    if (scenario == "e2e-report" || scenario == "e2e-speed-unstable")
     {
-        await RunE2EScenarioAsync(parcelCount, output, resetConfig, sortingMode, fixedChuteId);
+        await RunE2EScenarioAsync(parcelCount, output, resetConfig, sortingMode, fixedChuteId, scenario);
     }
     else
     {
@@ -91,7 +91,7 @@ static async Task RunSimulationAsync(string? scenario, int parcelCount, string? 
     }
 }
 
-static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool resetConfig, string? sortingModeStr, int? fixedChuteId)
+static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool resetConfig, string? sortingModeStr, int? fixedChuteId, string? scenario = "e2e-report")
 {
     // 解析分拣模式
     SortingMode sortingMode = (sortingModeStr?.ToLowerInvariant()) switch
@@ -100,8 +100,11 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
         "round-robin" => SortingMode.RoundRobin,
         "normal" or _ => SortingMode.Normal
     };
+    
+    bool isUnstableSpeedScenario = scenario == "e2e-speed-unstable";
 
     Console.WriteLine($"═══ 运行 E2E 场景 ═══");
+    Console.WriteLine($"场景类型: {scenario}");
     Console.WriteLine($"包裹数量: {parcelCount}");
     Console.WriteLine($"分拣模式: {sortingMode}");
     if (sortingMode == SortingMode.FixedChute)
@@ -109,7 +112,12 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
         Console.WriteLine($"固定格口: {fixedChuteId ?? 1}");
     }
     Console.WriteLine($"输出路径: {outputPath ?? "(未指定)"}");
-    Console.WriteLine($"重置配置: {(resetConfig ? "是" : "否")}\n");
+    Console.WriteLine($"重置配置: {(resetConfig ? "是" : "否")}");
+    if (isUnstableSpeedScenario)
+    {
+        Console.WriteLine($"速度不稳定模式: 启用");
+    }
+    Console.WriteLine();
 
     // ============================================================================
     // 种子配置（如果需要）
@@ -149,9 +157,12 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
         ParcelGenerationIntervalSeconds = 0.8, // 0.8秒间隔，给包裹足够时间分拣
         SimulationDurationSeconds = 0, // E2E 模式下不使用时长限制
         ParcelCount = parcelCount, // 使用命令行参数指定的包裹数量
-        ParcelTimeToLiveSeconds = 25.0, // 25秒 TTL - 大部分能正常分拣，少量超时进入强排
+        ParcelTimeToLiveSeconds = isUnstableSpeedScenario ? 15.0 : 25.0, // 不稳定场景使用更短的 TTL
         SortingMode = sortingMode, // 使用命令行参数指定的分拣模式
-        FixedChuteId = fixedChuteId // 固定格口ID（仅在 FixedChute 模式下使用）
+        FixedChuteId = fixedChuteId, // 固定格口ID（仅在 FixedChute 模式下使用）
+        Scenario = scenario, // 仿真场景类型
+        SpeedOscillationAmplitude = 300.0, // 速度波动幅度 ±300 mm/s (30% of target speed)
+        SpeedOscillationFrequency = 1.0 // 速度波动频率 1.0 Hz (每秒一个周期)
     };
 
     builder.Services.AddSingleton(simulationConfig);
@@ -204,6 +215,16 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
     builder.Services.AddSingleton<IMainLineDrivePort>(fakeMainLineDrive);
 
     var fakeMainLineFeedback = new FakeMainLineFeedbackPort(fakeMainLineDrive);
+    
+    // 如果是不稳定速度场景，启用速度波动
+    if (isUnstableSpeedScenario)
+    {
+        fakeMainLineFeedback.EnableUnstableMode(
+            simulationConfig.SpeedOscillationAmplitude,
+            simulationConfig.SpeedOscillationFrequency);
+        Console.WriteLine($"已启用速度不稳定模式：波动幅度 ±{simulationConfig.SpeedOscillationAmplitude} mm/s, 频率 {simulationConfig.SpeedOscillationFrequency} Hz\n");
+    }
+    
     builder.Services.AddSingleton(fakeMainLineFeedback);
     builder.Services.AddSingleton<IMainLineFeedbackPort>(fakeMainLineFeedback);
 
@@ -246,6 +267,7 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
     builder.Services.AddSingleton<IEjectPlanner, EjectPlanner>();
     builder.Services.AddSingleton<IMainLineControlService, MainLineControlService>();
     builder.Services.AddSingleton<IMainLineSpeedProvider, MainLineSpeedProvider>();
+    builder.Services.AddSingleton<IMainLineStabilityProvider, MainLineStabilityProvider>();
     builder.Services.AddSingleton<ICartPositionTracker, CartPositionTracker>();
     builder.Services.AddSingleton<IChuteConfigProvider>(sp =>
     {
@@ -449,6 +471,10 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
             
             Console.WriteLine();
             Console.WriteLine("【分拣配置】");
+            if (!string.IsNullOrEmpty(report.SortingConfig.Scenario))
+            {
+                Console.WriteLine($"  仿真场景:    {report.SortingConfig.Scenario,6}");
+            }
             Console.WriteLine($"  分拣模式:    {report.SortingConfig.SortingMode,6}");
             if (report.SortingConfig.FixedChuteId.HasValue)
             {
@@ -711,6 +737,7 @@ static async Task RunTraditionalSimulationAsync()
     builder.Services.AddSingleton<ISortingPlanner, SortingPlanner>();
     builder.Services.AddSingleton<IMainLineControlService, MainLineControlService>();
     builder.Services.AddSingleton<IMainLineSpeedProvider, MainLineSpeedProvider>();
+    builder.Services.AddSingleton<IMainLineStabilityProvider, MainLineStabilityProvider>();
     builder.Services.AddSingleton<ICartPositionTracker, CartPositionTracker>();
     builder.Services.AddSingleton<IChuteConfigProvider>(sp =>
     {

@@ -95,7 +95,7 @@ public class ParcelLifecycleService : IParcelLifecycleService
     }
 
     /// <inheritdoc/>
-    public void UpdateSortingOutcome(ParcelId parcelId, ParcelSortingOutcome outcome, ChuteId? actualChuteId = null)
+    public void UpdateSortingOutcome(ParcelId parcelId, ParcelSortingOutcome outcome, ChuteId? actualChuteId = null, ParcelDiscardReason? discardReason = null)
     {
         _parcels.AddOrUpdate(
             parcelId,
@@ -103,7 +103,8 @@ public class ParcelLifecycleService : IParcelLifecycleService
             (_, existingParcel) => existingParcel with
             {
                 SortingOutcome = outcome,
-                ActualChuteId = actualChuteId
+                ActualChuteId = actualChuteId,
+                DiscardReason = discardReason
             });
     }
 

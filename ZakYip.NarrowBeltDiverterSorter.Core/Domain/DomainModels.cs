@@ -49,6 +49,11 @@ public record class ParcelSnapshot
     /// 实际格口ID（实际落格位置）
     /// </summary>
     public ChuteId? ActualChuteId { get; init; }
+
+    /// <summary>
+    /// 丢弃原因（仅当被强排时有效）
+    /// </summary>
+    public ParcelDiscardReason? DiscardReason { get; init; }
 }
 
 /// <summary>

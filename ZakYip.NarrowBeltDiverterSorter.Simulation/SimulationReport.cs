@@ -172,6 +172,11 @@ public record class MainDriveInfo
 public record class SortingConfigInfo
 {
     /// <summary>
+    /// 仿真场景（例如：e2e-report, e2e-speed-unstable）
+    /// </summary>
+    public string? Scenario { get; init; }
+
+    /// <summary>
     /// 分拣模式
     /// </summary>
     public required string SortingMode { get; init; }

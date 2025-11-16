@@ -15,6 +15,7 @@ public class EjectPlanner : IEjectPlanner
     private readonly ICartRingBuilder _cartRingBuilder;
     private readonly ICartPositionTracker _cartPositionTracker;
     private readonly IMainLineSpeedProvider _mainLineSpeedProvider;
+    private readonly IMainLineStabilityProvider _stabilityProvider;
     private readonly IChuteConfigProvider _chuteConfigProvider;
     private readonly SortingPlannerOptions _options;
 
@@ -22,12 +23,14 @@ public class EjectPlanner : IEjectPlanner
         ICartRingBuilder cartRingBuilder,
         ICartPositionTracker cartPositionTracker,
         IMainLineSpeedProvider mainLineSpeedProvider,
+        IMainLineStabilityProvider stabilityProvider,
         IChuteConfigProvider chuteConfigProvider,
         SortingPlannerOptions options)
     {
         _cartRingBuilder = cartRingBuilder;
         _cartPositionTracker = cartPositionTracker;
         _mainLineSpeedProvider = mainLineSpeedProvider;
+        _stabilityProvider = stabilityProvider;
         _chuteConfigProvider = chuteConfigProvider;
         _options = options;
     }
@@ -43,7 +46,8 @@ public class EjectPlanner : IEjectPlanner
         }
 
         // Check if main line speed is stable
-        if (!_mainLineSpeedProvider.IsSpeedStable)
+        // Use the stability provider to determine if conditions are suitable for ejecting
+        if (!_stabilityProvider.IsStable)
         {
             return null;
         }
