@@ -122,7 +122,8 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
         InfeedConveyorSpeedMmPerSec = 1000.0,
         InfeedToDropDistanceMm = 2000m,
         ParcelGenerationIntervalSeconds = 0.1, // 快速生成
-        SimulationDurationSeconds = 60
+        SimulationDurationSeconds = 0, // E2E 模式下不使用时长限制
+        ParcelCount = parcelCount // 使用命令行参数指定的包裹数量
     };
 
     builder.Services.AddSingleton(simulationConfig);
@@ -220,6 +221,61 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
     });
 
     // ============================================================================
+    // 注册领域协调器
+    // ============================================================================
+
+    builder.Services.AddSingleton<ParcelLoadCoordinator>();
+
+    // ============================================================================
+    // 注册 Ingress 监视器并连接事件
+    // ============================================================================
+
+    builder.Services.AddSingleton<OriginSensorMonitor>();
+    
+    builder.Services.AddSingleton(sp =>
+    {
+        var infeedSensor = sp.GetRequiredService<IInfeedSensorPort>();
+        var monitor = new InfeedSensorMonitor(infeedSensor);
+        
+        // 连接 InfeedSensorMonitor 与 ParcelRoutingWorker 和 ParcelLoadCoordinator
+        var routingWorker = sp.GetRequiredService<ParcelRoutingWorker>();
+        var loadCoordinator = sp.GetRequiredService<ParcelLoadCoordinator>();
+        
+        monitor.ParcelCreatedFromInfeed += async (sender, args) =>
+        {
+            try
+            {
+                // 通知路由工作器处理包裹
+                await routingWorker.HandleParcelCreatedAsync(args);
+                
+                // 通知落车协调器
+                loadCoordinator.HandleParcelCreatedFromInfeed(sender, args);
+            }
+            catch (Exception ex)
+            {
+                var logger = sp.GetRequiredService<ILogger<InfeedSensorMonitor>>();
+                logger.LogError(ex, "处理包裹创建事件时发生错误");
+            }
+        };
+        
+        return monitor;
+    });
+
+    // ============================================================================
+    // 注册后台工作器（E2E 模式下启动完整管道）
+    // ============================================================================
+
+    builder.Services.AddSingleton<ParcelRoutingWorker>();
+    
+    builder.Services.AddHostedService<MainLineControlWorker>();
+    builder.Services.AddHostedService<SortingExecutionWorker>();
+    builder.Services.AddHostedService<CartMovementSimulator>();
+    builder.Services.AddHostedService<ParcelGeneratorWorker>();
+    
+    // 添加 InfeedSensorMonitor 启动服务（使用简单的后台服务包装）
+    builder.Services.AddHostedService<InfeedSensorMonitorHostedService>();
+
+    // ============================================================================
     // 注册 E2E Runner
     // ============================================================================
 
@@ -234,14 +290,28 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
     builder.Logging.SetMinimumLevel(LogLevel.Information);
 
     // ============================================================================
-    // 运行 E2E 仿真
+    // 构建并启动 Host
     // ============================================================================
 
     var app = builder.Build();
-    var runner = app.Services.GetRequiredService<EndToEndSimulationRunner>();
-
+    
     Console.WriteLine("开始仿真...\n");
+    
+    // 启动所有后台服务
+    await app.StartAsync();
+
+    // ============================================================================
+    // 运行 E2E 仿真（在后台服务运行期间）
+    // ============================================================================
+
+    var runner = app.Services.GetRequiredService<EndToEndSimulationRunner>();
     var report = await runner.RunAsync(parcelCount);
+
+    // ============================================================================
+    // 停止 Host
+    // ============================================================================
+
+    await app.StopAsync();
 
     // ============================================================================
     // 输出报告

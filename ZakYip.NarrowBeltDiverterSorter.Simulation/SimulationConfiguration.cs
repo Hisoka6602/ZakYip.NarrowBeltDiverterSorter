@@ -49,4 +49,9 @@ public class SimulationConfiguration
     /// 仿真持续时间（秒，0表示无限）
     /// </summary>
     public int SimulationDurationSeconds { get; set; } = 60;
+
+    /// <summary>
+    /// E2E 仿真包裹数量（仅在 E2E 模式下使用，0表示无限）
+    /// </summary>
+    public int ParcelCount { get; set; } = 0;
 }
