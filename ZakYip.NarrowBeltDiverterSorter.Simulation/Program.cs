@@ -115,7 +115,7 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
 
     var simulationConfig = new SimulationConfiguration
     {
-        NumberOfCarts = 20,
+        NumberOfCarts = 60, // 增加到60辆小车（需要至少60辆，格口数10个，每个包裹最多占用6个小车）
         CartSpacingMm = 500m,
         NumberOfChutes = 10,
         ForceEjectChuteId = 10,
@@ -231,7 +231,7 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
                 ChuteId = new ZakYip.NarrowBeltDiverterSorter.Core.Domain.ChuteId(i),
                 IsEnabled = true,
                 IsForceEject = (i == simulationConfig.ForceEjectChuteId),
-                CartOffsetFromOrigin = i * 2,
+                CartOffsetFromOrigin = i * 5, // 格口间距改为5个小车位（格口在位置 5, 10, 15, 20, 25, 30, 35, 40, 45, 50）
                 MaxOpenDuration = TimeSpan.FromMilliseconds(300)
             });
         }
@@ -565,7 +565,7 @@ static async Task RunTraditionalSimulationAsync()
 
     var simulationConfig = new SimulationConfiguration
     {
-        NumberOfCarts = 20,
+        NumberOfCarts = 60, // 增加到60辆小车（需要至少60辆，格口数10个，每个包裹最多占用6个小车）
         CartSpacingMm = 500m,
         NumberOfChutes = 10,
         ForceEjectChuteId = 10,
@@ -686,7 +686,7 @@ static async Task RunTraditionalSimulationAsync()
                 ChuteId = new ZakYip.NarrowBeltDiverterSorter.Core.Domain.ChuteId(i),
                 IsEnabled = true,
                 IsForceEject = (i == simulationConfig.ForceEjectChuteId),
-                CartOffsetFromOrigin = i * 2,
+                CartOffsetFromOrigin = i * 5, // 格口间距改为5个小车位（格口在位置 5, 10, 15, 20, 25, 30, 35, 40, 45, 50）
                 MaxOpenDuration = TimeSpan.FromMilliseconds(300)
             });
         }

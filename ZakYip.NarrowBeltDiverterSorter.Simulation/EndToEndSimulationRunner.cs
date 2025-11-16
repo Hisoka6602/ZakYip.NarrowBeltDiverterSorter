@@ -184,7 +184,7 @@ public class EndToEndSimulationRunner
     /// </summary>
     private async Task WaitForCartRingReadyAsync(CancellationToken cancellationToken)
     {
-        const int maxWaitSeconds = 30;
+        const int maxWaitSeconds = 90; // 增加到90秒，因为60辆小车需要更长时间完成一圈
         var timeout = DateTime.UtcNow.AddSeconds(maxWaitSeconds);
         var lastLogTime = DateTime.UtcNow;
 
@@ -226,8 +226,8 @@ public class EndToEndSimulationRunner
     {
         const int samplingIntervalMs = 100; // 每100ms采样一次速度
         const int statusCheckIntervalMs = 500; // 每500ms检查一次包裹状态
-        const int maxWaitSeconds = 180; // 最多等待3分钟作为兜底保护
-        const double minCompletionRatio = 0.95; // 至少95%的包裹完成才认为成功
+        const int maxWaitSeconds = 300; // 最多等待5分钟作为兜底保护
+        const double minCompletionRatio = 1.0; // 必须100%的包裹完成（正常落格或强排）
 
         var endTime = DateTime.UtcNow.AddSeconds(maxWaitSeconds);
         var lastStatusCheckTime = DateTime.UtcNow;
@@ -313,12 +313,16 @@ public class EndToEndSimulationRunner
         var finalProgress = GetSimulationProgress();
         
         _logger.LogWarning(
-            "仿真等待超时（{MaxWaitSeconds} 秒），强制结束。当前进度: 已生成 {GeneratedCount}/{ExpectedCount}, 已完成 {CompletedCount} ({CompletionPercentage:F1}%)",
+            "仿真等待超时（{MaxWaitSeconds} 秒），强制结束。当前进度: 已生成 {GeneratedCount}/{ExpectedCount}, 已完成 {CompletedCount} ({CompletionPercentage:F1}%), " +
+            "正常落格 {SortedCount}, 强排 {ForceEjectedCount}, 失败 {FailedCount}",
             maxWaitSeconds,
             finalProgress.GeneratedCount,
             expectedParcelCount,
             finalProgress.CompletedCount,
-            finalProgress.CompletedCount * 100.0 / expectedParcelCount);
+            finalProgress.CompletedCount * 100.0 / expectedParcelCount,
+            finalProgress.SortedCount,
+            finalProgress.ForceEjectedCount,
+            finalProgress.FailedCount);
     }
 
     /// <summary>
