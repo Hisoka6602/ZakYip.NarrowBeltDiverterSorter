@@ -358,6 +358,10 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
 
     var app = builder.Build();
     
+    // Enable main line setpoint for E2E scenario
+    var e2eSetpointProvider = app.Services.GetRequiredService<SimulationMainLineSetpoint>();
+    e2eSetpointProvider.SetSetpoint(true, (decimal)simulationConfig.MainLineSpeedMmPerSec);
+    
     Console.WriteLine("开始仿真...\n");
     
     // 创建一个超时的 CancellationTokenSource
