@@ -12,6 +12,7 @@ public class MainLineControlWorker : BackgroundService
     private readonly ILogger<MainLineControlWorker> _logger;
     private readonly IMainLineControlService _controlService;
     private readonly IMainLineSpeedProvider _speedProvider;
+    private readonly IMainLineSetpointProvider _setpointProvider;
     private readonly MainLineControlOptions _options;
     private readonly bool _enableBringupLogging;
 
@@ -19,12 +20,14 @@ public class MainLineControlWorker : BackgroundService
         ILogger<MainLineControlWorker> logger,
         IMainLineControlService controlService,
         IMainLineSpeedProvider speedProvider,
+        IMainLineSetpointProvider setpointProvider,
         IOptions<MainLineControlOptions> options,
         StartupModeConfiguration startupConfig)
     {
         _logger = logger;
         _controlService = controlService;
         _speedProvider = speedProvider;
+        _setpointProvider = setpointProvider;
         _options = options.Value;
         _enableBringupLogging = startupConfig.EnableBringupLogging && 
                                 startupConfig.Mode >= StartupMode.BringupMainline;
@@ -53,6 +56,10 @@ public class MainLineControlWorker : BackgroundService
         {
             try
             {
+                // 读取设定点并更新目标速度
+                var setpoint = _setpointProvider.IsEnabled ? _setpointProvider.TargetMmps : 0m;
+                _controlService.SetTargetSpeed(setpoint);
+
                 // 执行控制循环
                 var success = await _controlService.ExecuteControlLoopAsync(stoppingToken);
                 

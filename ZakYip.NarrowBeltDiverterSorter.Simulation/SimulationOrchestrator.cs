@@ -26,6 +26,7 @@ public class SimulationOrchestrator : BackgroundService
     private readonly ICartPositionTracker _cartPositionTracker;
     private readonly IMainLineControlService _mainLineControl;
     private readonly IMainLineSpeedProvider _speedProvider;
+    private readonly SimulationMainLineSetpoint _setpointProvider;
     private readonly ILogger<SimulationOrchestrator> _logger;
 
     public SimulationOrchestrator(
@@ -40,6 +41,7 @@ public class SimulationOrchestrator : BackgroundService
         ICartPositionTracker cartPositionTracker,
         IMainLineControlService mainLineControl,
         IMainLineSpeedProvider speedProvider,
+        SimulationMainLineSetpoint setpointProvider,
         ILogger<SimulationOrchestrator> logger)
     {
         _config = config;
@@ -53,6 +55,7 @@ public class SimulationOrchestrator : BackgroundService
         _cartPositionTracker = cartPositionTracker;
         _mainLineControl = mainLineControl;
         _speedProvider = speedProvider;
+        _setpointProvider = setpointProvider;
         _logger = logger;
     }
 
@@ -86,7 +89,7 @@ public class SimulationOrchestrator : BackgroundService
 
             // 5. 启动主线并等待速度稳定
             Console.WriteLine("[仿真启动] 步骤 5/7: 设置主线速度并启动...");
-            await _mainLineDrive.SetTargetSpeedAsync(_config.MainLineSpeedMmPerSec, stoppingToken);
+            _setpointProvider.SetSetpoint(true, (decimal)_config.MainLineSpeedMmPerSec);
             await _mainLineDrive.StartAsync(stoppingToken);
             
             // 等待主线速度稳定
@@ -156,6 +159,7 @@ public class SimulationOrchestrator : BackgroundService
     {
         Console.WriteLine("\n[仿真停止] 正在停止系统...");
         
+        _setpointProvider.SetSetpoint(false, 0);
         await _mainLineDrive.StopAsync();
         await _infeedConveyor.StopAsync();
         await _infeedSensor.StopMonitoringAsync();
