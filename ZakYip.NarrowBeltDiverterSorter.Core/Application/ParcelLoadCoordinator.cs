@@ -11,6 +11,7 @@ public class ParcelLoadCoordinator
 {
     private readonly IParcelLoadPlanner _loadPlanner;
     private readonly Dictionary<ParcelId, ParcelSnapshot> _parcelSnapshots = new();
+    private Action<string>? _logAction;
 
     /// <summary>
     /// 包裹装载到小车事件
@@ -24,6 +25,14 @@ public class ParcelLoadCoordinator
     public ParcelLoadCoordinator(IParcelLoadPlanner loadPlanner)
     {
         _loadPlanner = loadPlanner ?? throw new ArgumentNullException(nameof(loadPlanner));
+    }
+
+    /// <summary>
+    /// 设置日志输出委托（可选）
+    /// </summary>
+    public void SetLogAction(Action<string> logAction)
+    {
+        _logAction = logAction;
     }
 
     /// <summary>
@@ -46,11 +55,15 @@ public class ParcelLoadCoordinator
 
     private async void OnParcelCreatedFromInfeed(object? sender, ParcelCreatedFromInfeedEventArgs e)
     {
+        _logAction?.Invoke($"[上车规划] 开始为包裹 {e.ParcelId.Value} 规划目标小车");
+        
         // 调用装载计划器预测小车
         var predictedCartId = await _loadPlanner.PredictLoadedCartAsync(e.InfeedTriggerTime, CancellationToken.None);
 
         if (predictedCartId == null)
         {
+            _logAction?.Invoke($"[上车规划失败] 包裹 {e.ParcelId.Value} 无法预测目标小车 - 原因: 小车环未就绪或位置跟踪器未初始化");
+            
             // 无法预测小车，创建失败状态的快照
             var failedSnapshot = new ParcelSnapshot
             {
@@ -63,6 +76,8 @@ public class ParcelLoadCoordinator
         }
 
         var loadedTime = DateTimeOffset.UtcNow;
+
+        _logAction?.Invoke($"[上车规划] 包裹 {e.ParcelId.Value} 规划到小车 {predictedCartId.Value.Value}, 预计落车时间: {loadedTime:HH:mm:ss.fff}");
 
         // 创建装载的包裹快照
         var snapshot = new ParcelSnapshot
@@ -84,5 +99,7 @@ public class ParcelLoadCoordinator
             CartId = predictedCartId.Value,
             LoadedTime = loadedTime
         });
+        
+        _logAction?.Invoke($"[上车完成] 包裹 {e.ParcelId.Value} 已标记为在小车 {predictedCartId.Value.Value} 上");
     }
 }

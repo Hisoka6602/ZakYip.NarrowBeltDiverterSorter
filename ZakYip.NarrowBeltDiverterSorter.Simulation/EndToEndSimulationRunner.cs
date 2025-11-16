@@ -169,13 +169,16 @@ public class EndToEndSimulationRunner
     {
         const int samplingIntervalMs = 100; // 每100ms采样一次速度
         const int statusCheckIntervalMs = 500; // 每500ms检查一次包裹状态
-        const int maxWaitSeconds = 120; // 最多等待2分钟作为兜底保护
+        const int maxWaitSeconds = 180; // 最多等待3分钟作为兜底保护
+        const double minCompletionRatio = 0.95; // 至少95%的包裹完成才认为成功
 
         var endTime = DateTime.UtcNow.AddSeconds(maxWaitSeconds);
         var lastStatusCheckTime = DateTime.UtcNow;
         var lastSpeedSampleTime = DateTime.UtcNow;
         
         _logger.LogInformation("开始等待包裹处理完成，目标包裹数: {ExpectedCount}", expectedParcelCount);
+
+        bool timedOut = false;
 
         while (DateTime.UtcNow < endTime && !cancellationToken.IsCancellationRequested)
         {
@@ -204,31 +207,45 @@ public class EndToEndSimulationRunner
                 var progress = GetSimulationProgress();
                 
                 _logger.LogDebug(
-                    "仿真进度 - 已生成: {GeneratedCount}/{TargetCount}, 已完成: {CompletedCount}",
+                    "仿真进度 - 已生成: {GeneratedCount}/{TargetCount}, 已完成: {CompletedCount} ({CompletionPercentage:F1}%)",
                     progress.GeneratedCount,
                     expectedParcelCount,
-                    progress.CompletedCount);
+                    progress.CompletedCount,
+                    progress.CompletedCount * 100.0 / expectedParcelCount);
 
-                // 判定仿真完成条件：已完成包裹数量达到目标
-                if (progress.CompletedCount >= expectedParcelCount)
+                // 判定仿真完成条件：
+                // 1. 所有包裹都已生成
+                // 2. 至少95%的包裹进入终态（允许极少数包裹因异常未完成）
+                if (progress.GeneratedCount >= expectedParcelCount)
                 {
-                    _logger.LogInformation(
-                        "仿真完成 - 目标包裹数: {TargetCount}, 已生成: {GeneratedCount}, 已完成: {CompletedCount}",
-                        expectedParcelCount,
-                        progress.GeneratedCount,
-                        progress.CompletedCount);
+                    double completionRatio = (double)progress.CompletedCount / expectedParcelCount;
                     
-                    // 等待一小段时间确保所有操作完成
-                    await Task.Delay(500, cancellationToken);
-                    return;
-                }
-                
-                // 如果所有包裹都已生成但未完成，继续等待处理
-                if (progress.GeneratedCount >= expectedParcelCount && progress.CompletedCount < expectedParcelCount)
-                {
+                    if (completionRatio >= minCompletionRatio)
+                    {
+                        _logger.LogInformation(
+                            "仿真完成 - 目标包裹数: {TargetCount}, 已生成: {GeneratedCount}, 已完成: {CompletedCount} ({CompletionRatio:P1})",
+                            expectedParcelCount,
+                            progress.GeneratedCount,
+                            progress.CompletedCount,
+                            completionRatio);
+                        
+                        // 等待一小段时间确保所有操作完成
+                        await Task.Delay(500, cancellationToken);
+                        return;
+                    }
+                    
+                    // 如果完成率不足，继续等待但给出提示
                     _logger.LogDebug(
-                        "所有包裹已生成，等待处理完成 - 已完成: {CompletedCount}/{TargetCount}",
-                        progress.CompletedCount,
+                        "等待剩余包裹完成处理 - 完成率: {CompletionRatio:P1} (目标: {MinRatio:P0})",
+                        completionRatio,
+                        minCompletionRatio);
+                }
+                else
+                {
+                    // 包裹还在生成中
+                    _logger.LogDebug(
+                        "包裹生成中 - 已生成: {GeneratedCount}/{TargetCount}",
+                        progress.GeneratedCount,
                         expectedParcelCount);
                 }
             }
@@ -238,11 +255,16 @@ public class EndToEndSimulationRunner
         }
 
         // 兜底：超时后强制结束
+        timedOut = true;
+        var finalProgress = GetSimulationProgress();
+        
         _logger.LogWarning(
-            "仿真等待超时（{MaxWaitSeconds} 秒），强制结束。当前进度: {CompletedCount}/{ExpectedCount}",
+            "仿真等待超时（{MaxWaitSeconds} 秒），强制结束。当前进度: 已生成 {GeneratedCount}/{ExpectedCount}, 已完成 {CompletedCount} ({CompletionPercentage:F1}%)",
             maxWaitSeconds,
-            GetSimulationProgress().CompletedCount,
-            expectedParcelCount);
+            finalProgress.GeneratedCount,
+            expectedParcelCount,
+            finalProgress.CompletedCount,
+            finalProgress.CompletedCount * 100.0 / expectedParcelCount);
     }
 
     /// <summary>
@@ -260,12 +282,18 @@ public class EndToEndSimulationRunner
             ParcelRouteState.Failed
         };
         
-        var completedCount = allParcels.Count(p => terminatedStates.Contains(p.RouteState));
+        var sortedCount = allParcels.Count(p => p.RouteState == ParcelRouteState.Sorted);
+        var forceEjectedCount = allParcels.Count(p => p.RouteState == ParcelRouteState.ForceEjected);
+        var failedCount = allParcels.Count(p => p.RouteState == ParcelRouteState.Failed);
+        var completedCount = sortedCount + forceEjectedCount + failedCount;
         
         return new SimulationProgress
         {
             GeneratedCount = allParcels.Count,
-            CompletedCount = completedCount
+            CompletedCount = completedCount,
+            SortedCount = sortedCount,
+            ForceEjectedCount = forceEjectedCount,
+            FailedCount = failedCount
         };
     }
     
@@ -276,6 +304,9 @@ public class EndToEndSimulationRunner
     {
         public int GeneratedCount { get; set; }
         public int CompletedCount { get; set; }
+        public int SortedCount { get; set; }
+        public int ForceEjectedCount { get; set; }
+        public int FailedCount { get; set; }
     }
 
     /// <summary>
@@ -411,6 +442,8 @@ public class EndToEndSimulationRunner
     {
         if (_speedSamples.Count == 0)
         {
+            _logger.LogWarning("主线速度采样为空，速度统计数据不可用");
+            
             return new MainDriveInfo
             {
                 TargetSpeedMmps = (decimal)_config.MainLineSpeedMmPerSec,
@@ -425,6 +458,13 @@ public class EndToEndSimulationRunner
         var avgSpeed = speeds.Average();
         var variance = speeds.Select(s => Math.Pow((double)(s - avgSpeed), 2)).Average();
         var stdDev = (decimal)Math.Sqrt(variance);
+
+        _logger.LogInformation(
+            "主线速度统计 - 目标: {TargetSpeed:F1} mm/s, 平均: {AvgSpeed:F1} mm/s, 标准差: {StdDev:F2} mm/s, 采样数: {SampleCount}",
+            _config.MainLineSpeedMmPerSec,
+            avgSpeed,
+            stdDev,
+            _speedSamples.Count);
 
         return new MainDriveInfo
         {

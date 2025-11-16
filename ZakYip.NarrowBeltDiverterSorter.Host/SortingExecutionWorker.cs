@@ -59,6 +59,16 @@ public class SortingExecutionWorker : BackgroundService
                 if (ejectPlans.Count > 0)
                 {
                     _logger.LogDebug("规划了 {Count} 个吐件计划", ejectPlans.Count);
+                    
+                    foreach (var plan in ejectPlans)
+                    {
+                        _logger.LogInformation(
+                            "[吐件规划] 包裹 {ParcelId} 小车 {CartId} 目标格口 {ChuteId} 强排={IsForceEject}",
+                            plan.ParcelId.Value,
+                            plan.CartId.Value,
+                            plan.ChuteId.Value,
+                            plan.IsForceEject);
+                    }
                 }
 
                 // Execute plans
@@ -109,11 +119,11 @@ public class SortingExecutionWorker : BackgroundService
                     _parcelLifecycleService.UpdateRouteState(plan.ParcelId, ParcelRouteState.ForceEjected);
                     _parcelLifecycleService.UnbindCartId(plan.ParcelId);
 
-                    _logger.LogInformation(
-                        "强制吐件完成 - 包裹: {ParcelId}, 小车: {CartId}, 格口: {ChuteId}",
+                    _logger.LogWarning(
+                        "[强排] 包裹 {ParcelId} 被强制排出到格口 {ChuteId}（小车 {CartId}）",
                         plan.ParcelId.Value,
-                        plan.CartId.Value,
-                        plan.ChuteId.Value);
+                        plan.ChuteId.Value,
+                        plan.CartId.Value);
 
                     // Report to upstream
                     await ReportSortingResultAsync(
@@ -132,10 +142,10 @@ public class SortingExecutionWorker : BackgroundService
                 _parcelLifecycleService.UnbindCartId(plan.ParcelId);
 
                 _logger.LogInformation(
-                    "吐件完成 - 包裹: {ParcelId}, 小车: {CartId}, 格口: {ChuteId}",
+                    "[落格完成] 包裹 {ParcelId} 已落入格口 {ChuteId}（小车 {CartId}）",
                     plan.ParcelId.Value,
-                    plan.CartId.Value,
-                    plan.ChuteId.Value);
+                    plan.ChuteId.Value,
+                    plan.CartId.Value);
 
                 // Report to upstream
                 await ReportSortingResultAsync(

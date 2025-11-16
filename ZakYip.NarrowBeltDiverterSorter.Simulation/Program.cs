@@ -225,7 +225,17 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
     // 注册领域协调器
     // ============================================================================
 
-    builder.Services.AddSingleton<ParcelLoadCoordinator>();
+    builder.Services.AddSingleton(sp =>
+    {
+        var loadPlanner = sp.GetRequiredService<IParcelLoadPlanner>();
+        var coordinator = new ParcelLoadCoordinator(loadPlanner);
+        var logger = sp.GetRequiredService<ILogger<ParcelLoadCoordinator>>();
+        
+        // 设置日志委托
+        coordinator.SetLogAction(msg => logger.LogInformation(msg));
+        
+        return coordinator;
+    });
 
     // ============================================================================
     // 注册 Ingress 监视器并连接事件
@@ -339,18 +349,57 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
             var runner = app.Services.GetRequiredService<EndToEndSimulationRunner>();
             var report = await runner.RunAsync(parcelCount, cts.Token);
             
-            // 保存报告
+            // 计算完成率
+            double completionRate = report.Statistics.TotalParcels > 0 
+                ? (double)(report.Statistics.SuccessfulSorts + report.Statistics.ForceEjects + report.Statistics.Missorts) / report.Statistics.TotalParcels * 100.0
+                : 0.0;
+            
+            // 检查是否因超时提前结束
+            bool isIncomplete = completionRate < 95.0;
+            
+            // 保存报告 - 清晰的中文输出
             Console.WriteLine("\n════════════════════════════════════════");
-            Console.WriteLine("本次 E2E 仿真已完成：");
-            Console.WriteLine($"- 包裹总数: {report.Statistics.TotalParcels}");
-            Console.WriteLine($"- 正常落格: {report.Statistics.SuccessfulSorts}");
-            Console.WriteLine($"- 强排: {report.Statistics.ForceEjects}");
-            Console.WriteLine($"- 误分: {report.Statistics.Missorts}");
-            Console.WriteLine($"- 小车环长度: {report.CartRing.Length}");
-            Console.WriteLine($"- 目标速度: {report.MainDrive.TargetSpeedMmps:F1} mm/s");
-            Console.WriteLine($"- 平均速度: {report.MainDrive.AverageSpeedMmps:F1} mm/s");
-            Console.WriteLine($"- 速度标准差: {report.MainDrive.SpeedStdDevMmps:F2} mm/s");
-            Console.WriteLine($"- 仿真耗时: {report.Statistics.DurationSeconds:F2} 秒");
+            Console.WriteLine("║      E2E 仿真结果报告                ║");
+            Console.WriteLine("════════════════════════════════════════");
+            Console.WriteLine();
+            Console.WriteLine("【包裹统计】");
+            Console.WriteLine($"  总包裹数:    {report.Statistics.TotalParcels,6} 个");
+            Console.WriteLine($"  正常落格:    {report.Statistics.SuccessfulSorts,6} 个");
+            Console.WriteLine($"  强制排出:    {report.Statistics.ForceEjects,6} 个");
+            Console.WriteLine($"  误分/失败:   {report.Statistics.Missorts,6} 个");
+            Console.WriteLine($"  完成率:      {completionRate,6:F1} %");
+            
+            if (isIncomplete)
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine();
+                Console.WriteLine("  ⚠️  警告: 仿真因超时提前结束，未达到目标完成率");
+                Console.ResetColor();
+            }
+            
+            Console.WriteLine();
+            Console.WriteLine("【小车环配置】");
+            Console.WriteLine($"  小车数量:    {report.CartRing.Length,6} 辆");
+            Console.WriteLine($"  小车间距:    {report.CartRing.CartSpacingMm,6:F1} mm");
+            
+            Console.WriteLine();
+            Console.WriteLine("【主线速度统计】");
+            Console.WriteLine($"  目标速度:    {report.MainDrive.TargetSpeedMmps,6:F1} mm/s");
+            Console.WriteLine($"  平均速度:    {report.MainDrive.AverageSpeedMmps,6:F1} mm/s");
+            Console.WriteLine($"  速度标准差:  {report.MainDrive.SpeedStdDevMmps,6:F2} mm/s");
+            Console.WriteLine($"  最小速度:    {report.MainDrive.MinSpeedMmps,6:F1} mm/s");
+            Console.WriteLine($"  最大速度:    {report.MainDrive.MaxSpeedMmps,6:F1} mm/s");
+            
+            Console.WriteLine();
+            Console.WriteLine("【性能指标】");
+            Console.WriteLine($"  仿真耗时:    {report.Statistics.DurationSeconds,6:F2} 秒");
+            if (report.Statistics.DurationSeconds > 0)
+            {
+                double throughput = report.Statistics.TotalParcels / report.Statistics.DurationSeconds;
+                Console.WriteLine($"  吞吐量:      {throughput,6:F1} 件/秒");
+            }
+            
+            Console.WriteLine();
             Console.WriteLine("════════════════════════════════════════\n");
 
             if (!string.IsNullOrEmpty(outputPath))
@@ -363,7 +412,10 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
 
                 var json = JsonSerializer.Serialize(report, jsonOptions);
                 await File.WriteAllTextAsync(outputPath, json, cts.Token);
-                Console.WriteLine($"报告已保存到: {outputPath}");
+                
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine($"✓ 详细报告已保存到: {outputPath}");
+                Console.ResetColor();
             }
         }
         catch (OperationCanceledException)
@@ -575,7 +627,17 @@ static async Task RunTraditionalSimulationAsync()
         return provider;
     });
 
-    builder.Services.AddSingleton<ParcelLoadCoordinator>();
+    builder.Services.AddSingleton(sp =>
+    {
+        var loadPlanner = sp.GetRequiredService<IParcelLoadPlanner>();
+        var coordinator = new ParcelLoadCoordinator(loadPlanner);
+        var logger = sp.GetRequiredService<ILogger<ParcelLoadCoordinator>>();
+        
+        // 设置日志委托
+        coordinator.SetLogAction(msg => logger.LogInformation(msg));
+        
+        return coordinator;
+    });
 
     // ============================================================================
     // 注册 Ingress 监视器
