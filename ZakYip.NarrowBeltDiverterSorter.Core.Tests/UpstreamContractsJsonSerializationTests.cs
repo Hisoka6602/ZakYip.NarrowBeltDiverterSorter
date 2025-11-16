@@ -267,4 +267,147 @@ public class UpstreamContractsJsonSerializationTests
         // Assert
         Assert.Equal(EmcLockNotificationType.HotReset, notificationType);
     }
+
+    [Fact]
+    public void ParcelRoutingRequestDto_Should_Serialize_With_CamelCase_Fields()
+    {
+        // Arrange
+        var request = new ParcelRoutingRequestDto
+        {
+            ParcelId = 1234567890123,
+            RequestTime = DateTimeOffset.Parse("2025-11-16T08:00:00Z")
+        };
+
+        // Act
+        var json = JsonSerializer.Serialize(request, _jsonOptions);
+
+        // Assert
+        Assert.Contains("\"parcelId\"", json);
+        Assert.Contains("\"requestTime\"", json);
+        Assert.Contains("1234567890123", json);
+    }
+
+    [Fact]
+    public void ParcelRoutingRequestDto_Should_Deserialize_From_CamelCase_Json()
+    {
+        // Arrange
+        var json = """
+        {
+            "parcelId": 1234567890123,
+            "requestTime": "2025-11-16T08:00:00Z"
+        }
+        """;
+
+        // Act
+        var request = JsonSerializer.Deserialize<ParcelRoutingRequestDto>(json, _jsonOptions);
+
+        // Assert
+        Assert.NotNull(request);
+        Assert.Equal(1234567890123, request.ParcelId);
+        Assert.Equal(DateTimeOffset.Parse("2025-11-16T08:00:00Z"), request.RequestTime);
+    }
+
+    [Fact]
+    public void ParcelRoutingResponseDto_Should_Serialize_With_CamelCase_Fields()
+    {
+        // Arrange
+        var response = new ParcelRoutingResponseDto
+        {
+            ParcelId = 1234567890123,
+            ChuteId = 5,
+            IsSuccess = true,
+            ErrorMessage = null,
+            ResponseTime = DateTimeOffset.Parse("2025-11-16T08:00:01Z")
+        };
+
+        // Act
+        var json = JsonSerializer.Serialize(response, _jsonOptions);
+
+        // Assert
+        Assert.Contains("\"parcelId\"", json);
+        Assert.Contains("\"chuteId\"", json);
+        Assert.Contains("\"isSuccess\"", json);
+        Assert.Contains("\"responseTime\"", json);
+        Assert.Contains("1234567890123", json);
+        Assert.Contains("5", json);
+        Assert.Contains("true", json);
+    }
+
+    [Fact]
+    public void ParcelRoutingResponseDto_Should_Deserialize_From_CamelCase_Json()
+    {
+        // Arrange
+        var json = """
+        {
+            "parcelId": 1234567890123,
+            "chuteId": 5,
+            "isSuccess": true,
+            "errorMessage": "测试错误",
+            "responseTime": "2025-11-16T08:00:01Z"
+        }
+        """;
+
+        // Act
+        var response = JsonSerializer.Deserialize<ParcelRoutingResponseDto>(json, _jsonOptions);
+
+        // Assert
+        Assert.NotNull(response);
+        Assert.Equal(1234567890123, response.ParcelId);
+        Assert.Equal(5, response.ChuteId);
+        Assert.True(response.IsSuccess);
+        Assert.Equal("测试错误", response.ErrorMessage);
+        Assert.Equal(DateTimeOffset.Parse("2025-11-16T08:00:01Z"), response.ResponseTime);
+    }
+
+    [Fact]
+    public void SortingResultReportDto_Should_Serialize_With_CamelCase_Fields()
+    {
+        // Arrange
+        var report = new SortingResultReportDto
+        {
+            ParcelId = 1234567890123,
+            ChuteId = 5,
+            IsSuccess = true,
+            FailureReason = null,
+            ReportTime = DateTimeOffset.Parse("2025-11-16T08:00:02Z")
+        };
+
+        // Act
+        var json = JsonSerializer.Serialize(report, _jsonOptions);
+
+        // Assert
+        Assert.Contains("\"parcelId\"", json);
+        Assert.Contains("\"chuteId\"", json);
+        Assert.Contains("\"isSuccess\"", json);
+        Assert.Contains("\"reportTime\"", json);
+        Assert.Contains("1234567890123", json);
+        Assert.Contains("5", json);
+        Assert.Contains("true", json);
+    }
+
+    [Fact]
+    public void SortingResultReportDto_Should_Deserialize_From_CamelCase_Json()
+    {
+        // Arrange
+        var json = """
+        {
+            "parcelId": 1234567890123,
+            "chuteId": 5,
+            "isSuccess": false,
+            "failureReason": "格口满载",
+            "reportTime": "2025-11-16T08:00:02Z"
+        }
+        """;
+
+        // Act
+        var report = JsonSerializer.Deserialize<SortingResultReportDto>(json, _jsonOptions);
+
+        // Assert
+        Assert.NotNull(report);
+        Assert.Equal(1234567890123, report.ParcelId);
+        Assert.Equal(5, report.ChuteId);
+        Assert.False(report.IsSuccess);
+        Assert.Equal("格口满载", report.FailureReason);
+        Assert.Equal(DateTimeOffset.Parse("2025-11-16T08:00:02Z"), report.ReportTime);
+    }
 }
