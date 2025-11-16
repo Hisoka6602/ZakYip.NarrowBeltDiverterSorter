@@ -90,4 +90,19 @@ public class SimulationConfiguration
     /// 固定格口ID（仅在 FixedChute 模式下使用）
     /// </summary>
     public int? FixedChuteId { get; set; } = null;
+    
+    /// <summary>
+    /// 仿真场景（例如：e2e-speed-unstable 用于测试速度不稳定场景）
+    /// </summary>
+    public string? Scenario { get; set; } = null;
+    
+    /// <summary>
+    /// 速度波动幅度（mm/s），用于不稳定速度场景
+    /// </summary>
+    public double SpeedOscillationAmplitude { get; set; } = 500.0;
+    
+    /// <summary>
+    /// 速度波动频率（Hz），用于不稳定速度场景
+    /// </summary>
+    public double SpeedOscillationFrequency { get; set; } = 0.5;
 }

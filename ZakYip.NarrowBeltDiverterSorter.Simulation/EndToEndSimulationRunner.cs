@@ -142,6 +142,7 @@ public class EndToEndSimulationRunner
         // 收集分拣配置信息
         var sortingConfigInfo = new SortingConfigInfo
         {
+            Scenario = _config.Scenario,
             SortingMode = _config.SortingMode.ToString(),
             FixedChuteId = _config.SortingMode == SortingMode.FixedChute ? _config.FixedChuteId : null,
             AvailableChutes = _config.NumberOfChutes - 1, // 排除强排口
