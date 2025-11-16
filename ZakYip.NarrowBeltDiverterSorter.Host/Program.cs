@@ -14,6 +14,7 @@ using ZakYip.NarrowBeltDiverterSorter.Drivers.Chute;
 using ZakYip.NarrowBeltDiverterSorter.Execution.MainLine;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Feeding;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Sorting;
+using ChuteSafetyService = ZakYip.NarrowBeltDiverterSorter.Execution.Sorting.ChuteSafetyService;
 using ZakYip.NarrowBeltDiverterSorter.Observability;
 using ZakYip.NarrowBeltDiverterSorter.Ingress.Chute;
 using ZakYip.NarrowBeltDiverterSorter.Infrastructure;
@@ -166,6 +167,9 @@ builder.Services.AddSingleton<IMainLineControlService, MainLineControlService>()
 builder.Services.AddSingleton<IMainLineSpeedProvider, MainLineSpeedProvider>();
 builder.Services.AddSingleton<IMainLineStabilityProvider, MainLineStabilityProvider>();
 
+// 注册格口安全控制服务
+builder.Services.AddSingleton<IChuteSafetyService, ChuteSafetyService>();
+
 // ============================================================================
 // 注册健康检查
 // ============================================================================
@@ -224,6 +228,9 @@ if (startupConfig.ShouldStartParcelRoutingWorker())
 
 // 注册占位符工作器（可以移除）
 builder.Services.AddHostedService<Worker>();
+
+// 注册安全控制工作器（确保最早启动，最晚停止）
+builder.Services.AddHostedService<SafetyControlWorker>();
 
 var host = builder.Build();
 
