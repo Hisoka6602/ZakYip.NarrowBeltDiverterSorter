@@ -35,8 +35,9 @@ public class FakeOriginSensorPort : IOriginSensorPort
             _secondSensorState = false;
         }
 
-        // Hold sensor state for enough time for OriginSensorMonitor to detect (at least 3 polling cycles)
-        await Task.Delay(35);
+        // Hold sensor state for enough time for OriginSensorMonitor to detect 
+        // Polling interval is 10ms by default, so 50ms gives 5 polling cycles for detection
+        await Task.Delay(50);
         
         // Reset sensor state
         _firstSensorState = false;
