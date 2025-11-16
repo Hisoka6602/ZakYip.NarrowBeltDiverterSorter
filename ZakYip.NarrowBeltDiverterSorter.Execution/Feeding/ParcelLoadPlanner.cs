@@ -1,5 +1,6 @@
 using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
+using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Carts;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Feeding;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Tracking;
 
@@ -15,6 +16,7 @@ public class ParcelLoadPlanner : IParcelLoadPlanner
     private readonly ICartPositionTracker _cartPositionTracker;
     private readonly IMainLineFeedbackPort _mainLineFeedback;
     private readonly IInfeedConveyorPort _infeedConveyor;
+    private readonly ICartLifecycleService _cartLifecycleService;
     private readonly InfeedLayoutOptions _options;
 
     /// <summary>
@@ -25,12 +27,14 @@ public class ParcelLoadPlanner : IParcelLoadPlanner
         ICartPositionTracker cartPositionTracker,
         IMainLineFeedbackPort mainLineFeedback,
         IInfeedConveyorPort infeedConveyor,
+        ICartLifecycleService cartLifecycleService,
         InfeedLayoutOptions options)
     {
         _cartRingBuilder = cartRingBuilder ?? throw new ArgumentNullException(nameof(cartRingBuilder));
         _cartPositionTracker = cartPositionTracker ?? throw new ArgumentNullException(nameof(cartPositionTracker));
         _mainLineFeedback = mainLineFeedback ?? throw new ArgumentNullException(nameof(mainLineFeedback));
         _infeedConveyor = infeedConveyor ?? throw new ArgumentNullException(nameof(infeedConveyor));
+        _cartLifecycleService = cartLifecycleService ?? throw new ArgumentNullException(nameof(cartLifecycleService));
         _options = options ?? throw new ArgumentNullException(nameof(options));
     }
 
@@ -77,9 +81,24 @@ public class ParcelLoadPlanner : IParcelLoadPlanner
             return Task.FromResult<CartId?>(null);
         }
 
-        // 获取该索引对应的 CartId
-        var predictedCartId = snapshot.CartIds[cartIndexAtDropPoint.Value.Value];
+        // 查找第一个未装载的小车（一个小车只能承载一个包裹）
+        // 从预测的落车点开始，向前搜索整个环
+        var ringLength = snapshot.RingLength.Value;
+        for (int offset = 0; offset < ringLength; offset++)
+        {
+            var cartIndex = (cartIndexAtDropPoint.Value.Value + offset) % ringLength;
+            var candidateCartId = snapshot.CartIds[cartIndex];
+            
+            // 检查该小车是否已经装载包裹
+            var cartSnapshot = _cartLifecycleService.Get(candidateCartId);
+            if (cartSnapshot != null && !cartSnapshot.IsLoaded)
+            {
+                // 找到未装载的小车
+                return Task.FromResult<CartId?>(candidateCartId);
+            }
+        }
 
-        return Task.FromResult<CartId?>(predictedCartId);
+        // 如果整个环的所有小车都已装载，返回null
+        return Task.FromResult<CartId?>(null);
     }
 }

@@ -112,6 +112,12 @@ public class EndToEndSimulationRunner
             var cartId = cartRingSnapshot.CartIds[i];
             _cartLifecycleService.InitializeCart(cartId, new CartIndex(i), DateTimeOffset.UtcNow);
         }
+        
+        // 手动初始化 CartPositionTracker - 在仿真环境中，我们知道零点车已经在原点位置
+        // 这样可以避免等待下一个零点车通过原点（可能需要等待整个环的时间）
+        _cartPositionTracker.OnCartPassedOrigin(DateTimeOffset.UtcNow);
+        _logger.LogInformation("[CartRing] 小车位置跟踪器已初始化");
+
 
         // 步骤 3: 等待包裹生成和处理完成
         _logger.LogInformation("步骤 3/4: 等待包裹生成和处理（目标: {ParcelCount} 个包裹）", parcelCount);

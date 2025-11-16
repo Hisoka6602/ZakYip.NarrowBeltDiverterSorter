@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using ZakYip.NarrowBeltDiverterSorter.Core.Domain.MainLine;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Tracking;
 using ZakYip.NarrowBeltDiverterSorter.Simulation.Fakes;
 
@@ -14,6 +15,7 @@ public class ParcelGeneratorWorker : BackgroundService
     private readonly SimulationConfiguration _config;
     private readonly FakeInfeedSensorPort _infeedSensor;
     private readonly ICartPositionTracker _cartPositionTracker;
+    private readonly IMainLineSpeedProvider _speedProvider;
     private readonly ILogger<ParcelGeneratorWorker> _logger;
     private long _parcelIdCounter = 1;
 
@@ -21,36 +23,66 @@ public class ParcelGeneratorWorker : BackgroundService
         SimulationConfiguration config,
         FakeInfeedSensorPort infeedSensor,
         ICartPositionTracker cartPositionTracker,
+        IMainLineSpeedProvider speedProvider,
         ILogger<ParcelGeneratorWorker> logger)
     {
         _config = config;
         _infeedSensor = infeedSensor;
         _cartPositionTracker = cartPositionTracker;
+        _speedProvider = speedProvider;
         _logger = logger;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("包裹生成器已启动，等待小车环就绪...");
+        _logger.LogInformation("包裹生成器已启动，等待系统就绪...");
 
-        // Wait for cart ring to be ready
-        const int maxWaitSeconds = 30;
+        // Wait for both cart ring and main line speed to be stable
+        const int maxWaitSeconds = 60;
         var timeout = DateTimeOffset.UtcNow.AddSeconds(maxWaitSeconds);
+        
+        bool cartRingReady = false;
+        bool speedStable = false;
         
         while (!stoppingToken.IsCancellationRequested && DateTimeOffset.UtcNow < timeout)
         {
-            if (_cartPositionTracker.IsInitialized)
+            // Check cart ring readiness
+            if (!cartRingReady && _cartPositionTracker.IsRingReady)
             {
-                _logger.LogInformation("小车环已就绪，开始生成包裹");
+                cartRingReady = true;
+                _logger.LogInformation("小车环已就绪");
+            }
+            
+            // Check speed stability
+            if (!speedStable && _speedProvider.IsSpeedStable)
+            {
+                speedStable = true;
+                _logger.LogInformation(
+                    "主线速度已稳定 - 当前速度: {CurrentSpeed:F1} mm/s, 稳定持续: {StableDuration:F1}秒",
+                    _speedProvider.CurrentMmps,
+                    _speedProvider.StableDuration.TotalSeconds);
+            }
+            
+            // Both conditions met
+            if (cartRingReady && speedStable)
+            {
+                _logger.LogInformation("系统已就绪，开始生成包裹");
                 break;
             }
             
             await Task.Delay(500, stoppingToken);
         }
         
-        if (!_cartPositionTracker.IsInitialized)
+        if (!cartRingReady)
         {
             _logger.LogWarning("等待小车环就绪超时，包裹生成器可能无法正常工作");
+        }
+        
+        if (!speedStable)
+        {
+            _logger.LogWarning(
+                "等待主线速度稳定超时 (当前速度: {CurrentSpeed:F1} mm/s)，开始生成包裹但可能影响分拣质量",
+                _speedProvider.CurrentMmps);
         }
 
         // Additional delay for system stabilization

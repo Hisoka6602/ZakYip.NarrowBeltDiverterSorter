@@ -22,24 +22,29 @@ public class FakeOriginSensorPort : IOriginSensorPort
 
     public async Task SimulateCartPassingAsync(bool isCartZero)
     {
+        // Simulate cart passing origin sensor with realistic timing
+        // First sensor blocked
+        _firstSensorState = true;
+        _secondSensorState = false;
+        await Task.Delay(25); // Front of cart passes first sensor
+        
         if (isCartZero)
         {
-            // 0号车：双IO都触发
-            _firstSensorState = true;
+            // 0号车：双IO都触发 (both sensors blocked simultaneously)
             _secondSensorState = true;
+            await Task.Delay(50); // Both sensors blocked
         }
         else
         {
             // 普通车：只触发单个IO
-            _firstSensorState = true;
-            _secondSensorState = false;
+            await Task.Delay(50); // Only first sensor blocked
         }
-
-        // Hold sensor state for enough time for OriginSensorMonitor to detect (at least 3 polling cycles)
-        await Task.Delay(35);
         
-        // Reset sensor state
+        // Reset both sensors (cart has completely passed)
         _firstSensorState = false;
         _secondSensorState = false;
+        
+        // Small delay to ensure monitor detects the unblocked state
+        await Task.Delay(25);
     }
 }

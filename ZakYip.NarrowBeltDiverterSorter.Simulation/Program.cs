@@ -310,7 +310,7 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
                 parcelLifecycleService.UpdateRouteState(args.ParcelId, ParcelRouteState.Routed);
                 
                 logger.LogInformation(
-                    "包裹 {ParcelId} 已装载到小车 {CartId}",
+                    "[上车确认] 包裹 {ParcelId} 已上车到小车 {CartId}",
                     args.ParcelId.Value,
                     args.CartId.Value);
             }
@@ -361,6 +361,13 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
     // Enable main line setpoint for E2E scenario
     var e2eSetpointProvider = app.Services.GetRequiredService<SimulationMainLineSetpoint>();
     e2eSetpointProvider.SetSetpoint(true, (decimal)simulationConfig.MainLineSpeedMmPerSec);
+    
+    // Start and configure fake infeed conveyor for E2E scenario
+    await fakeInfeedConveyor.StartAsync();
+    await fakeInfeedConveyor.SetSpeedAsync(simulationConfig.InfeedConveyorSpeedMmPerSec);
+    
+    // Start fake main line drive for E2E scenario
+    await fakeMainLineDrive.StartAsync();
     
     Console.WriteLine("开始仿真...\n");
     

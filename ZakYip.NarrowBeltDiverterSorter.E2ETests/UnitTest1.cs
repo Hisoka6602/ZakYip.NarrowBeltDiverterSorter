@@ -33,11 +33,14 @@ public class EndToEndSimulationTests
             CartOffsetCalibration = 0 // 入口落车点在原点位置（偏移0）
         };
 
+        var cartLifecycleService = new CartLifecycleService();
+
         var parcelLoadPlanner = new ParcelLoadPlanner(
             cartRingBuilder,
             cartPositionTracker,
             mainLineFeedback,
             infeedConveyor,
+            cartLifecycleService,
             infeedLayoutOptions);
 
         var loadCoordinator = new ParcelLoadCoordinator(parcelLoadPlanner);
@@ -52,6 +55,13 @@ public class EndToEndSimulationTests
         var snapshot = cartRingBuilder.CurrentSnapshot;
         Assert.NotNull(snapshot);
         Assert.Equal(10, snapshot.RingLength.Value);
+
+        // 初始化小车到 CartLifecycleService
+        for (int i = 0; i < snapshot.RingLength.Value; i++)
+        {
+            var cartId = snapshot.CartIds[i];
+            cartLifecycleService.InitializeCart(cartId, new CartIndex(i), DateTimeOffset.UtcNow);
+        }
 
         // 步骤 2: 模拟小车经过原点，初始化位置跟踪器
         // 假设开始时小车0在原点
@@ -154,11 +164,14 @@ public class EndToEndSimulationTests
             CartOffsetCalibration = 3 // 入口落车点在原点偏移3个小车的位置
         };
 
+        var cartLifecycleService = new CartLifecycleService();
+
         var parcelLoadPlanner = new ParcelLoadPlanner(
             cartRingBuilder,
             cartPositionTracker,
             mainLineFeedback,
             infeedConveyor,
+            cartLifecycleService,
             infeedLayoutOptions);
 
         var loadCoordinator = new ParcelLoadCoordinator(parcelLoadPlanner);
@@ -168,6 +181,16 @@ public class EndToEndSimulationTests
 
         // 构建小车环
         BuildCartRing(cartRingBuilder, 10);
+
+        var snapshot = cartRingBuilder.CurrentSnapshot;
+        Assert.NotNull(snapshot);
+
+        // 初始化小车到 CartLifecycleService
+        for (int i = 0; i < snapshot.RingLength.Value; i++)
+        {
+            var cartId = snapshot.CartIds[i];
+            cartLifecycleService.InitializeCart(cartId, new CartIndex(i), DateTimeOffset.UtcNow);
+        }
 
         // 初始化位置跟踪器（小车0在原点）
         cartPositionTracker.OnCartPassedOrigin(DateTimeOffset.UtcNow);
@@ -208,11 +231,14 @@ public class EndToEndSimulationTests
             CartOffsetCalibration = 0
         };
 
+        var cartLifecycleService = new CartLifecycleService();
+
         var parcelLoadPlanner = new ParcelLoadPlanner(
             cartRingBuilder,
             cartPositionTracker,
             mainLineFeedback,
             infeedConveyor,
+            cartLifecycleService,
             infeedLayoutOptions);
 
         var loadCoordinator = new ParcelLoadCoordinator(parcelLoadPlanner);
