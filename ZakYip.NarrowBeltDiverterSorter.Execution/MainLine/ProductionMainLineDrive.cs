@@ -73,4 +73,11 @@ public sealed class ProductionMainLineDrive : IMainLineDrive
             return _stabilityProvider.IsStable;
         }
     }
+
+    /// <inheritdoc/>
+    public Task<decimal> GetCurrentSpeedAsync(CancellationToken cancellationToken = default)
+    {
+        // 从反馈端口获取当前实际速度
+        return Task.FromResult((decimal)_feedbackPort.GetCurrentSpeed());
+    }
 }

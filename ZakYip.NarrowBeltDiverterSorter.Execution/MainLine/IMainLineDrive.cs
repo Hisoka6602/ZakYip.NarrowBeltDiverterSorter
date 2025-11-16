@@ -19,4 +19,10 @@ public interface IMainLineDrive
 
     /// <summary>当前是否满足"稳速"判定。</summary>
     bool IsSpeedStable { get; }
+    
+    /// <summary>
+    /// 异步读取当前速度，单位：mm/s。
+    /// 对于仿真模式，返回内部模拟速度；对于 Rema 模式，从硬件读取真实速度。
+    /// </summary>
+    Task<decimal> GetCurrentSpeedAsync(CancellationToken cancellationToken = default);
 }

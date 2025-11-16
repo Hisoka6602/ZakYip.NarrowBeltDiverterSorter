@@ -25,6 +25,11 @@ public sealed class RemaLm1000HMainLineDrive : IMainLineDrive, IDisposable
     private readonly object _lock = new();
     private bool _isRunning;
     private bool _disposed;
+    
+    // 反馈失败保护
+    private int _consecutiveReadFailures = 0;
+    private const int MaxConsecutiveFailures = 5;
+    private bool _feedbackUnavailable = false;
 
     public RemaLm1000HMainLineDrive(
         ILogger<RemaLm1000HMainLineDrive> logger,
@@ -110,6 +115,75 @@ public sealed class RemaLm1000HMainLineDrive : IMainLineDrive, IDisposable
             {
                 return _isSpeedStable;
             }
+        }
+    }
+
+    /// <summary>
+    /// 反馈是否可用
+    /// </summary>
+    public bool IsFeedbackAvailable
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return !_feedbackUnavailable;
+            }
+        }
+    }
+
+    /// <summary>
+    /// 异步读取当前速度（mm/s）
+    /// 直接从 C0.26 寄存器读取编码器反馈频率并转换为线速
+    /// </summary>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>当前速度（mm/s）</returns>
+    public async Task<decimal> GetCurrentSpeedAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // 读取当前速度
+            var encoderFreqRegister = await _transport.ReadRegisterAsync(
+                RemaRegisters.C0_26_EncoderFrequency, 
+                cancellationToken);
+            
+            var currentHz = ConvertRegisterValueToHz(encoderFreqRegister);
+            var currentMmps = ConvertHzToMmps(currentHz);
+            
+            // 读取成功，重置失败计数器
+            lock (_lock)
+            {
+                _consecutiveReadFailures = 0;
+                if (_feedbackUnavailable)
+                {
+                    _feedbackUnavailable = false;
+                    _logger.LogInformation("主线速度反馈已恢复");
+                }
+            }
+            
+            return currentMmps;
+        }
+        catch (Exception ex)
+        {
+            lock (_lock)
+            {
+                _consecutiveReadFailures++;
+                
+                if (_consecutiveReadFailures >= MaxConsecutiveFailures && !_feedbackUnavailable)
+                {
+                    _feedbackUnavailable = true;
+                    _logger.LogError(ex, 
+                        "主线速度反馈不可用 - 连续 {Count} 次读取失败", 
+                        _consecutiveReadFailures);
+                }
+            }
+            
+            _logger.LogWarning(ex, 
+                "读取主线速度失败（第 {Count}/{Max} 次）", 
+                _consecutiveReadFailures, MaxConsecutiveFailures);
+            
+            // 返回当前缓存的速度值
+            return CurrentSpeedMmps;
         }
     }
 
@@ -259,6 +333,14 @@ public sealed class RemaLm1000HMainLineDrive : IMainLineDrive, IDisposable
             {
                 _currentSpeedMmps = currentMmps;
                 targetMmps = _targetSpeedMmps;
+                
+                // 读取成功，重置失败计数器
+                _consecutiveReadFailures = 0;
+                if (_feedbackUnavailable)
+                {
+                    _feedbackUnavailable = false;
+                    _logger.LogInformation("主线速度反馈已恢复");
+                }
             }
             
             // 更新稳定性状态
@@ -266,7 +348,22 @@ public sealed class RemaLm1000HMainLineDrive : IMainLineDrive, IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "控制循环读取速度异常");
+            lock (_lock)
+            {
+                _consecutiveReadFailures++;
+                
+                if (_consecutiveReadFailures >= MaxConsecutiveFailures && !_feedbackUnavailable)
+                {
+                    _feedbackUnavailable = true;
+                    _logger.LogError(ex, 
+                        "主线速度反馈不可用 - 连续 {Count} 次读取失败", 
+                        _consecutiveReadFailures);
+                }
+            }
+            
+            _logger.LogWarning(ex, 
+                "控制循环读取速度失败（第 {Count}/{Max} 次）", 
+                _consecutiveReadFailures, MaxConsecutiveFailures);
         }
     }
 
