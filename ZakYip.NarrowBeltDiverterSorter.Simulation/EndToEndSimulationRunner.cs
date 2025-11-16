@@ -186,12 +186,12 @@ public class EndToEndSimulationRunner
 
         while (DateTime.UtcNow < timeout && !cancellationToken.IsCancellationRequested)
         {
-            // 检查小车环是否已构建完成
+            // 检查小车环是否已构建完成并就绪
             var snapshot = _cartRingBuilder.CurrentSnapshot;
-            if (snapshot != null && _cartPositionTracker.IsInitialized)
+            if (snapshot != null && _cartPositionTracker.IsRingReady)
             {
                 _logger.LogInformation(
-                    "小车环构建完成 - 小车数量: {CartCount}, 零点车ID: {ZeroCartId}",
+                    "小车环已就绪 - 小车数量: {CartCount}, 零点车ID: {ZeroCartId}",
                     snapshot.RingLength.Value,
                     snapshot.ZeroCartId.Value);
                 return;
@@ -201,16 +201,16 @@ public class EndToEndSimulationRunner
             if ((DateTime.UtcNow - lastLogTime).TotalSeconds >= 5)
             {
                 _logger.LogDebug(
-                    "等待小车环就绪... (快照: {HasSnapshot}, 跟踪器初始化: {IsInitialized})",
+                    "等待小车环就绪... (快照: {HasSnapshot}, 跟踪器就绪: {IsRingReady})",
                     snapshot != null,
-                    _cartPositionTracker.IsInitialized);
+                    _cartPositionTracker.IsRingReady);
                 lastLogTime = DateTime.UtcNow;
             }
 
             await Task.Delay(100, cancellationToken);
         }
 
-        throw new TimeoutException($"小车环未能在 {maxWaitSeconds} 秒内完成构建");
+        throw new TimeoutException($"小车环未能在 {maxWaitSeconds} 秒内完成构建并就绪");
     }
 
     /// <summary>

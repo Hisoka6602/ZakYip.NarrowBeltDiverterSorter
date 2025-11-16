@@ -12,6 +12,12 @@ public interface ICartPositionTracker
     bool IsInitialized { get; }
 
     /// <summary>
+    /// 获取小车环是否已就绪
+    /// 就绪条件：至少一圈原点双IO已校准 + 所有cartId已建立初始相位
+    /// </summary>
+    bool IsRingReady { get; }
+
+    /// <summary>
     /// 获取当前原点位置的小车索引
     /// </summary>
     CartIndex? CurrentOriginCartIndex { get; }
