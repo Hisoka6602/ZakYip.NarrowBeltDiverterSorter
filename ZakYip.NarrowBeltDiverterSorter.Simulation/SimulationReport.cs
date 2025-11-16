@@ -54,6 +54,31 @@ public record class SimulationStatistics
     public int Missorts { get; init; }
 
     /// <summary>
+    /// 未处理数
+    /// </summary>
+    public int Unprocessed { get; init; }
+
+    /// <summary>
+    /// 正常落格率
+    /// </summary>
+    public double SuccessRate { get; init; }
+
+    /// <summary>
+    /// 强排率
+    /// </summary>
+    public double ForceEjectRate { get; init; }
+
+    /// <summary>
+    /// 误分率
+    /// </summary>
+    public double MissortRate { get; init; }
+
+    /// <summary>
+    /// 未处理率
+    /// </summary>
+    public double UnprocessedRate { get; init; }
+
+    /// <summary>
     /// 仿真开始时间
     /// </summary>
     public DateTime StartTime { get; init; }

@@ -367,30 +367,27 @@ public class EndToEndSimulationRunner
 
         foreach (var parcel in allParcels)
         {
-            // 根据 RouteState 判断包裹分拣结果
-            var isSuccess = parcel.RouteState == ParcelRouteState.Sorted;
-            var isForceEject = parcel.RouteState == ParcelRouteState.ForceEjected;
-            var isFailed = parcel.RouteState == ParcelRouteState.Failed;
+            // 根据 SortingOutcome 判断包裹分拣结果
+            var outcome = parcel.SortingOutcome ?? ParcelSortingOutcome.Unprocessed;
+            var isSuccess = outcome == ParcelSortingOutcome.NormalSort;
+            var isForceEject = outcome == ParcelSortingOutcome.ForceEject;
             
             // 确定实际格口ID
-            int? actualChuteId = null;
-            string? failureReason = null;
+            int? actualChuteId = parcel.ActualChuteId != null ? (int)parcel.ActualChuteId.Value.Value : null;
             
-            if (isSuccess && parcel.TargetChuteId.HasValue)
+            // 确定失败原因
+            string? failureReason = null;
+            if (outcome == ParcelSortingOutcome.ForceEject)
             {
-                // 正常分拣：实际格口 = 目标格口
-                actualChuteId = (int)parcel.TargetChuteId.Value.Value;
-            }
-            else if (isForceEject)
-            {
-                // 强排：实际格口 = 强排口
-                actualChuteId = _config.ForceEjectChuteId;
                 failureReason = "强排";
             }
-            else if (isFailed)
+            else if (outcome == ParcelSortingOutcome.Missort)
             {
-                // 失败：没有实际格口
-                failureReason = "分拣失败";
+                failureReason = "误分";
+            }
+            else if (outcome == ParcelSortingOutcome.Unprocessed)
+            {
+                failureReason = "未处理";
             }
 
             details.Add(new ParcelDetail
@@ -414,38 +411,29 @@ public class EndToEndSimulationRunner
         var allParcels = _parcelLifecycleService.GetAll();
         var totalParcels = allParcels.Count;
 
-        // 统计各类包裹
-        var forceEjects = 0;
-        var successful = 0;
-        var missorts = 0;
+        // 统计各类包裹，基于 SortingOutcome
+        var normalSorts = allParcels.Count(p => p.SortingOutcome == ParcelSortingOutcome.NormalSort);
+        var forceEjects = allParcels.Count(p => p.SortingOutcome == ParcelSortingOutcome.ForceEject);
+        var missorts = allParcels.Count(p => p.SortingOutcome == ParcelSortingOutcome.Missort);
+        var unprocessed = allParcels.Count(p => p.SortingOutcome == ParcelSortingOutcome.Unprocessed || p.SortingOutcome == null);
 
-        foreach (var parcel in allParcels)
-        {
-            // 根据包裹最终状态统计
-            // 1. 正常落格：RouteState.Sorted（已成功分拣到目标格口）
-            if (parcel.RouteState == ParcelRouteState.Sorted)
-            {
-                successful++;
-            }
-            // 2. 强排：RouteState.ForceEjected（被强制排出到强排口）
-            else if (parcel.RouteState == ParcelRouteState.ForceEjected)
-            {
-                forceEjects++;
-            }
-            // 3. 误分/失败：RouteState.Failed（未能成功分拣或路由失败）
-            else if (parcel.RouteState == ParcelRouteState.Failed)
-            {
-                missorts++;
-            }
-            // 注意：其他状态（WaitingForRouting, Routed, Sorting）表示未完成，不计入统计
-        }
+        // 计算比率
+        double successRate = totalParcels > 0 ? (double)normalSorts / totalParcels : 0.0;
+        double forceEjectRate = totalParcels > 0 ? (double)forceEjects / totalParcels : 0.0;
+        double missortRate = totalParcels > 0 ? (double)missorts / totalParcels : 0.0;
+        double unprocessedRate = totalParcels > 0 ? (double)unprocessed / totalParcels : 0.0;
 
         return new SimulationStatistics
         {
             TotalParcels = totalParcels,
-            SuccessfulSorts = successful,
+            SuccessfulSorts = normalSorts,
             ForceEjects = forceEjects,
             Missorts = missorts,
+            Unprocessed = unprocessed,
+            SuccessRate = successRate,
+            ForceEjectRate = forceEjectRate,
+            MissortRate = missortRate,
+            UnprocessedRate = unprocessedRate,
             StartTime = startTime,
             EndTime = DateTime.UtcNow,
             DurationSeconds = duration.TotalSeconds

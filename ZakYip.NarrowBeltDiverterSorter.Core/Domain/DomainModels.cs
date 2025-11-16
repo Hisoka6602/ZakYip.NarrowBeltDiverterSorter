@@ -39,6 +39,16 @@ public record class ParcelSnapshot
     /// 分拣完成时间
     /// </summary>
     public DateTimeOffset? SortedAt { get; init; }
+
+    /// <summary>
+    /// 分拣结果
+    /// </summary>
+    public ParcelSortingOutcome? SortingOutcome { get; init; }
+
+    /// <summary>
+    /// 实际格口ID（实际落格位置）
+    /// </summary>
+    public ChuteId? ActualChuteId { get; init; }
 }
 
 /// <summary>
