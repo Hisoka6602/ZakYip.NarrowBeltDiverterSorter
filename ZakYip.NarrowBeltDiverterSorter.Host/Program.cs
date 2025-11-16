@@ -12,6 +12,7 @@ using ZakYip.NarrowBeltDiverterSorter.Drivers.MainLine;
 using ZakYip.NarrowBeltDiverterSorter.Drivers.Cart;
 using ZakYip.NarrowBeltDiverterSorter.Drivers.Chute;
 using ZakYip.NarrowBeltDiverterSorter.Execution.MainLine;
+using ZakYip.NarrowBeltDiverterSorter.Execution.MainLine.Rema;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Feeding;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Sorting;
 using ChuteSafetyService = ZakYip.NarrowBeltDiverterSorter.Execution.Sorting.ChuteSafetyService;
@@ -80,6 +81,14 @@ builder.Services.Configure<ChuteMappingConfiguration>(
 builder.Services.Configure<FieldBusClientConfiguration>(
     builder.Configuration.GetSection("FieldBus"));
 
+// 配置主线驱动实现选项
+builder.Services.Configure<MainLineDriveOptions>(
+    builder.Configuration.GetSection(MainLineDriveOptions.SectionName));
+
+// 配置 RemaLm1000H 选项
+builder.Services.Configure<RemaLm1000HOptions>(
+    builder.Configuration.GetSection("RemaLm1000H"));
+
 // ============================================================================
 // 注册事件总线 (Observability)
 // ============================================================================
@@ -120,13 +129,60 @@ builder.Services.AddHttpClient<IUpstreamSortingApiClient, UpstreamSortingApiClie
 // 注册现场总线客户端
 builder.Services.AddSingleton<IFieldBusClient, FieldBusClient>();
 
-// 注册主线驱动和反馈端口（单例）
-builder.Services.AddSingleton<RemaMainLineDrive>();
-builder.Services.AddSingleton<IMainLineDrivePort>(sp => sp.GetRequiredService<RemaMainLineDrive>());
-builder.Services.AddSingleton<IMainLineFeedbackPort>(sp => sp.GetRequiredService<RemaMainLineDrive>());
+// ============================================================================
+// 根据配置注册主线驱动实现
+// ============================================================================
 
-// 注册 ProductionMainLineDrive（IMainLineDrive 实现）
-builder.Services.AddSingleton<IMainLineDrive, ProductionMainLineDrive>();
+var mainLineDriveOptions = builder.Configuration
+    .GetSection(MainLineDriveOptions.SectionName)
+    .Get<MainLineDriveOptions>() ?? new MainLineDriveOptions();
+
+switch (mainLineDriveOptions.Implementation)
+{
+    case MainLineDriveImplementation.Simulation:
+        // 注册仿真主线驱动和端口
+        var fakeMainLineDrive = new FakeMainLineDrivePort();
+        var fakeMainLineFeedback = new FakeMainLineFeedbackPort(fakeMainLineDrive);
+        
+        builder.Services.AddSingleton(fakeMainLineDrive);
+        builder.Services.AddSingleton(fakeMainLineFeedback);
+        builder.Services.AddSingleton<IMainLineDrivePort>(fakeMainLineDrive);
+        builder.Services.AddSingleton<IMainLineFeedbackPort>(fakeMainLineFeedback);
+        
+        // 注册 SimulatedMainLineDrive 为 IMainLineDrive
+        builder.Services.AddSingleton<IMainLineDrive, SimulatedMainLineDrive>();
+        
+        // 注册标准 MainLineControlService（使用 PID 控制）
+        builder.Services.AddSingleton<IMainLineControlService, MainLineControlService>();
+        
+        Console.WriteLine("主线驱动实现: 仿真主线");
+        break;
+
+    case MainLineDriveImplementation.RemaLm1000H:
+        // 注册 RemaLm1000HTransport（使用桩实现用于测试）
+        builder.Services.AddSingleton<IRemaLm1000HTransport, StubRemaLm1000HTransport>();
+        
+        // 注册 RemaLm1000HMainLineDrive
+        builder.Services.AddSingleton<RemaLm1000HMainLineDrive>();
+        
+        // 注册 IMainLineDrive（指向 RemaLm1000HMainLineDrive）
+        builder.Services.AddSingleton<IMainLineDrive>(sp => sp.GetRequiredService<RemaLm1000HMainLineDrive>());
+        
+        // 注册 RemaMainLineControlServiceAdapter 作为 IMainLineControlService
+        // 用于适配 MainLineControlWorker 的启动/停止流程
+        builder.Services.AddSingleton<IMainLineControlService, RemaMainLineControlServiceAdapter>();
+        
+        // 注册占位符端口用于其他可能的依赖
+        builder.Services.AddSingleton<IMainLineDrivePort, StubMainLineDrivePort>();
+        builder.Services.AddSingleton<IMainLineFeedbackPort, StubMainLineFeedbackPort>();
+        
+        Console.WriteLine("主线驱动实现: Rema LM1000H");
+        break;
+
+    default:
+        throw new InvalidOperationException(
+            $"不支持的主线驱动实现类型: {mainLineDriveOptions.Implementation}");
+}
 
 // 注册小车参数驱动
 builder.Services.AddSingleton<ICartParameterPort, CartParameterDriver>();
@@ -165,8 +221,8 @@ builder.Services.AddSingleton<IParcelLoadPlanner, ParcelLoadPlanner>();
 // 注册分拣计划器
 builder.Services.AddSingleton<ISortingPlanner, SortingPlanner>();
 
-// 注册主线控制服务和速度提供者
-builder.Services.AddSingleton<IMainLineControlService, MainLineControlService>();
+// 注册主线速度提供者和稳定性提供者
+// 注意：IMainLineControlService 已在主线驱动配置中根据实现类型注册
 builder.Services.AddSingleton<IMainLineSpeedProvider, MainLineSpeedProvider>();
 builder.Services.AddSingleton<IMainLineStabilityProvider, MainLineStabilityProvider>();
 
@@ -240,6 +296,7 @@ var host = builder.Build();
 // 输出启动信息
 var logger = host.Services.GetRequiredService<ILogger<Program>>();
 logger.LogInformation("=== 系统启动模式: {Mode} ===", startupConfig.GetModeDescription());
+logger.LogInformation("主线驱动实现: {Implementation}", mainLineDriveOptions.GetImplementationDescription());
 logger.LogInformation("已启动服务:");
 if (startupConfig.ShouldStartMainLineControl())
     logger.LogInformation("  - 主线控制工作器 (MainLineControlWorker)");
