@@ -54,4 +54,24 @@ public class MainLineControlOptions
     /// 积分限幅
     /// </summary>
     public decimal IntegralLimit { get; set; } = 1000m;
+
+    /// <summary>
+    /// 创建默认配置
+    /// </summary>
+    public static MainLineControlOptions CreateDefault()
+    {
+        return new MainLineControlOptions
+        {
+            TargetSpeedMmps = 1000m,
+            LoopPeriod = TimeSpan.FromMilliseconds(100),
+            ProportionalGain = 1.0m,
+            IntegralGain = 0.1m,
+            DerivativeGain = 0.01m,
+            StableDeadbandMmps = 10m,
+            StableHold = TimeSpan.FromSeconds(2),
+            MinOutputMmps = 0m,
+            MaxOutputMmps = 5000m,
+            IntegralLimit = 1000m
+        };
+    }
 }

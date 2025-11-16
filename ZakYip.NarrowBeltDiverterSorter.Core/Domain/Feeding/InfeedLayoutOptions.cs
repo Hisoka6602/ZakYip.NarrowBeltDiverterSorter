@@ -19,4 +19,17 @@ public record class InfeedLayoutOptions
     /// 以小车数计的偏移校准
     /// </summary>
     public required int CartOffsetCalibration { get; init; }
+
+    /// <summary>
+    /// 创建默认配置
+    /// </summary>
+    public static InfeedLayoutOptions CreateDefault()
+    {
+        return new InfeedLayoutOptions
+        {
+            InfeedToMainLineDistanceMm = 5000m,
+            TimeToleranceMs = 100,
+            CartOffsetCalibration = 0
+        };
+    }
 }

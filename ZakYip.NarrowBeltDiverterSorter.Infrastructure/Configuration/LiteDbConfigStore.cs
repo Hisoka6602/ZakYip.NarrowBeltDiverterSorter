@@ -19,14 +19,24 @@ public class LiteDbConfigStore : IConfigStore, IDisposable
     /// </summary>
     /// <param name="logger">日志记录器</param>
     public LiteDbConfigStore(ILogger<LiteDbConfigStore> logger)
+        : this(logger, DatabaseFileName)
+    {
+    }
+
+    /// <summary>
+    /// 初始化 LiteDB 配置存储（测试友好）
+    /// </summary>
+    /// <param name="logger">日志记录器</param>
+    /// <param name="databaseFileName">数据库文件名</param>
+    public LiteDbConfigStore(ILogger<LiteDbConfigStore> logger, string databaseFileName)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         try
         {
-            var connectionString = $"Filename={DatabaseFileName};Connection=shared";
+            var connectionString = $"Filename={databaseFileName};Connection=shared";
             _database = new LiteDatabase(connectionString);
-            _logger.LogInformation("已初始化配置数据库: {DatabaseFile}", DatabaseFileName);
+            _logger.LogInformation("已初始化配置数据库: {DatabaseFile}", databaseFileName);
         }
         catch (Exception ex)
         {
