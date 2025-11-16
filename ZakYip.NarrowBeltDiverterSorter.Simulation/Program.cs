@@ -65,9 +65,10 @@ builder.Services.Configure<MainLineControlOptions>(options =>
     options.StableDeadbandMmps = 50m;
 });
 
-builder.Services.Configure<SortingPlannerOptions>(options =>
+// Register SortingPlannerOptions directly as singleton
+builder.Services.AddSingleton(new SortingPlannerOptions
 {
-    options.CartSpacingMm = simulationConfig.CartSpacingMm;
+    CartSpacingMm = simulationConfig.CartSpacingMm
 });
 
 builder.Services.Configure<SortingExecutionOptions>(options =>
@@ -97,6 +98,7 @@ builder.Services.AddSingleton(fakeMainLineFeedback);
 builder.Services.AddSingleton<IMainLineFeedbackPort>(fakeMainLineFeedback);
 
 var fakeFieldBus = new FakeFieldBusClient();
+builder.Services.AddSingleton(fakeFieldBus);
 builder.Services.AddSingleton<IFieldBusClient>(fakeFieldBus);
 
 var fakeInfeedSensor = new FakeInfeedSensorPort();
@@ -108,6 +110,7 @@ builder.Services.AddSingleton(fakeOriginSensor);
 builder.Services.AddSingleton<IOriginSensorPort>(fakeOriginSensor);
 
 var fakeInfeedConveyor = new FakeInfeedConveyorPort();
+builder.Services.AddSingleton(fakeInfeedConveyor);
 builder.Services.AddSingleton<IInfeedConveyorPort>(fakeInfeedConveyor);
 
 var fakeChuteTransmitter = new FakeChuteTransmitterPort();

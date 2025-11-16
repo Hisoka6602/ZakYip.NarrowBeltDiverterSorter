@@ -29,6 +29,9 @@
 - **ZakYip.NarrowBeltDiverterSorter.Host**  
   运行宿主层，支持 Windows 服务和控制台模式的应用程序入口
 
+- **ZakYip.NarrowBeltDiverterSorter.Simulation**  
+  仿真程序层，使用 Fake 实现替代真实硬件，模拟完整的分拣流程
+
 ### 测试项目 (Test Projects)
 
 - **ZakYip.NarrowBeltDiverterSorter.Core.Tests**  
@@ -72,3 +75,32 @@ dotnet test
 cd ZakYip.NarrowBeltDiverterSorter.Host
 dotnet run
 ```
+
+### 运行仿真程序 (Run Simulation)
+
+仿真程序提供了一个完整的模拟环境，使用 Fake 实现替代真实硬件：
+
+```bash
+cd ZakYip.NarrowBeltDiverterSorter.Simulation
+dotnet run
+```
+
+仿真功能包括：
+- 模拟主线驱动和反馈
+- 模拟小车运动和原点传感器
+- 模拟入口传感器和包裹生成
+- 模拟格口发信器和分拣过程
+- 中文控制台日志输出
+
+详细设计文档请参阅 [docs/NarrowBeltDesign.md](docs/NarrowBeltDesign.md)
+
+## 文档 (Documentation)
+
+- [NarrowBeltDesign.md](docs/NarrowBeltDesign.md) - 窄带分拣机设计文档，包含：
+  - 与 WheelDiverterSorter 的异同对比
+  - 双 IO 数小车算法说明
+  - 入口 IO 到落车的时间-位置换算
+  - 主驱稳速与格口发信器窗口控制
+  - 强排口清空策略
+
+- [SORTING_SYSTEM.md](SORTING_SYSTEM.md) - 分拣系统实现文档
