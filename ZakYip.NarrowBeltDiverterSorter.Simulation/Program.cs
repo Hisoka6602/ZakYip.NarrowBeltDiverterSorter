@@ -33,16 +33,17 @@ Console.WriteLine("════════════════════�
 
 var scenarioOption = new Option<string?>(
     name: "--scenario",
-    description: "场景名称，例如 narrowbelt-e2e");
+    getDefaultValue: () => "legacy",
+    description: "仿真场景：legacy（传统仿真，60秒持续运行）或 e2e-report（端到端仿真并输出报告）");
 
 var parcelCountOption = new Option<int>(
     name: "--parcel-count",
-    getDefaultValue: () => 50,
-    description: "本次仿真包裹数量");
+    getDefaultValue: () => 20,
+    description: "本次仿真包裹数量（仅在 e2e-report 模式下生效）");
 
 var outputOption = new Option<string?>(
     name: "--output",
-    description: "报告输出路径，例如 simulation-report.json");
+    description: "报告输出路径，例如 simulation-report.json（仅在 e2e-report 模式下生效）");
 
 var resetConfigOption = new Option<bool>(
     name: "--reset-config",
@@ -66,14 +67,14 @@ return await rootCommand.InvokeAsync(args);
 
 static async Task RunSimulationAsync(string? scenario, int parcelCount, string? output, bool resetConfig)
 {
-    // 如果指定了 E2E 场景，运行 E2E 模式
-    if (scenario == "narrowbelt-e2e")
+    // 如果指定了 E2E 报告场景，运行 E2E 模式
+    if (scenario == "e2e-report")
     {
         await RunE2EScenarioAsync(parcelCount, output, resetConfig);
     }
     else
     {
-        // 否则运行传统仿真模式
+        // 否则运行传统仿真模式（legacy 或默认）
         await RunTraditionalSimulationAsync();
     }
 }
@@ -85,10 +86,8 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
     Console.WriteLine($"输出路径: {outputPath ?? "(未指定)"}");
     Console.WriteLine($"重置配置: {(resetConfig ? "是" : "否")}\n");
 
-    var builder = Host.CreateApplicationBuilder();
-
     // ============================================================================
-    // 配置 LiteDB
+    // 种子配置（如果需要）
     // ============================================================================
 
     var dbPath = Path.Combine(Environment.CurrentDirectory, "simulation.db");
@@ -98,60 +97,16 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
         File.Delete(dbPath);
     }
 
-    builder.Services.AddSingleton<IConfigStore>(sp =>
-        new LiteDbConfigStore(sp.GetRequiredService<ILogger<LiteDbConfigStore>>(), dbPath));
-
-    // ============================================================================
-    // 注册配置仓储
-    // ============================================================================
-
-    builder.Services.AddSingleton<IMainLineOptionsRepository, LiteDbMainLineOptionsRepository>();
-    builder.Services.AddSingleton<IInfeedLayoutOptionsRepository, LiteDbInfeedLayoutOptionsRepository>();
-    builder.Services.AddSingleton<IChuteConfigRepository, LiteDbChuteConfigRepository>();
-    builder.Services.AddSingleton<IUpstreamConnectionOptionsRepository, LiteDbUpstreamConnectionOptionsRepository>();
-
-    // ============================================================================
-    // 加载或种子配置
-    // ============================================================================
-
-    var host = builder.Build();
-    var configStore = host.Services.GetRequiredService<IConfigStore>();
-
-    // 检查并种子配置
-    var mainLineRepo = host.Services.GetRequiredService<IMainLineOptionsRepository>();
-    var infeedRepo = host.Services.GetRequiredService<IInfeedLayoutOptionsRepository>();
-    var chuteRepo = host.Services.GetRequiredService<IChuteConfigRepository>();
-    var upstreamRepo = host.Services.GetRequiredService<IUpstreamConnectionOptionsRepository>();
-
-    if (!await configStore.ExistsAsync("MainLineControlOptions"))
-    {
-        Console.WriteLine("种子主线控制选项...");
-        var defaultMainLine = NarrowBeltDefaultConfigSeeder.CreateDefaultMainLineOptions();
-        await mainLineRepo.SaveAsync(defaultMainLine);
-    }
-
-    if (!await configStore.ExistsAsync("InfeedLayoutOptions"))
-    {
-        Console.WriteLine("种子入口布局选项...");
-        var defaultInfeed = NarrowBeltDefaultConfigSeeder.CreateDefaultInfeedLayoutOptions();
-        await infeedRepo.SaveAsync(defaultInfeed);
-    }
-
-    if (!await configStore.ExistsAsync("ChuteConfigSet"))
-    {
-        Console.WriteLine("种子格口配置...");
-        var defaultChutes = NarrowBeltDefaultConfigSeeder.CreateDefaultChuteConfigs(10, 10);
-        await chuteRepo.SaveAsync(defaultChutes);
-    }
-
-    if (!await configStore.ExistsAsync("UpstreamConnectionOptions"))
-    {
-        Console.WriteLine("种子上游连接选项...");
-        var defaultUpstream = NarrowBeltDefaultConfigSeeder.CreateDefaultUpstreamOptions(true);
-        await upstreamRepo.SaveAsync(defaultUpstream);
-    }
+    // 使用临时主机来种子配置
+    await SeedConfigurationIfNeededAsync(dbPath);
 
     Console.WriteLine("配置加载完成\n");
+
+    // ============================================================================
+    // 创建主应用程序构建器
+    // ============================================================================
+
+    var builder = Host.CreateApplicationBuilder();
 
     // ============================================================================
     // 配置仿真参数
@@ -171,6 +126,35 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
     };
 
     builder.Services.AddSingleton(simulationConfig);
+
+    // ============================================================================
+    // 配置选项
+    // ============================================================================
+
+    builder.Services.Configure<MainLineControlOptions>(options =>
+    {
+        options.TargetSpeedMmps = (decimal)simulationConfig.MainLineSpeedMmPerSec;
+        options.LoopPeriod = TimeSpan.FromMilliseconds(100);
+        options.StableDeadbandMmps = 50m;
+    });
+
+    builder.Services.AddSingleton(new SortingPlannerOptions
+    {
+        CartSpacingMm = simulationConfig.CartSpacingMm
+    });
+
+    builder.Services.Configure<SortingExecutionOptions>(options =>
+    {
+        options.ExecutionPeriod = TimeSpan.FromMilliseconds(100);
+        options.PlanningHorizon = TimeSpan.FromSeconds(5);
+    });
+
+    builder.Services.AddSingleton(new InfeedLayoutOptions
+    {
+        InfeedToMainLineDistanceMm = simulationConfig.InfeedToDropDistanceMm,
+        TimeToleranceMs = 50,
+        CartOffsetCalibration = 0
+    });
 
     // ============================================================================
     // 注册 Fake 硬件实现
@@ -201,6 +185,7 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
     builder.Services.AddSingleton<IInfeedConveyorPort>(fakeInfeedConveyor);
 
     var fakeChuteTransmitter = new FakeChuteTransmitterPort();
+    builder.Services.AddSingleton(fakeChuteTransmitter);
     builder.Services.AddSingleton<IChuteTransmitterPort>(fakeChuteTransmitter);
 
     builder.Services.AddSingleton<IUpstreamSortingApiClient, FakeUpstreamSortingApiClient>();
@@ -263,9 +248,7 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
     // ============================================================================
 
     Console.WriteLine("\n════════════════════════════════════════");
-    Console.WriteLine("  仿真报告");
-    Console.WriteLine("════════════════════════════════════════");
-    Console.WriteLine($"本次仿真已完成:");
+    Console.WriteLine("本次 E2E 仿真已完成：");
     Console.WriteLine($"- 包裹总数: {report.Statistics.TotalParcels}");
     Console.WriteLine($"- 正常落格: {report.Statistics.SuccessfulSorts}");
     Console.WriteLine($"- 强排: {report.Statistics.ForceEjects}");
@@ -292,6 +275,54 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
         var json = JsonSerializer.Serialize(report, jsonOptions);
         await File.WriteAllTextAsync(outputPath, json);
         Console.WriteLine($"报告已保存到: {outputPath}");
+    }
+}
+
+static async Task SeedConfigurationIfNeededAsync(string dbPath)
+{
+    var tempBuilder = Host.CreateApplicationBuilder();
+    tempBuilder.Logging.ClearProviders();
+
+    tempBuilder.Services.AddSingleton<IConfigStore>(sp =>
+        new LiteDbConfigStore(sp.GetRequiredService<ILogger<LiteDbConfigStore>>(), dbPath));
+    tempBuilder.Services.AddSingleton<IMainLineOptionsRepository, LiteDbMainLineOptionsRepository>();
+    tempBuilder.Services.AddSingleton<IInfeedLayoutOptionsRepository, LiteDbInfeedLayoutOptionsRepository>();
+    tempBuilder.Services.AddSingleton<IChuteConfigRepository, LiteDbChuteConfigRepository>();
+    tempBuilder.Services.AddSingleton<IUpstreamConnectionOptionsRepository, LiteDbUpstreamConnectionOptionsRepository>();
+
+    var tempHost = tempBuilder.Build();
+    var configStore = tempHost.Services.GetRequiredService<IConfigStore>();
+    var mainLineRepo = tempHost.Services.GetRequiredService<IMainLineOptionsRepository>();
+    var infeedRepo = tempHost.Services.GetRequiredService<IInfeedLayoutOptionsRepository>();
+    var chuteRepo = tempHost.Services.GetRequiredService<IChuteConfigRepository>();
+    var upstreamRepo = tempHost.Services.GetRequiredService<IUpstreamConnectionOptionsRepository>();
+
+    if (!await configStore.ExistsAsync("MainLineControlOptions"))
+    {
+        Console.WriteLine("种子主线控制选项...");
+        var defaultMainLine = NarrowBeltDefaultConfigSeeder.CreateDefaultMainLineOptions();
+        await mainLineRepo.SaveAsync(defaultMainLine);
+    }
+
+    if (!await configStore.ExistsAsync("InfeedLayoutOptions"))
+    {
+        Console.WriteLine("种子入口布局选项...");
+        var defaultInfeed = NarrowBeltDefaultConfigSeeder.CreateDefaultInfeedLayoutOptions();
+        await infeedRepo.SaveAsync(defaultInfeed);
+    }
+
+    if (!await configStore.ExistsAsync("ChuteConfigSet"))
+    {
+        Console.WriteLine("种子格口配置...");
+        var defaultChutes = NarrowBeltDefaultConfigSeeder.CreateDefaultChuteConfigs(10, 10);
+        await chuteRepo.SaveAsync(defaultChutes);
+    }
+
+    if (!await configStore.ExistsAsync("UpstreamConnectionOptions"))
+    {
+        Console.WriteLine("种子上游连接选项...");
+        var defaultUpstream = NarrowBeltDefaultConfigSeeder.CreateDefaultUpstreamOptions(true);
+        await upstreamRepo.SaveAsync(defaultUpstream);
     }
 }
 
