@@ -15,6 +15,7 @@ using ZakYip.NarrowBeltDiverterSorter.Execution.Feeding;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Sorting;
 using ZakYip.NarrowBeltDiverterSorter.Observability;
 using ZakYip.NarrowBeltDiverterSorter.Ingress.Chute;
+using ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
 using ZakYip.NarrowBeltDiverterSorter.Host;
 
 var builder = Host.CreateApplicationBuilder(args);
@@ -64,6 +65,12 @@ builder.Services.Configure<FieldBusClientConfiguration>(
 // ============================================================================
 
 builder.Services.AddSingleton<IEventBus, InMemoryEventBus>();
+
+// ============================================================================
+// 注册配置存储 (Infrastructure)
+// ============================================================================
+
+builder.Services.AddSingleton<IConfigStore, LiteDbConfigStore>();
 
 // ============================================================================
 // 注册上游客户端
