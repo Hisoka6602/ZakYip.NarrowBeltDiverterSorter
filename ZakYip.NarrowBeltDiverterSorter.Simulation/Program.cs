@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using ZakYip.NarrowBeltDiverterSorter.Communication;
 using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Core.Application;
+using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Carts;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Feeding;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.MainLine;
@@ -240,6 +241,9 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
         // 连接 InfeedSensorMonitor 与 ParcelRoutingWorker 和 ParcelLoadCoordinator
         var routingWorker = sp.GetRequiredService<ParcelRoutingWorker>();
         var loadCoordinator = sp.GetRequiredService<ParcelLoadCoordinator>();
+        var parcelLifecycleService = sp.GetRequiredService<IParcelLifecycleService>();
+        var cartLifecycleService = sp.GetRequiredService<ICartLifecycleService>();
+        var logger = sp.GetRequiredService<ILogger<InfeedSensorMonitor>>();
         
         monitor.ParcelCreatedFromInfeed += async (sender, args) =>
         {
@@ -253,8 +257,32 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
             }
             catch (Exception ex)
             {
-                var logger = sp.GetRequiredService<ILogger<InfeedSensorMonitor>>();
                 logger.LogError(ex, "处理包裹创建事件时发生错误");
+            }
+        };
+        
+        // 连接 ParcelLoadCoordinator 的装载事件
+        loadCoordinator.ParcelLoadedOnCart += (sender, args) =>
+        {
+            try
+            {
+                // 更新包裹生命周期服务
+                parcelLifecycleService.BindCartId(args.ParcelId, args.CartId, args.LoadedTime);
+                
+                // 更新小车生命周期服务
+                cartLifecycleService.LoadParcel(args.CartId, args.ParcelId);
+                
+                // 更新路由状态为已路由（已装载到小车）
+                parcelLifecycleService.UpdateRouteState(args.ParcelId, ParcelRouteState.Routed);
+                
+                logger.LogInformation(
+                    "包裹 {ParcelId} 已装载到小车 {CartId}",
+                    args.ParcelId.Value,
+                    args.CartId.Value);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "处理包裹装载事件时发生错误");
             }
         };
         
@@ -290,61 +318,87 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
     builder.Logging.SetMinimumLevel(LogLevel.Information);
 
     // ============================================================================
-    // 构建并启动 Host
+    // 构建并运行 Host（使用超时控制）
     // ============================================================================
 
     var app = builder.Build();
     
     Console.WriteLine("开始仿真...\n");
     
-    // 启动所有后台服务
-    await app.StartAsync();
-
-    // ============================================================================
-    // 运行 E2E 仿真（在后台服务运行期间）
-    // ============================================================================
-
-    var runner = app.Services.GetRequiredService<EndToEndSimulationRunner>();
-    var report = await runner.RunAsync(parcelCount);
-
-    // ============================================================================
-    // 停止 Host
-    // ============================================================================
-
-    await app.StopAsync();
-
-    // ============================================================================
-    // 输出报告
-    // ============================================================================
-
-    Console.WriteLine("\n════════════════════════════════════════");
-    Console.WriteLine("本次 E2E 仿真已完成：");
-    Console.WriteLine($"- 包裹总数: {report.Statistics.TotalParcels}");
-    Console.WriteLine($"- 正常落格: {report.Statistics.SuccessfulSorts}");
-    Console.WriteLine($"- 强排: {report.Statistics.ForceEjects}");
-    Console.WriteLine($"- 误分: {report.Statistics.Missorts}");
-    Console.WriteLine($"- 小车环长度: {report.CartRing.Length}");
-    Console.WriteLine($"- 目标速度: {report.MainDrive.TargetSpeedMmps:F1} mm/s");
-    Console.WriteLine($"- 平均速度: {report.MainDrive.AverageSpeedMmps:F1} mm/s");
-    Console.WriteLine($"- 速度标准差: {report.MainDrive.SpeedStdDevMmps:F2} mm/s");
-    Console.WriteLine($"- 仿真耗时: {report.Statistics.DurationSeconds:F2} 秒");
-    Console.WriteLine("════════════════════════════════════════\n");
-
-    // ============================================================================
-    // 保存 JSON 报告
-    // ============================================================================
-
-    if (!string.IsNullOrEmpty(outputPath))
+    // 创建一个超时的 CancellationTokenSource
+    using var cts = new CancellationTokenSource();
+    
+    // 创建一个 Task 来运行 E2E 仿真并在完成后取消 Host
+    var e2eTask = Task.Run(async () =>
     {
-        var jsonOptions = new JsonSerializerOptions
+        try
         {
-            WriteIndented = true,
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-        };
+            // 等待一小段时间让后台服务启动
+            await Task.Delay(1000, cts.Token);
+            
+            var runner = app.Services.GetRequiredService<EndToEndSimulationRunner>();
+            var report = await runner.RunAsync(parcelCount, cts.Token);
+            
+            // 保存报告
+            Console.WriteLine("\n════════════════════════════════════════");
+            Console.WriteLine("本次 E2E 仿真已完成：");
+            Console.WriteLine($"- 包裹总数: {report.Statistics.TotalParcels}");
+            Console.WriteLine($"- 正常落格: {report.Statistics.SuccessfulSorts}");
+            Console.WriteLine($"- 强排: {report.Statistics.ForceEjects}");
+            Console.WriteLine($"- 误分: {report.Statistics.Missorts}");
+            Console.WriteLine($"- 小车环长度: {report.CartRing.Length}");
+            Console.WriteLine($"- 目标速度: {report.MainDrive.TargetSpeedMmps:F1} mm/s");
+            Console.WriteLine($"- 平均速度: {report.MainDrive.AverageSpeedMmps:F1} mm/s");
+            Console.WriteLine($"- 速度标准差: {report.MainDrive.SpeedStdDevMmps:F2} mm/s");
+            Console.WriteLine($"- 仿真耗时: {report.Statistics.DurationSeconds:F2} 秒");
+            Console.WriteLine("════════════════════════════════════════\n");
 
-        var json = JsonSerializer.Serialize(report, jsonOptions);
-        await File.WriteAllTextAsync(outputPath, json);
-        Console.WriteLine($"报告已保存到: {outputPath}");
+            if (!string.IsNullOrEmpty(outputPath))
+            {
+                var jsonOptions = new JsonSerializerOptions
+                {
+                    WriteIndented = true,
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                };
+
+                var json = JsonSerializer.Serialize(report, jsonOptions);
+                await File.WriteAllTextAsync(outputPath, json, cts.Token);
+                Console.WriteLine($"报告已保存到: {outputPath}");
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            Console.WriteLine("E2E 仿真已取消");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"E2E 仿真发生异常: {ex.Message}");
+        }
+        finally
+        {
+            // 取消 Host 运行
+            cts.Cancel();
+        }
+    }, cts.Token);
+    
+    // 启动并运行 Host（会阻塞直到取消）
+    try
+    {
+        await app.RunAsync(cts.Token);
+    }
+    catch (OperationCanceledException)
+    {
+        // 正常结束
+    }
+    
+    // 等待 E2E 任务完成
+    try
+    {
+        await e2eTask;
+    }
+    catch (OperationCanceledException)
+    {
+        // 预期的取消
     }
 }
 

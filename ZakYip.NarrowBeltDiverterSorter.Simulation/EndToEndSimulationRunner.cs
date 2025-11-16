@@ -168,69 +168,114 @@ public class EndToEndSimulationRunner
     private async Task WaitForSimulationCompletionAsync(int expectedParcelCount, CancellationToken cancellationToken)
     {
         const int samplingIntervalMs = 100; // 每100ms采样一次速度
-        const int checkIntervalMs = 500; // 每500ms检查一次包裹状态
-        const int maxWaitSeconds = 120; // 最多等待2分钟
+        const int statusCheckIntervalMs = 500; // 每500ms检查一次包裹状态
+        const int maxWaitSeconds = 120; // 最多等待2分钟作为兜底保护
 
-        var timeout = DateTime.UtcNow.AddSeconds(maxWaitSeconds);
-        var lastCheckTime = DateTime.UtcNow;
+        var endTime = DateTime.UtcNow.AddSeconds(maxWaitSeconds);
+        var lastStatusCheckTime = DateTime.UtcNow;
+        var lastSpeedSampleTime = DateTime.UtcNow;
+        
+        _logger.LogInformation("开始等待包裹处理完成，目标包裹数: {ExpectedCount}", expectedParcelCount);
 
-        while (DateTime.UtcNow < timeout && !cancellationToken.IsCancellationRequested)
+        while (DateTime.UtcNow < endTime && !cancellationToken.IsCancellationRequested)
         {
-            // 采样主线速度
-            var currentSpeed = _speedProvider.CurrentMmps;
-            if (currentSpeed > 0) // 忽略明显非法值
+            // 定期采样主线速度
+            if ((DateTime.UtcNow - lastSpeedSampleTime).TotalMilliseconds >= samplingIntervalMs)
             {
-                _speedSamples.Add(new SpeedSample
+                lastSpeedSampleTime = DateTime.UtcNow;
+                
+                var currentSpeed = _speedProvider.CurrentMmps;
+                if (currentSpeed > 0) // 忽略明显非法值
                 {
-                    Timestamp = DateTimeOffset.UtcNow,
-                    SpeedMmps = currentSpeed
-                });
-            }
-
-            // 定期检查包裹状态
-            if ((DateTime.UtcNow - lastCheckTime).TotalMilliseconds >= checkIntervalMs)
-            {
-                lastCheckTime = DateTime.UtcNow;
-
-                var allParcels = _parcelLifecycleService.GetAll();
-                var totalParcels = allParcels.Count;
-
-                if (totalParcels >= expectedParcelCount)
-                {
-                    // 检查所有包裹是否都进入终态
-                    var terminatedStates = new[]
+                    _speedSamples.Add(new SpeedSample
                     {
-                        ParcelRouteState.Sorted,
-                        ParcelRouteState.ForceEjected,
-                        ParcelRouteState.Failed
-                    };
-
-                    var terminatedCount = allParcels.Count(p => terminatedStates.Contains(p.RouteState));
-
-                    _logger.LogDebug(
-                        "包裹状态检查 - 已生成: {TotalParcels}/{ExpectedCount}, 已终态: {TerminatedCount}",
-                        totalParcels,
-                        expectedParcelCount,
-                        terminatedCount);
-
-                    if (terminatedCount >= expectedParcelCount)
-                    {
-                        _logger.LogInformation(
-                            "所有包裹已完成处理 - 总数: {TotalParcels}, 已终态: {TerminatedCount}",
-                            totalParcels,
-                            terminatedCount);
-                        
-                        // 等待一小段时间确保所有操作完成
-                        await Task.Delay(500, cancellationToken);
-                        return;
-                    }
+                        Timestamp = DateTimeOffset.UtcNow,
+                        SpeedMmps = currentSpeed
+                    });
                 }
             }
 
-            await Task.Delay(samplingIntervalMs, cancellationToken);
+            // 定期检查仿真进度
+            if ((DateTime.UtcNow - lastStatusCheckTime).TotalMilliseconds >= statusCheckIntervalMs)
+            {
+                lastStatusCheckTime = DateTime.UtcNow;
+
+                // 从仓储/服务读取仿真进度
+                var progress = GetSimulationProgress();
+                
+                _logger.LogDebug(
+                    "仿真进度 - 已生成: {GeneratedCount}/{TargetCount}, 已完成: {CompletedCount}",
+                    progress.GeneratedCount,
+                    expectedParcelCount,
+                    progress.CompletedCount);
+
+                // 判定仿真完成条件：已完成包裹数量达到目标
+                if (progress.CompletedCount >= expectedParcelCount)
+                {
+                    _logger.LogInformation(
+                        "仿真完成 - 目标包裹数: {TargetCount}, 已生成: {GeneratedCount}, 已完成: {CompletedCount}",
+                        expectedParcelCount,
+                        progress.GeneratedCount,
+                        progress.CompletedCount);
+                    
+                    // 等待一小段时间确保所有操作完成
+                    await Task.Delay(500, cancellationToken);
+                    return;
+                }
+                
+                // 如果所有包裹都已生成但未完成，继续等待处理
+                if (progress.GeneratedCount >= expectedParcelCount && progress.CompletedCount < expectedParcelCount)
+                {
+                    _logger.LogDebug(
+                        "所有包裹已生成，等待处理完成 - 已完成: {CompletedCount}/{TargetCount}",
+                        progress.CompletedCount,
+                        expectedParcelCount);
+                }
+            }
+
+            // 短暂延迟避免 CPU 占用过高
+            await Task.Delay(50, cancellationToken);
         }
 
-        _logger.LogWarning("仿真等待超时（{MaxWaitSeconds} 秒），强制结束", maxWaitSeconds);
+        // 兜底：超时后强制结束
+        _logger.LogWarning(
+            "仿真等待超时（{MaxWaitSeconds} 秒），强制结束。当前进度: {CompletedCount}/{ExpectedCount}",
+            maxWaitSeconds,
+            GetSimulationProgress().CompletedCount,
+            expectedParcelCount);
+    }
+
+    /// <summary>
+    /// 获取仿真进度（从仓储/服务读取）
+    /// </summary>
+    private SimulationProgress GetSimulationProgress()
+    {
+        var allParcels = _parcelLifecycleService.GetAll();
+        
+        // 终态定义：已分拣、强排、失败
+        var terminatedStates = new[]
+        {
+            ParcelRouteState.Sorted,
+            ParcelRouteState.ForceEjected,
+            ParcelRouteState.Failed
+        };
+        
+        var completedCount = allParcels.Count(p => terminatedStates.Contains(p.RouteState));
+        
+        return new SimulationProgress
+        {
+            GeneratedCount = allParcels.Count,
+            CompletedCount = completedCount
+        };
+    }
+    
+    /// <summary>
+    /// 仿真进度信息
+    /// </summary>
+    private class SimulationProgress
+    {
+        public int GeneratedCount { get; set; }
+        public int CompletedCount { get; set; }
     }
 
     /// <summary>
