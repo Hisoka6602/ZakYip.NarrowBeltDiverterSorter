@@ -11,6 +11,7 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="8.0.1" />
   </ItemGroup>
 
   <ItemGroup>
@@ -19,6 +20,8 @@
     <ProjectReference Include="..\ZakYip.NarrowBeltDiverterSorter.UpstreamContracts\ZakYip.NarrowBeltDiverterSorter.UpstreamContracts.csproj" />
     <ProjectReference Include="..\ZakYip.NarrowBeltDiverterSorter.Execution\ZakYip.NarrowBeltDiverterSorter.Execution.csproj" />
     <ProjectReference Include="..\ZakYip.NarrowBeltDiverterSorter.Drivers\ZakYip.NarrowBeltDiverterSorter.Drivers.csproj" />
+    <ProjectReference Include="..\ZakYip.NarrowBeltDiverterSorter.Observability\ZakYip.NarrowBeltDiverterSorter.Observability.csproj" />
+    <ProjectReference Include="..\ZakYip.NarrowBeltDiverterSorter.Ingress\ZakYip.NarrowBeltDiverterSorter.Ingress.csproj" />
   </ItemGroup>
 
 </Project>
