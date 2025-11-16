@@ -122,9 +122,10 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
         MainLineSpeedMmPerSec = 1000.0,
         InfeedConveyorSpeedMmPerSec = 1000.0,
         InfeedToDropDistanceMm = 2000m,
-        ParcelGenerationIntervalSeconds = 0.1, // 快速生成
+        ParcelGenerationIntervalSeconds = 0.8, // 0.8秒间隔，给包裹足够时间分拣
         SimulationDurationSeconds = 0, // E2E 模式下不使用时长限制
-        ParcelCount = parcelCount // 使用命令行参数指定的包裹数量
+        ParcelCount = parcelCount, // 使用命令行参数指定的包裹数量
+        ParcelTimeToLiveSeconds = 25.0 // 25秒 TTL - 大部分能正常分拣，少量超时进入强排
     };
 
     builder.Services.AddSingleton(simulationConfig);
@@ -300,14 +301,13 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
         {
             try
             {
-                // 更新包裹生命周期服务
+                // 更新包裹生命周期服务 - BindCartId 会自动将状态设置为 Sorting
                 parcelLifecycleService.BindCartId(args.ParcelId, args.CartId, args.LoadedTime);
                 
                 // 更新小车生命周期服务
                 cartLifecycleService.LoadParcel(args.CartId, args.ParcelId);
                 
-                // 更新路由状态为已路由（已装载到小车）
-                parcelLifecycleService.UpdateRouteState(args.ParcelId, ParcelRouteState.Routed);
+                // 注意：不再手动设置状态为 Routed，因为 BindCartId 已经正确地将状态设置为 Sorting
                 
                 logger.LogInformation(
                     "[上车确认] 包裹 {ParcelId} 已上车到小车 {CartId}",
