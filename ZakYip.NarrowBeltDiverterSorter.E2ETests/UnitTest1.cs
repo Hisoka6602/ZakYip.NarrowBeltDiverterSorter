@@ -182,6 +182,16 @@ public class EndToEndSimulationTests
         // 构建小车环
         BuildCartRing(cartRingBuilder, 10);
 
+        var snapshot = cartRingBuilder.CurrentSnapshot;
+        Assert.NotNull(snapshot);
+
+        // 初始化小车到 CartLifecycleService
+        for (int i = 0; i < snapshot.RingLength.Value; i++)
+        {
+            var cartId = snapshot.CartIds[i];
+            cartLifecycleService.InitializeCart(cartId, new CartIndex(i), DateTimeOffset.UtcNow);
+        }
+
         // 初始化位置跟踪器（小车0在原点）
         cartPositionTracker.OnCartPassedOrigin(DateTimeOffset.UtcNow);
 
