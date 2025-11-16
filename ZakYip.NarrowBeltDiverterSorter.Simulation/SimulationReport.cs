@@ -93,6 +93,16 @@ public record class CartRingInfo
     /// 小车节距（mm）
     /// </summary>
     public decimal CartSpacingMm { get; init; }
+
+    /// <summary>
+    /// 小车环是否就绪
+    /// </summary>
+    public bool IsReady { get; init; }
+
+    /// <summary>
+    /// 小车环预热耗时（秒）
+    /// </summary>
+    public double WarmupDurationSeconds { get; init; }
 }
 
 /// <summary>
