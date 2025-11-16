@@ -2,4 +2,8 @@
 
   <!-- Properties inherited from Directory.Build.props -->
 
+  <ItemGroup>
+    <ProjectReference Include="..\ZakYip.NarrowBeltDiverterSorter.Core\ZakYip.NarrowBeltDiverterSorter.Core.csproj" />
+  </ItemGroup>
+
 </Project>
