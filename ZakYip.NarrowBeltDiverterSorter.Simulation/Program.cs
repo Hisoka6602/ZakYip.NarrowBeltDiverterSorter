@@ -216,6 +216,7 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
     builder.Services.AddSingleton<ICartLifecycleService, CartLifecycleService>();
     builder.Services.AddSingleton<IParcelLoadPlanner, ParcelLoadPlanner>();
     builder.Services.AddSingleton<ISortingPlanner, SortingPlanner>();
+    builder.Services.AddSingleton<IEjectPlanner, EjectPlanner>();
     builder.Services.AddSingleton<IMainLineControlService, MainLineControlService>();
     builder.Services.AddSingleton<IMainLineSpeedProvider, MainLineSpeedProvider>();
     builder.Services.AddSingleton<ICartPositionTracker, CartPositionTracker>();
@@ -329,7 +330,7 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
     builder.Services.AddSingleton<ParcelRoutingWorker>();
     
     builder.Services.AddHostedService<MainLineControlWorker>();
-    builder.Services.AddHostedService<SortingExecutionWorker>();
+    builder.Services.AddHostedService<ParcelSortingSimulator>();
     builder.Services.AddHostedService<CartMovementSimulator>();
     builder.Services.AddHostedService<ParcelGeneratorWorker>();
     

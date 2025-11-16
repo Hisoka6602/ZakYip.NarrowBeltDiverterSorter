@@ -46,6 +46,11 @@ public class SimulationConfiguration
     public double ParcelGenerationIntervalSeconds { get; set; } = 2.0;
 
     /// <summary>
+    /// 包裹存活时间（秒）- 超过此时间的包裹将被强排
+    /// </summary>
+    public double ParcelTimeToLiveSeconds { get; set; } = 120.0;
+
+    /// <summary>
     /// 仿真持续时间（秒，0表示无限）
     /// </summary>
     public int SimulationDurationSeconds { get; set; } = 60;
