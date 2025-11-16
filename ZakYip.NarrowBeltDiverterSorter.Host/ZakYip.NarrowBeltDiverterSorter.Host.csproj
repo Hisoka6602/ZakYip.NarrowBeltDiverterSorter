@@ -12,4 +12,10 @@
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="8.0.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\ZakYip.NarrowBeltDiverterSorter.Core\ZakYip.NarrowBeltDiverterSorter.Core.csproj" />
+    <ProjectReference Include="..\ZakYip.NarrowBeltDiverterSorter.Communication\ZakYip.NarrowBeltDiverterSorter.Communication.csproj" />
+    <ProjectReference Include="..\ZakYip.NarrowBeltDiverterSorter.UpstreamContracts\ZakYip.NarrowBeltDiverterSorter.UpstreamContracts.csproj" />
+  </ItemGroup>
+
 </Project>

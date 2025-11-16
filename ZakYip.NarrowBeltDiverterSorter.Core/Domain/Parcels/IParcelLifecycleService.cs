@@ -1,0 +1,59 @@
+namespace ZakYip.NarrowBeltDiverterSorter.Core.Domain.Parcels;
+
+/// <summary>
+/// 包裹生命周期服务接口
+/// 管理包裹的创建、状态更新和查询
+/// </summary>
+public interface IParcelLifecycleService
+{
+    /// <summary>
+    /// 创建新包裹（入口事件触发时）
+    /// </summary>
+    /// <param name="parcelId">包裹ID</param>
+    /// <param name="barcode">条码</param>
+    /// <param name="infeedTriggerTime">入口触发时间</param>
+    /// <returns>创建的包裹快照</returns>
+    ParcelSnapshot CreateParcel(ParcelId parcelId, string barcode, DateTimeOffset infeedTriggerTime);
+
+    /// <summary>
+    /// 绑定格口ID（上游路由结果）
+    /// </summary>
+    /// <param name="parcelId">包裹ID</param>
+    /// <param name="chuteId">格口ID</param>
+    void BindChuteId(ParcelId parcelId, ChuteId chuteId);
+
+    /// <summary>
+    /// 绑定小车ID
+    /// </summary>
+    /// <param name="parcelId">包裹ID</param>
+    /// <param name="cartId">小车ID</param>
+    /// <param name="loadedTime">装载时间</param>
+    void BindCartId(ParcelId parcelId, CartId cartId, DateTimeOffset loadedTime);
+
+    /// <summary>
+    /// 解绑小车ID
+    /// </summary>
+    /// <param name="parcelId">包裹ID</param>
+    void UnbindCartId(ParcelId parcelId);
+
+    /// <summary>
+    /// 更新包裹路由状态
+    /// </summary>
+    /// <param name="parcelId">包裹ID</param>
+    /// <param name="newState">新状态</param>
+    void UpdateRouteState(ParcelId parcelId, ParcelRouteState newState);
+
+    /// <summary>
+    /// 标记包裹已分拣
+    /// </summary>
+    /// <param name="parcelId">包裹ID</param>
+    /// <param name="sortedTime">分拣时间</param>
+    void MarkSorted(ParcelId parcelId, DateTimeOffset sortedTime);
+
+    /// <summary>
+    /// 获取包裹快照
+    /// </summary>
+    /// <param name="parcelId">包裹ID</param>
+    /// <returns>包裹快照，如果不存在返回null</returns>
+    ParcelSnapshot? Get(ParcelId parcelId);
+}
