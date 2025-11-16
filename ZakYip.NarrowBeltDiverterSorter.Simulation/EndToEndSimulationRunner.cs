@@ -81,12 +81,12 @@ public class EndToEndSimulationRunner
 
         _logger.LogInformation("开始端到端仿真，包裹数量: {ParcelCount}", parcelCount);
 
-        // 步骤 1: 启动主线控制
-        _logger.LogInformation("步骤 1/5: 启动主线控制");
-        await _mainLineControl.StartAsync(cancellationToken);
+        // 步骤 1: 等待主线控制启动并稳定
+        _logger.LogInformation("步骤 1/4: 等待主线控制启动并稳定");
+        await WaitForMainLineStableAsync(cancellationToken);
 
         // 步骤 2: 构建小车环
-        _logger.LogInformation("步骤 2/5: 构建小车环");
+        _logger.LogInformation("步骤 2/4: 构建小车环");
         BuildCartRing();
 
         var cartRingSnapshot = _cartRingBuilder.CurrentSnapshot;
@@ -104,16 +104,12 @@ public class EndToEndSimulationRunner
             _cartLifecycleService.InitializeCart(cartId, new CartIndex(i), DateTimeOffset.UtcNow);
         }
 
-        // 步骤 3: 生成并处理包裹
-        _logger.LogInformation("步骤 3/5: 生成和处理包裹");
-        await GenerateAndProcessParcelsAsync(parcelCount, cancellationToken);
+        // 步骤 3: 等待包裹生成和处理完成
+        _logger.LogInformation("步骤 3/4: 等待包裹生成和处理（目标: {ParcelCount} 个包裹）", parcelCount);
+        await WaitForSimulationCompletionAsync(parcelCount, cancellationToken);
 
-        // 步骤 4: 执行分拣计划
-        _logger.LogInformation("步骤 4/5: 执行分拣计划");
-        await ExecuteSortingPlansAsync(cancellationToken);
-
-        // 步骤 5: 收集统计信息
-        _logger.LogInformation("步骤 5/5: 收集统计信息");
+        // 步骤 4: 收集统计信息
+        _logger.LogInformation("步骤 4/4: 收集统计信息");
         var statistics = CalculateStatistics(startTime, stopwatch.Elapsed);
 
         var cartRingInfo = new CartRingInfo
@@ -142,6 +138,144 @@ public class EndToEndSimulationRunner
         _logger.LogInformation("仿真完成，耗时: {Duration:F2} 秒", stopwatch.Elapsed.TotalSeconds);
 
         return report;
+    }
+
+    /// <summary>
+    /// 等待主线控制启动并速度稳定
+    /// </summary>
+    private async Task WaitForMainLineStableAsync(CancellationToken cancellationToken)
+    {
+        const int maxWaitSeconds = 10;
+        var timeout = DateTime.UtcNow.AddSeconds(maxWaitSeconds);
+
+        while (DateTime.UtcNow < timeout && !cancellationToken.IsCancellationRequested)
+        {
+            if (_mainLineControl.IsRunning && _speedProvider.IsSpeedStable)
+            {
+                _logger.LogInformation("主线已启动并稳定，当前速度: {Speed:F1} mm/s", _speedProvider.CurrentMmps);
+                return;
+            }
+
+            await Task.Delay(100, cancellationToken);
+        }
+
+        _logger.LogWarning("主线未能在 {MaxWaitSeconds} 秒内稳定，继续执行", maxWaitSeconds);
+    }
+
+    /// <summary>
+    /// 等待仿真完成：所有包裹都生成并进入终态
+    /// </summary>
+    private async Task WaitForSimulationCompletionAsync(int expectedParcelCount, CancellationToken cancellationToken)
+    {
+        const int samplingIntervalMs = 100; // 每100ms采样一次速度
+        const int statusCheckIntervalMs = 500; // 每500ms检查一次包裹状态
+        const int maxWaitSeconds = 120; // 最多等待2分钟作为兜底保护
+
+        var endTime = DateTime.UtcNow.AddSeconds(maxWaitSeconds);
+        var lastStatusCheckTime = DateTime.UtcNow;
+        var lastSpeedSampleTime = DateTime.UtcNow;
+        
+        _logger.LogInformation("开始等待包裹处理完成，目标包裹数: {ExpectedCount}", expectedParcelCount);
+
+        while (DateTime.UtcNow < endTime && !cancellationToken.IsCancellationRequested)
+        {
+            // 定期采样主线速度
+            if ((DateTime.UtcNow - lastSpeedSampleTime).TotalMilliseconds >= samplingIntervalMs)
+            {
+                lastSpeedSampleTime = DateTime.UtcNow;
+                
+                var currentSpeed = _speedProvider.CurrentMmps;
+                if (currentSpeed > 0) // 忽略明显非法值
+                {
+                    _speedSamples.Add(new SpeedSample
+                    {
+                        Timestamp = DateTimeOffset.UtcNow,
+                        SpeedMmps = currentSpeed
+                    });
+                }
+            }
+
+            // 定期检查仿真进度
+            if ((DateTime.UtcNow - lastStatusCheckTime).TotalMilliseconds >= statusCheckIntervalMs)
+            {
+                lastStatusCheckTime = DateTime.UtcNow;
+
+                // 从仓储/服务读取仿真进度
+                var progress = GetSimulationProgress();
+                
+                _logger.LogDebug(
+                    "仿真进度 - 已生成: {GeneratedCount}/{TargetCount}, 已完成: {CompletedCount}",
+                    progress.GeneratedCount,
+                    expectedParcelCount,
+                    progress.CompletedCount);
+
+                // 判定仿真完成条件：已完成包裹数量达到目标
+                if (progress.CompletedCount >= expectedParcelCount)
+                {
+                    _logger.LogInformation(
+                        "仿真完成 - 目标包裹数: {TargetCount}, 已生成: {GeneratedCount}, 已完成: {CompletedCount}",
+                        expectedParcelCount,
+                        progress.GeneratedCount,
+                        progress.CompletedCount);
+                    
+                    // 等待一小段时间确保所有操作完成
+                    await Task.Delay(500, cancellationToken);
+                    return;
+                }
+                
+                // 如果所有包裹都已生成但未完成，继续等待处理
+                if (progress.GeneratedCount >= expectedParcelCount && progress.CompletedCount < expectedParcelCount)
+                {
+                    _logger.LogDebug(
+                        "所有包裹已生成，等待处理完成 - 已完成: {CompletedCount}/{TargetCount}",
+                        progress.CompletedCount,
+                        expectedParcelCount);
+                }
+            }
+
+            // 短暂延迟避免 CPU 占用过高
+            await Task.Delay(50, cancellationToken);
+        }
+
+        // 兜底：超时后强制结束
+        _logger.LogWarning(
+            "仿真等待超时（{MaxWaitSeconds} 秒），强制结束。当前进度: {CompletedCount}/{ExpectedCount}",
+            maxWaitSeconds,
+            GetSimulationProgress().CompletedCount,
+            expectedParcelCount);
+    }
+
+    /// <summary>
+    /// 获取仿真进度（从仓储/服务读取）
+    /// </summary>
+    private SimulationProgress GetSimulationProgress()
+    {
+        var allParcels = _parcelLifecycleService.GetAll();
+        
+        // 终态定义：已分拣、强排、失败
+        var terminatedStates = new[]
+        {
+            ParcelRouteState.Sorted,
+            ParcelRouteState.ForceEjected,
+            ParcelRouteState.Failed
+        };
+        
+        var completedCount = allParcels.Count(p => terminatedStates.Contains(p.RouteState));
+        
+        return new SimulationProgress
+        {
+            GeneratedCount = allParcels.Count,
+            CompletedCount = completedCount
+        };
+    }
+    
+    /// <summary>
+    /// 仿真进度信息
+    /// </summary>
+    private class SimulationProgress
+    {
+        public int GeneratedCount { get; set; }
+        public int CompletedCount { get; set; }
     }
 
     /// <summary>
@@ -174,165 +308,6 @@ public class EndToEndSimulationRunner
         _cartRingBuilder.OnOriginSensorTriggered(isFirstSensor: false, isRisingEdge: true, timestamp.AddMilliseconds(10));
         _cartRingBuilder.OnOriginSensorTriggered(isFirstSensor: true, isRisingEdge: false, timestamp.AddMilliseconds(50));
         _cartRingBuilder.OnOriginSensorTriggered(isFirstSensor: false, isRisingEdge: false, timestamp.AddMilliseconds(60));
-    }
-
-    /// <summary>
-    /// 生成并处理包裹（通过入口事件触发）
-    /// </summary>
-    private async Task GenerateAndProcessParcelsAsync(int parcelCount, CancellationToken cancellationToken)
-    {
-        for (int i = 0; i < parcelCount; i++)
-        {
-            var parcelIdLong = (long)(i + 1);
-            var barcode = $"PKG{parcelIdLong:D6}";
-            var infeedTime = DateTimeOffset.UtcNow;
-
-            // 1. 模拟入口传感器触发，创建包裹
-            var parcelSnapshot = _parcelLifecycleService.CreateParcel(
-                new ParcelId(parcelIdLong),
-                barcode,
-                infeedTime);
-
-            _logger.LogDebug("包裹 {ParcelId} 在入口触发", parcelIdLong);
-
-            // 2. 请求上游分配格口
-            var routingRequest = new ParcelRoutingRequestDto { ParcelId = parcelIdLong };
-            var routingResponse = await _upstreamClient.RequestChuteAsync(routingRequest, cancellationToken);
-
-            if (routingResponse.IsSuccess)
-            {
-                // 3. 绑定格口到包裹
-                _parcelLifecycleService.BindChuteId(new ParcelId(parcelIdLong), new ChuteId(routingResponse.ChuteId));
-                _logger.LogDebug("包裹 {ParcelId} 分配到格口 {ChuteId}", parcelIdLong, routingResponse.ChuteId);
-
-                // 4. 使用 ParcelLoadPlanner 预测应该落到哪个小车
-                var predictedCartId = await _loadPlanner.PredictLoadedCartAsync(infeedTime, cancellationToken);
-
-                if (predictedCartId != null)
-                {
-                    var loadedTime = DateTimeOffset.UtcNow;
-
-                    // 5. 绑定包裹到小车
-                    _parcelLifecycleService.BindCartId(new ParcelId(parcelIdLong), predictedCartId.Value, loadedTime);
-                    _cartLifecycleService.LoadParcel(predictedCartId.Value, new ParcelId(parcelIdLong));
-
-                    _logger.LogDebug("包裹 {ParcelId} 装载到小车 {CartId}", parcelIdLong, predictedCartId.Value.Value);
-
-                    // 更新路由状态为已路由（已装载到小车）
-                    _parcelLifecycleService.UpdateRouteState(new ParcelId(parcelIdLong), ParcelRouteState.Routed);
-                }
-            }
-
-            // 记录速度样本
-            _speedSamples.Add(new SpeedSample
-            {
-                Timestamp = DateTimeOffset.UtcNow,
-                SpeedMmps = _speedProvider.CurrentMmps
-            });
-
-            // 模拟包裹生成间隔
-            if (i < parcelCount - 1)
-            {
-                await Task.Delay(TimeSpan.FromSeconds(_config.ParcelGenerationIntervalSeconds), cancellationToken);
-            }
-        }
-    }
-
-    /// <summary>
-    /// 执行分拣计划（使用 ISortingPlanner）
-    /// </summary>
-    private async Task ExecuteSortingPlansAsync(CancellationToken cancellationToken)
-    {
-        // 获取所有包裹
-        var allParcels = _parcelLifecycleService.GetAll();
-        var loadedParcels = allParcels.Where(p => 
-            p.RouteState == ParcelRouteState.Routed && 
-            p.TargetChuteId != null && 
-            p.BoundCartId != null).ToList();
-
-        _logger.LogInformation("开始执行分拣计划，已路由包裹数: {Count}", loadedParcels.Count);
-
-        // 使用 SortingPlanner 生成吐件计划
-        var now = DateTimeOffset.UtcNow;
-        var horizon = TimeSpan.FromSeconds(10);
-        var ejectPlans = _sortingPlanner.PlanEjects(now, horizon);
-
-        _logger.LogInformation("生成吐件计划数: {Count}", ejectPlans.Count);
-
-        // 执行吐件计划（模拟格口打开）
-        foreach (var plan in ejectPlans)
-        {
-            if (cancellationToken.IsCancellationRequested)
-                break;
-
-            // 模拟格口打开
-            var chuteConfig = _chuteConfigProvider.GetConfig(plan.ChuteId);
-            var openDuration = chuteConfig?.MaxOpenDuration ?? TimeSpan.FromMilliseconds(300);
-            await _chuteTransmitter.OpenWindowAsync(plan.ChuteId, openDuration, cancellationToken);
-
-            // 更新状态为分拣中
-            _parcelLifecycleService.UpdateRouteState(plan.ParcelId, ParcelRouteState.Sorting);
-
-            // 标记包裹已分拣
-            _parcelLifecycleService.MarkSorted(plan.ParcelId, DateTimeOffset.UtcNow);
-            _parcelLifecycleService.UpdateRouteState(plan.ParcelId, ParcelRouteState.Sorted);
-
-            // 卸载小车
-            _cartLifecycleService.UnloadCart(plan.CartId, DateTimeOffset.UtcNow);
-
-            // 报告分拣结果给上游
-            var report = new SortingResultReportDto
-            {
-                ParcelId = plan.ParcelId.Value,
-                ChuteId = (int)plan.ChuteId.Value,
-                IsSuccess = true
-            };
-            await _upstreamClient.ReportSortingResultAsync(report, cancellationToken);
-
-            _logger.LogDebug("包裹 {ParcelId} 在格口 {ChuteId} 完成分拣", plan.ParcelId.Value, plan.ChuteId.Value);
-
-            await Task.Delay(10, cancellationToken); // 模拟少量延迟
-        }
-
-        // 处理未被计划的包裹（可能需要强排）
-        var sortedParcelIds = ejectPlans.Select(p => p.ParcelId).ToHashSet();
-        var unsortedParcels = loadedParcels.Where(p => !sortedParcelIds.Contains(p.ParcelId)).ToList();
-
-        if (unsortedParcels.Any())
-        {
-            _logger.LogInformation("处理未被计划的包裹数（可能强排）: {Count}", unsortedParcels.Count);
-
-            foreach (var parcel in unsortedParcels)
-            {
-                if (cancellationToken.IsCancellationRequested)
-                    break;
-
-                // 使用强排口
-                var forceEjectChute = new ChuteId(_config.ForceEjectChuteId);
-                await _chuteTransmitter.OpenWindowAsync(forceEjectChute, TimeSpan.FromMilliseconds(300), cancellationToken);
-
-                _parcelLifecycleService.UpdateRouteState(parcel.ParcelId, ParcelRouteState.ForceEjected);
-                _parcelLifecycleService.MarkSorted(parcel.ParcelId, DateTimeOffset.UtcNow);
-
-                if (parcel.BoundCartId != null)
-                {
-                    _cartLifecycleService.UnloadCart(parcel.BoundCartId.Value, DateTimeOffset.UtcNow);
-                }
-
-                var report = new SortingResultReportDto
-                {
-                    ParcelId = parcel.ParcelId.Value,
-                    ChuteId = _config.ForceEjectChuteId,
-                    IsSuccess = false,
-                    FailureReason = "强排"
-                };
-                await _upstreamClient.ReportSortingResultAsync(report, cancellationToken);
-
-                _logger.LogDebug("包裹 {ParcelId} 强排到格口 {ChuteId}", parcel.ParcelId.Value, _config.ForceEjectChuteId);
-
-                await Task.Delay(10, cancellationToken);
-            }
-        }
     }
 
     /// <summary>

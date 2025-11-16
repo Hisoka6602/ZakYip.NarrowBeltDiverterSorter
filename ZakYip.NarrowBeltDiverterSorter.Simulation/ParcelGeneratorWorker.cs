@@ -33,11 +33,16 @@ public class ParcelGeneratorWorker : BackgroundService
         await Task.Delay(TimeSpan.FromSeconds(3), stoppingToken);
 
         var intervalMs = (int)(_config.ParcelGenerationIntervalSeconds * 1000);
+        
+        // 确定停止条件
+        var maxParcels = _config.ParcelCount > 0 ? _config.ParcelCount : int.MaxValue;
         var stopTime = _config.SimulationDurationSeconds > 0
             ? DateTimeOffset.Now.AddSeconds(_config.SimulationDurationSeconds)
             : DateTimeOffset.MaxValue;
 
-        while (!stoppingToken.IsCancellationRequested && DateTimeOffset.Now < stopTime)
+        while (!stoppingToken.IsCancellationRequested 
+               && _parcelIdCounter <= maxParcels 
+               && DateTimeOffset.Now < stopTime)
         {
             try
             {
@@ -66,6 +71,6 @@ public class ParcelGeneratorWorker : BackgroundService
             }
         }
 
-        _logger.LogInformation("包裹生成器已停止");
+        _logger.LogInformation("包裹生成器已停止，共生成 {Count} 个包裹", _parcelIdCounter - 1);
     }
 }
