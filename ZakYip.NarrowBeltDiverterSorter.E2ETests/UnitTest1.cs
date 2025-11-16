@@ -22,7 +22,7 @@ public class EndToEndSimulationTests
     {
         // Arrange - 设置测试环境
         var cartRingBuilder = new CartRingBuilder();
-        var cartPositionTracker = new CartPositionTracker();
+        var cartPositionTracker = new CartPositionTracker(cartRingBuilder);
         var mainLineFeedback = new MockMainLineFeedbackPort(1000.0); // 1000 mm/s
         var infeedConveyor = new MockInfeedConveyorPort(1000.0); // 1000 mm/s
         
@@ -115,7 +115,7 @@ public class EndToEndSimulationTests
 
         // 再让一个小车经过，应该回到0
         cartPositionTracker.OnCartPassedOrigin(DateTimeOffset.UtcNow);
-        Assert.Equal(10, cartPositionTracker.CurrentOriginCartIndex!.Value.Value);
+        Assert.Equal(0, cartPositionTracker.CurrentOriginCartIndex!.Value.Value); // 回绕到0
 
         // 测试第三个包裹
         var parcelId3 = new ParcelId(3);
@@ -129,7 +129,7 @@ public class EndToEndSimulationTests
         loadCoordinator.HandleParcelCreatedFromInfeed(null, parcelEvent3);
         await Task.Delay(150);
 
-        // 验证环绕后仍能正确预测（小车10 % 10 = 0）
+        // 验证环绕后仍能正确预测（小车0）
         Assert.Equal(3, loadedEvents.Count);
         Assert.Equal(parcelId3, loadedEvents[2].ParcelId);
         Assert.Equal(0L, loadedEvents[2].CartId.Value); // 应该回到小车0
@@ -143,7 +143,7 @@ public class EndToEndSimulationTests
     {
         // Arrange
         var cartRingBuilder = new CartRingBuilder();
-        var cartPositionTracker = new CartPositionTracker();
+        var cartPositionTracker = new CartPositionTracker(cartRingBuilder);
         var mainLineFeedback = new MockMainLineFeedbackPort(1000.0);
         var infeedConveyor = new MockInfeedConveyorPort(1000.0);
         
@@ -197,7 +197,7 @@ public class EndToEndSimulationTests
     {
         // Arrange
         var cartRingBuilder = new CartRingBuilder();
-        var cartPositionTracker = new CartPositionTracker();
+        var cartPositionTracker = new CartPositionTracker(cartRingBuilder);
         var mainLineFeedback = new MockMainLineFeedbackPort(1000.0);
         var infeedConveyor = new MockInfeedConveyorPort(1000.0);
         
@@ -229,10 +229,10 @@ public class EndToEndSimulationTests
         loadCoordinator.HandleParcelCreatedFromInfeed(null, parcelEvent);
         await Task.Delay(150);
 
-        // Assert - 验证包裹进入失败状态
+        // Assert - 验证包裹保持在等待状态（而不是失败状态）
         var snapshots = loadCoordinator.GetParcelSnapshots();
         Assert.Single(snapshots);
-        Assert.Equal(ParcelRouteState.Failed, snapshots[parcelId].RouteState);
+        Assert.Equal(ParcelRouteState.WaitingForRouting, snapshots[parcelId].RouteState);
     }
 
     /// <summary>

@@ -5,8 +5,15 @@ namespace ZakYip.NarrowBeltDiverterSorter.Core.Domain.Tracking;
 /// </summary>
 public class CartPositionTracker : ICartPositionTracker
 {
+    private readonly ICartRingBuilder _cartRingBuilder;
     private CartIndex? _currentOriginCartIndex;
+    private RingLength? _ringLength;
     private bool _isInitialized;
+
+    public CartPositionTracker(ICartRingBuilder cartRingBuilder)
+    {
+        _cartRingBuilder = cartRingBuilder ?? throw new ArgumentNullException(nameof(cartRingBuilder));
+    }
 
     /// <inheritdoc/>
     public bool IsInitialized => _isInitialized;
@@ -17,16 +24,26 @@ public class CartPositionTracker : ICartPositionTracker
     /// <inheritdoc/>
     public void OnCartPassedOrigin(DateTimeOffset timestamp)
     {
-        if (_currentOriginCartIndex == null)
+        // Check if cart ring is built
+        var snapshot = _cartRingBuilder.CurrentSnapshot;
+        if (snapshot == null)
         {
-            // First cart detection - assume it's cart 0
-            _currentOriginCartIndex = new CartIndex(0);
-            _isInitialized = true; // Mark as initialized on first cart detection
+            // Cart ring not yet built, cannot track
+            return;
+        }
+
+        if (!_isInitialized)
+        {
+            // First cart detection after ring is built - initialize with zero cart
+            _currentOriginCartIndex = snapshot.ZeroIndex;
+            _ringLength = snapshot.RingLength;
+            _isInitialized = true;
         }
         else
         {
-            // Increment to next cart (will wrap around in CalculateCartIndexAtOffset)
-            _currentOriginCartIndex = new CartIndex(_currentOriginCartIndex.Value.Value + 1);
+            // Increment to next cart, wrapping around the ring
+            var nextIndex = (_currentOriginCartIndex!.Value.Value + 1) % _ringLength!.Value.Value;
+            _currentOriginCartIndex = new CartIndex(nextIndex);
         }
     }
 

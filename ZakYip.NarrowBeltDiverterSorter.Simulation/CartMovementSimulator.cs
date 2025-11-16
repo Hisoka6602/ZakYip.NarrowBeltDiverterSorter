@@ -49,11 +49,11 @@ public class CartMovementSimulator : BackgroundService
 
                     // 模拟小车通过原点
                     bool isCartZero = (_currentCartIndex == 0);
-                    _originSensor.SimulateCartPassing(isCartZero);
+                    await _originSensor.SimulateCartPassingAsync(isCartZero);
 
                     if (isCartZero)
                     {
-                        Console.WriteLine($"[小车运动] 0号车通过原点 - 当前速度: {currentSpeed:F2} mm/s");
+                        _logger.LogDebug("0号车通过原点 - 当前速度: {Speed:F2} mm/s", currentSpeed);
                     }
 
                     _currentCartIndex = (_currentCartIndex + 1) % _config.NumberOfCarts;
