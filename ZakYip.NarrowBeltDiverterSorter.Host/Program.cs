@@ -177,6 +177,20 @@ switch (mainLineDriveOptions.Implementation)
         builder.Services.AddSingleton<IMainLineFeedbackPort, StubMainLineFeedbackPort>();
         
         Console.WriteLine("主线驱动实现: Rema LM1000H");
+        
+        // 输出雷马连接参数（便于现场排查）
+        if (mainLineDriveOptions.Rema != null)
+        {
+            Console.WriteLine($"  串口号: {mainLineDriveOptions.Rema.PortName}");
+            Console.WriteLine($"  波特率: {mainLineDriveOptions.Rema.BaudRate}");
+            Console.WriteLine($"  数据位: {mainLineDriveOptions.Rema.DataBits}");
+            Console.WriteLine($"  奇偶校验: {mainLineDriveOptions.Rema.Parity}");
+            Console.WriteLine($"  停止位: {mainLineDriveOptions.Rema.StopBits}");
+            Console.WriteLine($"  站号: {mainLineDriveOptions.Rema.SlaveAddress}");
+            Console.WriteLine($"  读取超时: {mainLineDriveOptions.Rema.ReadTimeout.TotalMilliseconds} ms");
+            Console.WriteLine($"  写入超时: {mainLineDriveOptions.Rema.WriteTimeout.TotalMilliseconds} ms");
+            Console.WriteLine($"  最大重试: {mainLineDriveOptions.Rema.MaxRetries}");
+        }
         break;
 
     default:
@@ -297,6 +311,22 @@ var host = builder.Build();
 var logger = host.Services.GetRequiredService<ILogger<Program>>();
 logger.LogInformation("=== 系统启动模式: {Mode} ===", startupConfig.GetModeDescription());
 logger.LogInformation("主线驱动实现: {Implementation}", mainLineDriveOptions.GetImplementationDescription());
+
+// 输出雷马连接参数（当使用 RemaLm1000H 模式时）
+if (mainLineDriveOptions.Implementation == MainLineDriveImplementation.RemaLm1000H && mainLineDriveOptions.Rema != null)
+{
+    logger.LogInformation("雷马 LM1000H 连接参数:");
+    logger.LogInformation("  串口号: {PortName}", mainLineDriveOptions.Rema.PortName);
+    logger.LogInformation("  波特率: {BaudRate}", mainLineDriveOptions.Rema.BaudRate);
+    logger.LogInformation("  数据位: {DataBits}", mainLineDriveOptions.Rema.DataBits);
+    logger.LogInformation("  奇偶校验: {Parity}", mainLineDriveOptions.Rema.Parity);
+    logger.LogInformation("  停止位: {StopBits}", mainLineDriveOptions.Rema.StopBits);
+    logger.LogInformation("  站号: {SlaveAddress}", mainLineDriveOptions.Rema.SlaveAddress);
+    logger.LogInformation("  读取超时: {ReadTimeout} ms", mainLineDriveOptions.Rema.ReadTimeout.TotalMilliseconds);
+    logger.LogInformation("  写入超时: {WriteTimeout} ms", mainLineDriveOptions.Rema.WriteTimeout.TotalMilliseconds);
+    logger.LogInformation("  最大重试: {MaxRetries}", mainLineDriveOptions.Rema.MaxRetries);
+}
+
 logger.LogInformation("已启动服务:");
 if (startupConfig.ShouldStartMainLineControl())
     logger.LogInformation("  - 主线控制工作器 (MainLineControlWorker)");
