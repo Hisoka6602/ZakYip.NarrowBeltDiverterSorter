@@ -35,7 +35,7 @@ Console.WriteLine("════════════════════�
 var scenarioOption = new Option<string?>(
     name: "--scenario",
     getDefaultValue: () => "legacy",
-    description: "仿真场景：legacy（传统仿真，60秒持续运行）、e2e-report（端到端仿真并输出报告）或 e2e-speed-unstable（端到端仿真，速度不稳定）");
+    description: "仿真场景：legacy（传统仿真，60秒持续运行）、e2e-report（端到端仿真并输出报告）、e2e-speed-unstable（端到端仿真，速度不稳定）或 safety-chute-reset（安全场景仿真）");
 
 var parcelCountOption = new Option<int>(
     name: "--parcel-count",
@@ -83,6 +83,10 @@ static async Task RunSimulationAsync(string? scenario, int parcelCount, string? 
     if (scenario == "e2e-report" || scenario == "e2e-speed-unstable")
     {
         await RunE2EScenarioAsync(parcelCount, output, resetConfig, sortingMode, fixedChuteId, scenario);
+    }
+    else if (scenario == "safety-chute-reset")
+    {
+        await RunSafetyScenarioAsync();
     }
     else
     {
@@ -811,4 +815,146 @@ static async Task RunTraditionalSimulationAsync()
     Console.WriteLine("正在启动仿真...\n");
 
     await host.RunAsync();
+}
+
+static async Task RunSafetyScenarioAsync()
+{
+    Console.WriteLine("═══ 运行安全场景仿真 (safety-chute-reset) ═══\n");
+
+    var builder = Host.CreateApplicationBuilder();
+
+    // ============================================================================
+    // 配置仿真参数
+    // ============================================================================
+
+    const int numberOfChutes = 10;
+    
+    var simulationConfig = new SimulationConfiguration
+    {
+        NumberOfCarts = 20,
+        CartSpacingMm = 500m,
+        NumberOfChutes = numberOfChutes,
+        ForceEjectChuteId = 10,
+        MainLineSpeedMmPerSec = 1000.0,
+        Scenario = "safety-chute-reset"
+    };
+
+    Console.WriteLine($"仿真配置:");
+    Console.WriteLine($"  格口数量: {simulationConfig.NumberOfChutes}");
+    Console.WriteLine($"  场景: 安全场景验证\n");
+
+    builder.Services.AddSingleton(simulationConfig);
+
+    // ============================================================================
+    // 配置日志
+    // ============================================================================
+
+    builder.Logging.ClearProviders();
+    builder.Logging.AddConsole();
+    builder.Logging.SetMinimumLevel(LogLevel.Information);
+
+    // ============================================================================
+    // 注册 Fake 硬件实现
+    // ============================================================================
+
+    var fakeChuteTransmitter = new FakeChuteTransmitterPort();
+    builder.Services.AddSingleton(fakeChuteTransmitter);
+    builder.Services.AddSingleton<IChuteTransmitterPort>(fakeChuteTransmitter);
+
+    // ============================================================================
+    // 注册格口配置提供者
+    // ============================================================================
+
+    builder.Services.AddSingleton<IChuteConfigProvider>(sp =>
+    {
+        var provider = new ChuteConfigProvider();
+        for (int i = 1; i <= numberOfChutes; i++)
+        {
+            provider.AddOrUpdate(new ZakYip.NarrowBeltDiverterSorter.Core.Domain.ChuteConfig
+            {
+                ChuteId = new ZakYip.NarrowBeltDiverterSorter.Core.Domain.ChuteId(i),
+                IsEnabled = true,
+                IsForceEject = (i == simulationConfig.ForceEjectChuteId),
+                CartOffsetFromOrigin = i * 5,
+                MaxOpenDuration = TimeSpan.FromMilliseconds(300)
+            });
+        }
+        return provider;
+    });
+
+    // ============================================================================
+    // 注册安全服务和场景运行器
+    // ============================================================================
+
+    builder.Services.AddSingleton<IChuteSafetyService, SimulatedChuteSafetyService>();
+    builder.Services.AddSingleton<SafetyScenarioRunner>();
+
+    // ============================================================================
+    // 构建并运行安全场景
+    // ============================================================================
+
+    var app = builder.Build();
+
+    Console.WriteLine("开始安全场景验证...\n");
+
+    try
+    {
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        
+        var runner = app.Services.GetRequiredService<SafetyScenarioRunner>();
+        var report = await runner.RunAsync(numberOfChutes, cts.Token);
+
+        // 输出报告
+        PrintSafetyReport(report);
+    }
+    catch (Exception ex)
+    {
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine($"\n✗ 安全场景运行失败: {ex.Message}");
+        Console.ResetColor();
+    }
+}
+
+static void PrintSafetyReport(SafetyScenarioReport report)
+{
+    Console.WriteLine("\n════════════════════════════════════════");
+    Console.WriteLine("║      安全场景验证报告 (Chute Safety) ║");
+    Console.WriteLine("════════════════════════════════════════");
+    Console.WriteLine();
+    Console.WriteLine("【格口状态】");
+    Console.WriteLine($"  总格口数:          {report.TotalChutes}");
+    Console.WriteLine($"  启动前已清零:      {(report.StartupCloseExecuted ? "✓ 是" : "✗ 否")}");
+    Console.WriteLine($"  运行中曾触发开合:  {(report.ChutesTriggeredDuringRun > 0 ? $"✓ 是 ({report.ChutesTriggeredDuringRun} 个格口)" : "✗ 否")}");
+    Console.WriteLine($"  停止后全部关闭:    {(report.ChutesOpenAfterShutdown == 0 ? "✓ 是" : "✗ 否")}");
+    Console.WriteLine();
+    Console.WriteLine("【异常情况】");
+    Console.WriteLine($"  启动时仍被检测为打开的格口: {report.ChutesOpenBeforeStartup}");
+    Console.WriteLine($"  启动安全关闭后仍打开的格口: {report.ChutesOpenAfterStartupClose}");
+    Console.WriteLine($"  停止后仍被检测为打开的格口: {report.ChutesOpenAfterShutdown}");
+    Console.WriteLine();
+    
+    if (!string.IsNullOrEmpty(report.ErrorMessage))
+    {
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine($"【错误信息】");
+        Console.WriteLine($"  {report.ErrorMessage}");
+        Console.ResetColor();
+        Console.WriteLine();
+    }
+    
+    Console.Write("安全检查结果:       ");
+    if (report.FinalVerificationPassed)
+    {
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine("✓ 通过");
+        Console.ResetColor();
+    }
+    else
+    {
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine("✗ 失败");
+        Console.ResetColor();
+    }
+    Console.WriteLine();
+    Console.WriteLine("════════════════════════════════════════\n");
 }
