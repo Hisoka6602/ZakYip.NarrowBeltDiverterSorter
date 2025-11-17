@@ -88,6 +88,10 @@ builder.Services.Configure<MainLineDriveOptions>(
 builder.Services.Configure<RemaLm1000HOptions>(
     builder.Configuration.GetSection("RemaLm1000H"));
 
+// 配置格口 IO 选项
+builder.Services.Configure<ChuteIoOptions>(
+    builder.Configuration.GetSection(ChuteIoOptions.SectionName));
+
 // ============================================================================
 // 注册事件总线 (Observability)
 // ============================================================================
@@ -200,8 +204,71 @@ switch (mainLineDriveOptions.Implementation)
 // 注册小车参数驱动
 builder.Services.AddSingleton<ICartParameterPort, CartParameterDriver>();
 
-// 注册格口发信器驱动
+// 注册格口发信器驱动（底层实现，由 SortingExecutionWorker 和 ChuteSafetyService 使用）
+// 注意：IChuteTransmitterPort 是底层硬件端口抽象，用于现有代码兼容性
+// 新代码应优先使用 IChuteIoService，它提供了更通用的多 IP 端点支持
 builder.Services.AddSingleton<IChuteTransmitterPort, ChuteTransmitterDriver>();
+
+// ============================================================================
+// 根据配置注册格口 IO 服务实现
+// ============================================================================
+// IChuteIoService 是新的通用格口 IO 服务接口，支持：
+// 1. 多个 IP 端点（每个端点可以是不同的品牌/型号）
+// 2. 灵活的通道映射配置（避免硬编码魔法数字）
+// 3. 品牌无关的抽象（不暴露具体硬件细节）
+// ============================================================================
+
+var chuteIoOptions = builder.Configuration
+    .GetSection(ChuteIoOptions.SectionName)
+    .Get<ChuteIoOptions>();
+
+if (chuteIoOptions != null && chuteIoOptions.Mode == "Simulation")
+{
+    // 创建端点列表和映射
+    var endpoints = new List<IChuteIoEndpoint>();
+    var chuteMapping = new Dictionary<long, (IChuteIoEndpoint endpoint, int channelIndex)>();
+
+    foreach (var nodeConfig in chuteIoOptions.Nodes)
+    {
+        // 创建模拟端点
+        var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
+        var endpointLogger = loggerFactory.CreateLogger<SimulationChuteIoEndpoint>();
+        var endpoint = new SimulationChuteIoEndpoint(
+            nodeConfig.NodeKey,
+            nodeConfig.MaxChannelCount,
+            endpointLogger);
+
+        endpoints.Add(endpoint);
+
+        // 构建映射关系
+        foreach (var channelBinding in nodeConfig.Channels)
+        {
+            chuteMapping[channelBinding.ChuteId] = (endpoint, channelBinding.ChannelIndex);
+        }
+    }
+
+    // 注册模拟格口 IO 服务
+    builder.Services.AddSingleton<IChuteIoService>(sp =>
+    {
+        var logger = sp.GetRequiredService<ILogger<SimulationChuteIoService>>();
+        return new SimulationChuteIoService(endpoints, chuteMapping, logger);
+    });
+
+    Console.WriteLine("格口 IO 实现: 模拟模式");
+    Console.WriteLine($"  节点数量: {chuteIoOptions.Nodes.Count}");
+    foreach (var node in chuteIoOptions.Nodes)
+    {
+        Console.WriteLine($"  - {node.NodeKey}: {node.Channels.Count} 个通道绑定");
+    }
+}
+else if (chuteIoOptions == null)
+{
+    Console.WriteLine("格口 IO 配置未找到，跳过注册");
+}
+else
+{
+    Console.WriteLine($"格口 IO 模式 '{chuteIoOptions.Mode}' 尚未实现，跳过注册");
+}
 
 // 注册传感器端口（这些需要具体实现，这里使用占位符）
 // TODO: 实现具体的传感器端口
