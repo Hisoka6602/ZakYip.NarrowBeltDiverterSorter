@@ -27,6 +27,7 @@ using ZakYip.NarrowBeltDiverterSorter.Infrastructure.LiteDb;
 using ZakYip.NarrowBeltDiverterSorter.Communication.Upstream;
 using ZakYip.NarrowBeltDiverterSorter.Host;
 using ZakYip.NarrowBeltDiverterSorter.Host.SignalR;
+using ZakYip.NarrowBeltDiverterSorter.Observability.Recording;
 // Note: Simulation types cannot be used due to circular dependency
 // using ZakYip.NarrowBeltDiverterSorter.Simulation;
 // using ZakYip.NarrowBeltDiverterSorter.Simulation.Fakes;
@@ -135,6 +136,18 @@ builder.Services.Configure<LiveViewPushOptions>(
 // ============================================================================
 
 builder.Services.AddSingleton<IEventBus, InMemoryEventBus>();
+
+// ============================================================================
+// 注册事件录制与回放 (Observability)
+// ============================================================================
+
+// 注册文件事件录制管理器（同时实现管理器和录制器接口）
+builder.Services.AddSingleton<FileEventRecordingManager>();
+builder.Services.AddSingleton<IEventRecordingManager>(sp => sp.GetRequiredService<FileEventRecordingManager>());
+builder.Services.AddSingleton<IEventRecorder>(sp => sp.GetRequiredService<FileEventRecordingManager>());
+
+// 注册录制事件订阅器（作为托管服务自动启动）
+builder.Services.AddSingleton<RecordingEventSubscriber>();
 
 // ============================================================================
 // 注册实时视图聚合器 (Observability)
