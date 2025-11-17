@@ -27,6 +27,22 @@ public interface ITrackTopology
     int ChuteCount { get; }
 
     /// <summary>
+    /// 格口宽度（mm）
+    /// </summary>
+    decimal ChuteWidthMm { get; }
+
+    /// <summary>
+    /// 小车宽度（mm）
+    /// </summary>
+    decimal CartWidthMm { get; }
+
+    /// <summary>
+    /// 主线长度（mm）
+    /// 计算为：格口宽度 × 格口数量 / 2
+    /// </summary>
+    decimal TrackLengthMm { get; }
+
+    /// <summary>
     /// 入口落包点相对于原点的距离（mm）
     /// </summary>
     decimal InfeedDropPointOffsetMm { get; }

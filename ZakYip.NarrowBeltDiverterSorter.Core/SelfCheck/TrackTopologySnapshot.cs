@@ -20,4 +20,25 @@ public sealed record TrackTopologySnapshot
     /// 环总长（mm）
     /// </summary>
     public required decimal RingTotalLengthMm { get; init; }
+
+    /// <summary>
+    /// 格口数量
+    /// </summary>
+    public required int ChuteCount { get; init; }
+
+    /// <summary>
+    /// 格口宽度（mm）
+    /// </summary>
+    public required decimal ChuteWidthMm { get; init; }
+
+    /// <summary>
+    /// 小车宽度（mm）
+    /// </summary>
+    public required decimal CartWidthMm { get; init; }
+
+    /// <summary>
+    /// 主线长度（mm）
+    /// 通常计算为：格口宽度 × 格口数量 / 2
+    /// </summary>
+    public required decimal TrackLengthMm { get; init; }
 }

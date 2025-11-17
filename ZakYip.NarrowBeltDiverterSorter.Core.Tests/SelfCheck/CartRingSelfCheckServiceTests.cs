@@ -22,7 +22,11 @@ public class CartRingSelfCheckServiceTests
         {
             CartCount = 20,
             CartSpacingMm = 500m,
-            RingTotalLengthMm = 10000m
+            RingTotalLengthMm = 10000m,
+            ChuteCount = 32,
+            ChuteWidthMm = 500m,
+            CartWidthMm = 200m,
+            TrackLengthMm = 8000m
         };
 
         // 模拟20辆小车通过，速度1000mm/s，节距500mm
@@ -63,7 +67,11 @@ public class CartRingSelfCheckServiceTests
         {
             CartCount = 20,
             CartSpacingMm = 500m,
-            RingTotalLengthMm = 10000m
+            RingTotalLengthMm = 10000m,
+            ChuteCount = 32,
+            ChuteWidthMm = 500m,
+            CartWidthMm = 200m,
+            TrackLengthMm = 8000m
         };
 
         // 模拟只有18辆小车通过（配置是20辆）
@@ -102,7 +110,11 @@ public class CartRingSelfCheckServiceTests
         {
             CartCount = 20,
             CartSpacingMm = 500m,
-            RingTotalLengthMm = 10000m
+            RingTotalLengthMm = 10000m,
+            ChuteCount = 32,
+            ChuteWidthMm = 500m,
+            CartWidthMm = 200m,
+            TrackLengthMm = 8000m
         };
 
         // 模拟20辆小车，但实际节距是550mm（超出5%容差）
@@ -145,7 +157,11 @@ public class CartRingSelfCheckServiceTests
         {
             CartCount = 10,
             CartSpacingMm = 500m,
-            RingTotalLengthMm = 5000m
+            RingTotalLengthMm = 5000m,
+            ChuteCount = 16,
+            ChuteWidthMm = 500m,
+            CartWidthMm = 200m,
+            TrackLengthMm = 4000m
         };
 
         // 模拟速度轻微变化的场景（更接近实际）
@@ -190,7 +206,11 @@ public class CartRingSelfCheckServiceTests
         {
             CartCount = 20,
             CartSpacingMm = 500m,
-            RingTotalLengthMm = 10000m
+            RingTotalLengthMm = 10000m,
+            ChuteCount = 32,
+            ChuteWidthMm = 500m,
+            CartWidthMm = 200m,
+            TrackLengthMm = 8000m
         };
 
         var events = new List<CartPassEventArgs>();
@@ -217,7 +237,11 @@ public class CartRingSelfCheckServiceTests
         {
             CartCount = 5,
             CartSpacingMm = 500m,
-            RingTotalLengthMm = 2500m
+            RingTotalLengthMm = 2500m,
+            ChuteCount = 8,
+            ChuteWidthMm = 500m,
+            CartWidthMm = 200m,
+            TrackLengthMm = 2000m
         };
 
         // 模拟多圈数据，包含重复的小车ID
@@ -264,7 +288,11 @@ public class CartRingSelfCheckServiceTests
         {
             CartCount = 20,
             CartSpacingMm = 500m,
-            RingTotalLengthMm = 10000m
+            RingTotalLengthMm = 10000m,
+            ChuteCount = 32,
+            ChuteWidthMm = 500m,
+            CartWidthMm = 200m,
+            TrackLengthMm = 8000m
         };
 
         // Act & Assert

@@ -32,6 +32,16 @@ public class TrackTopologyOptions
     public decimal CartSpacingMm { get; set; }
 
     /// <summary>
+    /// 小车宽度（mm）
+    /// </summary>
+    public decimal CartWidthMm { get; set; }
+
+    /// <summary>
+    /// 格口宽度（mm）
+    /// </summary>
+    public decimal ChuteWidthMm { get; set; }
+
+    /// <summary>
     /// 格口位置配置列表
     /// </summary>
     public List<ChutePositionConfig> ChutePositions { get; set; } = new();

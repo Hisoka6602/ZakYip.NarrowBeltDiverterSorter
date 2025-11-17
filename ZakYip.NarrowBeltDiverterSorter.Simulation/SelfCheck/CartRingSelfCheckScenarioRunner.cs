@@ -87,7 +87,11 @@ public class CartRingSelfCheckScenarioRunner
         {
             CartCount = _trackTopology.CartCount,
             CartSpacingMm = _trackTopology.CartSpacingMm,
-            RingTotalLengthMm = _trackTopology.RingTotalLengthMm
+            RingTotalLengthMm = _trackTopology.RingTotalLengthMm,
+            ChuteCount = _trackTopology.ChuteCount,
+            ChuteWidthMm = _trackTopology.ChuteWidthMm,
+            CartWidthMm = _trackTopology.CartWidthMm,
+            TrackLengthMm = _trackTopology.TrackLengthMm
         };
 
         var result = _selfCheckService.RunAnalysis(collectedEvents, topologySnapshot);

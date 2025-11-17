@@ -32,7 +32,11 @@ public class CartRingSelfCheckTests
         {
             CartCount = 20,
             CartSpacingMm = 500m,
-            RingTotalLengthMm = 10000m
+            RingTotalLengthMm = 10000m,
+            ChuteCount = 32,
+            ChuteWidthMm = 500m,
+            CartWidthMm = 200m,
+            TrackLengthMm = 8000m
         };
 
         // 模拟完整的2圈数据（20辆小车 × 2圈 = 40个事件）
@@ -90,7 +94,11 @@ public class CartRingSelfCheckTests
         {
             CartCount = 18, // 错误的配置
             CartSpacingMm = 500m,
-            RingTotalLengthMm = 9000m
+            RingTotalLengthMm = 9000m,
+            ChuteCount = 29,
+            ChuteWidthMm = 500m,
+            CartWidthMm = 200m,
+            TrackLengthMm = 7250m
         };
 
         // 模拟20辆小车通过
@@ -134,7 +142,11 @@ public class CartRingSelfCheckTests
         {
             CartCount = 20,
             CartSpacingMm = 500m, // 配置是500mm
-            RingTotalLengthMm = 10000m
+            RingTotalLengthMm = 10000m,
+            ChuteCount = 32,
+            ChuteWidthMm = 500m,
+            CartWidthMm = 200m,
+            TrackLengthMm = 8000m
         };
 
         // 模拟实际节距是550mm（超出5%容差）
