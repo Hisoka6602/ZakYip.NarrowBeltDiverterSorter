@@ -3,6 +3,7 @@ using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using ZakYip.NarrowBeltDiverterSorter.Communication;
 using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Core.Application;
@@ -254,6 +255,18 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
     var fakeChuteTransmitter = new FakeChuteTransmitterPort();
     builder.Services.AddSingleton(fakeChuteTransmitter);
     builder.Services.AddSingleton<IChuteTransmitterPort>(fakeChuteTransmitter);
+
+    // 配置格口 IO 映射选项
+    builder.Services.AddSingleton<IOptions<ChuteIoMappingOptions>>(sp =>
+    {
+        var options = ChuteIoMappingOptions.CreateDefault(
+            numberOfChutes: simulationConfig.NumberOfChutes,
+            strongEjectChuteId: simulationConfig.ForceEjectChuteId);
+        return Options.Create(options);
+    });
+
+    // 注册仿真格口执行器
+    builder.Services.AddSingleton<IChuteActuator, SimulationChuteActuator>();
 
     builder.Services.AddSingleton<IUpstreamSortingApiClient, FakeUpstreamSortingApiClient>();
 
@@ -729,6 +742,18 @@ static async Task RunTraditionalSimulationAsync()
     var fakeChuteTransmitter = new FakeChuteTransmitterPort();
     builder.Services.AddSingleton<IChuteTransmitterPort>(fakeChuteTransmitter);
 
+    // 配置格口 IO 映射选项
+    builder.Services.AddSingleton<IOptions<ChuteIoMappingOptions>>(sp =>
+    {
+        var options = ChuteIoMappingOptions.CreateDefault(
+            numberOfChutes: simulationConfig.NumberOfChutes,
+            strongEjectChuteId: simulationConfig.ForceEjectChuteId);
+        return Options.Create(options);
+    });
+
+    // 注册仿真格口执行器
+    builder.Services.AddSingleton<IChuteActuator, SimulationChuteActuator>();
+
     builder.Services.AddSingleton<IUpstreamSortingApiClient, FakeUpstreamSortingApiClient>();
 
     // ============================================================================
@@ -866,6 +891,18 @@ static async Task RunSafetyScenarioAsync()
     var fakeChuteTransmitter = new FakeChuteTransmitterPort();
     builder.Services.AddSingleton(fakeChuteTransmitter);
     builder.Services.AddSingleton<IChuteTransmitterPort>(fakeChuteTransmitter);
+
+    // 配置格口 IO 映射选项
+    builder.Services.AddSingleton<IOptions<ChuteIoMappingOptions>>(sp =>
+    {
+        var options = ChuteIoMappingOptions.CreateDefault(
+            numberOfChutes: numberOfChutes,
+            strongEjectChuteId: simulationConfig.ForceEjectChuteId);
+        return Options.Create(options);
+    });
+
+    // 注册仿真格口执行器
+    builder.Services.AddSingleton<IChuteActuator, SimulationChuteActuator>();
 
     // ============================================================================
     // 注册格口配置提供者

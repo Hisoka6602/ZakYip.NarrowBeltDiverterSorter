@@ -17,7 +17,7 @@ public class SortingExecutionWorker : BackgroundService
 {
     private readonly ILogger<SortingExecutionWorker> _logger;
     private readonly ISortingPlanner _sortingPlanner;
-    private readonly IChuteTransmitterPort _chuteTransmitterPort;
+    private readonly IChuteActuator _chuteActuator;
     private readonly ICartLifecycleService _cartLifecycleService;
     private readonly IParcelLifecycleService _parcelLifecycleService;
     private readonly IUpstreamSortingApiClient _upstreamApiClient;
@@ -29,7 +29,7 @@ public class SortingExecutionWorker : BackgroundService
     public SortingExecutionWorker(
         ILogger<SortingExecutionWorker> logger,
         ISortingPlanner sortingPlanner,
-        IChuteTransmitterPort chuteTransmitterPort,
+        IChuteActuator chuteActuator,
         ICartLifecycleService cartLifecycleService,
         IParcelLifecycleService parcelLifecycleService,
         IUpstreamSortingApiClient upstreamApiClient,
@@ -40,7 +40,7 @@ public class SortingExecutionWorker : BackgroundService
     {
         _logger = logger;
         _sortingPlanner = sortingPlanner;
-        _chuteTransmitterPort = chuteTransmitterPort;
+        _chuteActuator = chuteActuator;
         _cartLifecycleService = cartLifecycleService;
         _parcelLifecycleService = parcelLifecycleService;
         _upstreamApiClient = upstreamApiClient;
@@ -133,11 +133,8 @@ public class SortingExecutionWorker : BackgroundService
                     plan.IsForceEject ? "是" : "否");
             }
             
-            // Open chute window
-            await _chuteTransmitterPort.OpenWindowAsync(
-                plan.ChuteId,
-                plan.OpenDuration,
-                cancellationToken);
+            // Trigger chute actuation
+            await _chuteActuator.TriggerAsync(plan.ChuteId.Value, cancellationToken);
 
             if (plan.IsForceEject)
             {

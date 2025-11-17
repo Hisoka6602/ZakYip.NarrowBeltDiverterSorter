@@ -203,6 +203,16 @@ builder.Services.AddSingleton<ICartParameterPort, CartParameterDriver>();
 // 注册格口发信器驱动
 builder.Services.AddSingleton<IChuteTransmitterPort, ChuteTransmitterDriver>();
 
+// 配置格口 IO 映射选项
+builder.Services.AddSingleton<IOptions<ChuteIoMappingOptions>>(sp =>
+{
+    var options = ChuteIoMappingOptions.CreateDefault(numberOfChutes: 10, strongEjectChuteId: 10);
+    return Options.Create(options);
+});
+
+// 注册格口执行器（使用现场总线实现）
+builder.Services.AddSingleton<IChuteActuator, FieldBusChuteActuator>();
+
 // 注册传感器端口（这些需要具体实现，这里使用占位符）
 // TODO: 实现具体的传感器端口
 // builder.Services.AddSingleton<IOriginSensorPort, OriginSensorPortImplementation>();
