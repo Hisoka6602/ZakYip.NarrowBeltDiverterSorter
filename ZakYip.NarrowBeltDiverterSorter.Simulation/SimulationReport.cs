@@ -36,6 +36,11 @@ public record class SimulationReport
     /// 逐包裹详细信息（可选）
     /// </summary>
     public List<ParcelDetail>? ParcelDetails { get; init; }
+
+    /// <summary>
+    /// 小车环自检结果（可选）
+    /// </summary>
+    public CartRingSelfCheckInfo? CartRingSelfCheck { get; init; }
 }
 
 /// <summary>
@@ -313,4 +318,45 @@ public record class ChuteIoNodeInfo
     /// 该节点控制的格口ID列表
     /// </summary>
     public required List<long> ControlledChutes { get; init; }
+}
+
+/// <summary>
+/// 小车环自检信息
+/// </summary>
+public record class CartRingSelfCheckInfo
+{
+    /// <summary>
+    /// 配置的小车数量
+    /// </summary>
+    public int ExpectedCartCount { get; init; }
+
+    /// <summary>
+    /// 检测到的小车数量
+    /// </summary>
+    public int MeasuredCartCount { get; init; }
+
+    /// <summary>
+    /// 配置的节距（mm）
+    /// </summary>
+    public decimal ExpectedPitchMm { get; init; }
+
+    /// <summary>
+    /// 估算出的节距（mm）
+    /// </summary>
+    public decimal MeasuredPitchMm { get; init; }
+
+    /// <summary>
+    /// 小车数量是否匹配
+    /// </summary>
+    public bool IsCartCountMatched { get; init; }
+
+    /// <summary>
+    /// 节距是否在容忍范围内
+    /// </summary>
+    public bool IsPitchWithinTolerance { get; init; }
+
+    /// <summary>
+    /// 节距误差容忍百分比
+    /// </summary>
+    public double TolerancePercent { get; init; }
 }

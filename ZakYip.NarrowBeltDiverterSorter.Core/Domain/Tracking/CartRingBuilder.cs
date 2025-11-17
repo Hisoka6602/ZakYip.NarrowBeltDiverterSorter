@@ -25,6 +25,9 @@ public class CartRingBuilder : ICartRingBuilder
     public CartRingSnapshot? CurrentSnapshot { get; private set; }
 
     /// <inheritdoc/>
+    public event EventHandler<CartPassedEventArgs>? OnCartPassed;
+
+    /// <inheritdoc/>
     public void OnOriginSensorTriggered(bool isFirstSensor, bool isRisingEdge, DateTimeOffset timestamp)
     {
         if (_state != BuildState.Building)
@@ -62,12 +65,15 @@ public class CartRingBuilder : ICartRingBuilder
                     _firstZeroCartPassed = true;
                     _firstZeroCartTime = timestamp;
                     _cartCount = 1;
-                    _cartIds.Add(new CartId(0)); // Zero cart ID is 0
+                    var cartId = new CartId(0);
+                    _cartIds.Add(cartId); // Zero cart ID is 0
+                    RaiseCartPassed(cartId, timestamp);
                 }
                 else
                 {
                     // Second zero cart detection - complete the ring
                     CompleteRing(timestamp);
+                    RaiseCartPassed(new CartId(0), timestamp);
                 }
             }
 
@@ -79,7 +85,9 @@ public class CartRingBuilder : ICartRingBuilder
         {
             // Regular cart has passed (only sensor 1 was blocked)
             _cartCount++;
-            _cartIds.Add(new CartId(_cartCount - 1));
+            var cartId = new CartId(_cartCount - 1);
+            _cartIds.Add(cartId);
+            RaiseCartPassed(cartId, timestamp);
         }
     }
 
@@ -101,5 +109,14 @@ public class CartRingBuilder : ICartRingBuilder
         };
 
         _state = BuildState.Completed;
+    }
+
+    private void RaiseCartPassed(CartId cartId, DateTimeOffset timestamp)
+    {
+        OnCartPassed?.Invoke(this, new CartPassedEventArgs
+        {
+            CartId = cartId,
+            PassAt = timestamp
+        });
     }
 }

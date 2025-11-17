@@ -62,3 +62,15 @@ public class TestLogger : ILogger
         }
     }
 }
+
+/// <summary>
+/// Logger extension methods for tests
+/// </summary>
+public static class TestLoggerExtensions
+{
+    public static ILoggingBuilder AddXUnit(this ILoggingBuilder builder, ITestOutputHelper output)
+    {
+        builder.AddProvider(new TestLoggerProvider(output));
+        return builder;
+    }
+}
