@@ -4,6 +4,7 @@ using Xunit;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Sorting;
 using ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
+using ZakYip.NarrowBeltDiverterSorter.Infrastructure.LiteDb;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Infrastructure.Tests;
 
@@ -12,7 +13,7 @@ namespace ZakYip.NarrowBeltDiverterSorter.Infrastructure.Tests;
 /// </summary>
 public class LiteDbChuteConfigRepositoryTests : IDisposable
 {
-    private readonly LiteDbConfigStore _configStore;
+    private readonly LiteDbSorterConfigurationStore _configStore;
     private readonly LiteDbChuteConfigRepository _repository;
     private readonly string _testDbFile;
 
@@ -21,8 +22,8 @@ public class LiteDbChuteConfigRepositoryTests : IDisposable
         // Use a unique database file for each test instance
         _testDbFile = Path.Combine(Path.GetTempPath(), $"test-chute-{Guid.NewGuid()}.db");
         
-        var configLogger = NullLogger<LiteDbConfigStore>.Instance;
-        _configStore = new LiteDbConfigStore(configLogger, _testDbFile);
+        var configLogger = NullLogger<LiteDbSorterConfigurationStore>.Instance;
+        _configStore = new LiteDbSorterConfigurationStore(configLogger, _testDbFile);
 
         var repoLogger = NullLogger<LiteDbChuteConfigRepository>.Instance;
         _repository = new LiteDbChuteConfigRepository(_configStore, repoLogger);

@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Feeding;
 using ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
+using ZakYip.NarrowBeltDiverterSorter.Infrastructure.LiteDb;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Infrastructure.Tests;
 
@@ -11,7 +12,7 @@ namespace ZakYip.NarrowBeltDiverterSorter.Infrastructure.Tests;
 /// </summary>
 public class LiteDbInfeedLayoutOptionsRepositoryTests : IDisposable
 {
-    private readonly LiteDbConfigStore _configStore;
+    private readonly LiteDbSorterConfigurationStore _configStore;
     private readonly LiteDbInfeedLayoutOptionsRepository _repository;
     private readonly string _testDbFile;
 
@@ -20,8 +21,8 @@ public class LiteDbInfeedLayoutOptionsRepositoryTests : IDisposable
         // Use a unique database file for each test instance
         _testDbFile = Path.Combine(Path.GetTempPath(), $"test-infeed-{Guid.NewGuid()}.db");
         
-        var configLogger = NullLogger<LiteDbConfigStore>.Instance;
-        _configStore = new LiteDbConfigStore(configLogger, _testDbFile);
+        var configLogger = NullLogger<LiteDbSorterConfigurationStore>.Instance;
+        _configStore = new LiteDbSorterConfigurationStore(configLogger, _testDbFile);
 
         var repoLogger = NullLogger<LiteDbInfeedLayoutOptionsRepository>.Instance;
         _repository = new LiteDbInfeedLayoutOptionsRepository(_configStore, repoLogger);
