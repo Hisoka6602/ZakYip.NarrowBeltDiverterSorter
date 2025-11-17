@@ -121,6 +121,7 @@ public class RemaLm1000HMainLineDriveTests
         var drive = new RemaLm1000HMainLineDrive(logger, options, transport);
 
         // Act
+        await drive.InitializeAsync(); // Initialize first
         await drive.StartAsync();
 
         // Assert
@@ -142,7 +143,7 @@ public class RemaLm1000HMainLineDriveTests
         Assert.Equal(RemaScaling.ControlCmd_Forward, controlWord);
         
         // Cleanup
-        await drive.StopAsync();
+        await drive.ShutdownAsync(); // Use ShutdownAsync instead of StopAsync
         drive.Dispose();
     }
 

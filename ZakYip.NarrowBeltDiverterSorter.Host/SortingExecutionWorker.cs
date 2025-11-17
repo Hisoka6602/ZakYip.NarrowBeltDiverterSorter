@@ -4,6 +4,7 @@ using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Carts;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Parcels;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Sorting;
+using ZakYip.NarrowBeltDiverterSorter.Execution.MainLine;
 using ZakYip.NarrowBeltDiverterSorter.UpstreamContracts.Models;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Host;
@@ -21,6 +22,7 @@ public class SortingExecutionWorker : BackgroundService
     private readonly IParcelLifecycleService _parcelLifecycleService;
     private readonly IUpstreamSortingApiClient _upstreamApiClient;
     private readonly IChuteConfigProvider _chuteConfigProvider;
+    private readonly IMainLineDrive _mainLineDrive;
     private readonly SortingExecutionOptions _options;
     private readonly bool _enableBringupLogging;
 
@@ -32,6 +34,7 @@ public class SortingExecutionWorker : BackgroundService
         IParcelLifecycleService parcelLifecycleService,
         IUpstreamSortingApiClient upstreamApiClient,
         IChuteConfigProvider chuteConfigProvider,
+        IMainLineDrive mainLineDrive,
         IOptions<SortingExecutionOptions> options,
         StartupModeConfiguration startupConfig)
     {
@@ -42,6 +45,7 @@ public class SortingExecutionWorker : BackgroundService
         _parcelLifecycleService = parcelLifecycleService;
         _upstreamApiClient = upstreamApiClient;
         _chuteConfigProvider = chuteConfigProvider;
+        _mainLineDrive = mainLineDrive;
         _options = options.Value;
         _enableBringupLogging = startupConfig.EnableBringupLogging && 
                                 startupConfig.Mode >= StartupMode.BringupChutes;
@@ -58,6 +62,14 @@ public class SortingExecutionWorker : BackgroundService
         {
             try
             {
+                // 检查主线是否已就绪
+                if (!_mainLineDrive.IsReady)
+                {
+                    _logger.LogWarning("主线未就绪，跳过本次分拣执行周期");
+                    await Task.Delay(executionPeriod, stoppingToken);
+                    continue;
+                }
+                
                 var now = DateTimeOffset.UtcNow;
 
                 // Plan ejects
