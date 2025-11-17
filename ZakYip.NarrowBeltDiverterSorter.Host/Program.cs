@@ -17,6 +17,7 @@ using ZakYip.NarrowBeltDiverterSorter.Execution.Feeding;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Sorting;
 using ChuteSafetyService = ZakYip.NarrowBeltDiverterSorter.Execution.Sorting.ChuteSafetyService;
 using ZakYip.NarrowBeltDiverterSorter.Observability;
+using ZakYip.NarrowBeltDiverterSorter.Observability.LiveView;
 using ZakYip.NarrowBeltDiverterSorter.Ingress.Chute;
 using ZakYip.NarrowBeltDiverterSorter.Core.Configuration;
 using ZakYip.NarrowBeltDiverterSorter.Infrastructure;
@@ -24,6 +25,7 @@ using ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
 using ZakYip.NarrowBeltDiverterSorter.Infrastructure.LiteDb;
 using ZakYip.NarrowBeltDiverterSorter.Communication.Upstream;
 using ZakYip.NarrowBeltDiverterSorter.Host;
+using ZakYip.NarrowBeltDiverterSorter.Host.SignalR;
 // Note: Simulation types cannot be used due to circular dependency
 // using ZakYip.NarrowBeltDiverterSorter.Simulation;
 // using ZakYip.NarrowBeltDiverterSorter.Simulation.Fakes;
@@ -46,6 +48,11 @@ builder.Services.AddSingleton(startupConfig);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// ============================================================================
+// 配置 SignalR
+// ============================================================================
+builder.Services.AddSignalR();
 
 // ============================================================================
 // 配置选项
@@ -123,6 +130,18 @@ builder.Services.Configure<TargetChuteAssignmentProfile>(
 // ============================================================================
 
 builder.Services.AddSingleton<IEventBus, InMemoryEventBus>();
+
+// ============================================================================
+// 注册实时视图聚合器 (Observability)
+// ============================================================================
+
+builder.Services.AddSingleton<INarrowBeltLiveView, NarrowBeltLiveView>();
+
+// ============================================================================
+// 注册 SignalR 推送桥接服务
+// ============================================================================
+
+builder.Services.AddHostedService<LiveViewBridgeService>();
 
 // ============================================================================
 // 注册配置存储 (Infrastructure)
@@ -492,6 +511,11 @@ if (app.Environment.IsDevelopment())
 
 app.MapControllers();
 
+// ============================================================================
+// 配置 SignalR Hub
+// ============================================================================
+app.MapHub<NarrowBeltLiveHub>("/hubs/narrowbelt-live");
+
 // 输出启动信息
 var logger = app.Services.GetRequiredService<ILogger<Program>>();
 logger.LogInformation("=== 系统启动模式: {Mode} ===", startupConfig.GetModeDescription());
@@ -529,5 +553,6 @@ if (startupConfig.ShouldStartParcelRoutingWorker())
     logger.LogInformation("  - 包裹路由工作器 (ParcelRoutingWorker)");
 
 logger.LogInformation("Web API 已启用，Swagger UI: /swagger");
+logger.LogInformation("SignalR Hub 已启用，Hub 端点: /hubs/narrowbelt-live");
 
 app.Run();
