@@ -117,6 +117,14 @@ public class NarrowBeltLiveHub : Hub
             var cartLayout = _liveView.GetCartLayout();
             await Clients.Caller.SendAsync("CartLayoutUpdated", MapToCartLayoutDto(cartLayout));
 
+            // 线体运行状态
+            var lineRunState = _liveView.GetLineRunState();
+            await Clients.Caller.SendAsync("LineRunStateUpdated", MapToLineRunStateDto(lineRunState));
+
+            // 安全状态
+            var safetyState = _liveView.GetSafetyState();
+            await Clients.Caller.SendAsync("SafetyStateUpdated", MapToSafetyStateDto(safetyState));
+
             // 在线包裹
             var onlineParcels = _liveView.GetOnlineParcels();
             await Clients.Caller.SendAsync("OnlineParcelsUpdated", 
@@ -204,6 +212,27 @@ public class NarrowBeltLiveHub : Hub
             ActualChuteId = summary.ActualChuteId,
             CreatedAt = summary.CreatedAt,
             DivertedAt = summary.DivertedAt
+        };
+    }
+
+    private static LineRunStateDto MapToLineRunStateDto(LineRunStateSnapshot snapshot)
+    {
+        return new LineRunStateDto
+        {
+            State = snapshot.State,
+            Message = snapshot.Message,
+            LastUpdatedAt = snapshot.LastUpdatedAt
+        };
+    }
+
+    private static SafetyStateDto MapToSafetyStateDto(SafetyStateSnapshot snapshot)
+    {
+        return new SafetyStateDto
+        {
+            State = snapshot.State,
+            Source = snapshot.Source,
+            Message = snapshot.Message,
+            LastUpdatedAt = snapshot.LastUpdatedAt
         };
     }
 }

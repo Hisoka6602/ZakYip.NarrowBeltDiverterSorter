@@ -50,4 +50,14 @@ public interface INarrowBeltLiveView
     /// 获取小车布局快照
     /// </summary>
     CartLayoutSnapshot GetCartLayout();
+
+    /// <summary>
+    /// 获取线体运行状态快照
+    /// </summary>
+    LineRunStateSnapshot GetLineRunState();
+
+    /// <summary>
+    /// 获取安全状态快照
+    /// </summary>
+    SafetyStateSnapshot GetSafetyState();
 }

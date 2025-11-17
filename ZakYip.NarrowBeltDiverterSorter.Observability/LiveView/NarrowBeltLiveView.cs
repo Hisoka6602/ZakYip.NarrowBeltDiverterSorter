@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
+using ZakYip.NarrowBeltDiverterSorter.Observability.Events;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Observability.LiveView;
 
@@ -51,6 +52,21 @@ public class NarrowBeltLiveView : INarrowBeltLiveView, IDisposable
         LastUpdatedAt = DateTimeOffset.UtcNow
     };
 
+    private LineRunStateSnapshot _lineRunStateSnapshot = new()
+    {
+        State = "Idle",
+        Message = null,
+        LastUpdatedAt = DateTimeOffset.UtcNow
+    };
+
+    private SafetyStateSnapshot _safetyStateSnapshot = new()
+    {
+        State = "Safe",
+        Source = null,
+        Message = null,
+        LastUpdatedAt = DateTimeOffset.UtcNow
+    };
+
     public NarrowBeltLiveView(IEventBus eventBus, ILogger<NarrowBeltLiveView> logger)
     {
         _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
@@ -71,6 +87,8 @@ public class NarrowBeltLiveView : INarrowBeltLiveView, IDisposable
         _eventBus.Subscribe<ParcelDivertedEventArgs>(OnParcelDivertedAsync);
         _eventBus.Subscribe<DeviceStatusChangedEventArgs>(OnDeviceStatusChangedAsync);
         _eventBus.Subscribe<CartLayoutChangedEventArgs>(OnCartLayoutChangedAsync);
+        _eventBus.Subscribe<LineRunStateChangedEventArgs>(OnLineRunStateChangedAsync);
+        _eventBus.Subscribe<SafetyStateChangedEventArgs>(OnSafetyStateChangedAsync);
 
         _logger.LogDebug("已订阅所有实时监控事件");
     }
@@ -224,6 +242,43 @@ public class NarrowBeltLiveView : INarrowBeltLiveView, IDisposable
         return Task.CompletedTask;
     }
 
+    private Task OnLineRunStateChangedAsync(LineRunStateChangedEventArgs eventArgs, CancellationToken cancellationToken)
+    {
+        lock (_lock)
+        {
+            _lineRunStateSnapshot = new LineRunStateSnapshot
+            {
+                State = eventArgs.State,
+                Message = eventArgs.Message,
+                LastUpdatedAt = eventArgs.OccurredAt
+            };
+        }
+
+        _logger.LogInformation("线体运行状态快照已更新: {State}, 消息: {Message}", 
+            eventArgs.State, eventArgs.Message);
+
+        return Task.CompletedTask;
+    }
+
+    private Task OnSafetyStateChangedAsync(SafetyStateChangedEventArgs eventArgs, CancellationToken cancellationToken)
+    {
+        lock (_lock)
+        {
+            _safetyStateSnapshot = new SafetyStateSnapshot
+            {
+                State = eventArgs.State,
+                Source = eventArgs.Source,
+                Message = eventArgs.Message,
+                LastUpdatedAt = eventArgs.OccurredAt
+            };
+        }
+
+        _logger.LogWarning("安全状态快照已更新: {State}, 源: {Source}, 消息: {Message}", 
+            eventArgs.State, eventArgs.Source, eventArgs.Message);
+
+        return Task.CompletedTask;
+    }
+
     public LineSpeedSnapshot GetLineSpeed()
     {
         lock (_lock)
@@ -290,6 +345,22 @@ public class NarrowBeltLiveView : INarrowBeltLiveView, IDisposable
         lock (_lock)
         {
             return _cartLayoutSnapshot;
+        }
+    }
+
+    public LineRunStateSnapshot GetLineRunState()
+    {
+        lock (_lock)
+        {
+            return _lineRunStateSnapshot;
+        }
+    }
+
+    public SafetyStateSnapshot GetSafetyState()
+    {
+        lock (_lock)
+        {
+            return _safetyStateSnapshot;
         }
     }
 
