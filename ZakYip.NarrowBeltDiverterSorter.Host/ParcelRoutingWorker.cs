@@ -15,6 +15,7 @@ public class ParcelRoutingWorker : BackgroundService
     private readonly ILogger<ParcelRoutingWorker> _logger;
     private readonly IUpstreamSortingApiClient _upstreamClient;
     private readonly IParcelLifecycleService _parcelLifecycleService;
+    private readonly IParcelLifecycleTracker _lifecycleTracker;
 
     /// <summary>
     /// 包裹路由完成事件
@@ -24,11 +25,13 @@ public class ParcelRoutingWorker : BackgroundService
     public ParcelRoutingWorker(
         ILogger<ParcelRoutingWorker> logger,
         IUpstreamSortingApiClient upstreamClient,
-        IParcelLifecycleService parcelLifecycleService)
+        IParcelLifecycleService parcelLifecycleService,
+        IParcelLifecycleTracker lifecycleTracker)
     {
         _logger = logger;
         _upstreamClient = upstreamClient;
         _parcelLifecycleService = parcelLifecycleService;
+        _lifecycleTracker = lifecycleTracker;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -67,6 +70,13 @@ public class ParcelRoutingWorker : BackgroundService
                 eventArgs.Barcode,
                 eventArgs.InfeedTriggerTime);
 
+            // 更新生命周期状态：已创建
+            _lifecycleTracker.UpdateStatus(
+                eventArgs.ParcelId,
+                ParcelStatus.Created,
+                ParcelFailureReason.None,
+                "包裹从入口传感器创建");
+
             // 调用上游系统请求格口
             var request = new ParcelRoutingRequestDto
             {
@@ -103,6 +113,13 @@ public class ParcelRoutingWorker : BackgroundService
                     eventArgs.ParcelId,
                     ParcelRouteState.Failed);
 
+                // 更新生命周期状态：失败（上游超时）
+                _lifecycleTracker.UpdateStatus(
+                    eventArgs.ParcelId,
+                    ParcelStatus.Failed,
+                    ParcelFailureReason.UpstreamTimeout,
+                    $"上游返回失败: {response.ErrorMessage}");
+
                 _logger.LogWarning(
                     "包裹 {ParcelId} 格口分配失败: {ErrorMessage}",
                     eventArgs.ParcelId.Value,
@@ -132,6 +149,13 @@ public class ParcelRoutingWorker : BackgroundService
                 _parcelLifecycleService.UpdateRouteState(
                     eventArgs.ParcelId,
                     ParcelRouteState.Failed);
+
+                // 更新生命周期状态：失败（未知原因）
+                _lifecycleTracker.UpdateStatus(
+                    eventArgs.ParcelId,
+                    ParcelStatus.Failed,
+                    ParcelFailureReason.Unknown,
+                    $"处理路由请求时发生异常: {ex.Message}");
             }
             catch
             {

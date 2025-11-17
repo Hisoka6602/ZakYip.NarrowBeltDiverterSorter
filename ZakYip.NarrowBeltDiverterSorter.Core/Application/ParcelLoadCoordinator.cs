@@ -1,5 +1,6 @@
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Feeding;
+using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Parcels;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Core.Application;
 
@@ -10,6 +11,7 @@ namespace ZakYip.NarrowBeltDiverterSorter.Core.Application;
 public class ParcelLoadCoordinator
 {
     private readonly IParcelLoadPlanner _loadPlanner;
+    private readonly IParcelLifecycleTracker? _lifecycleTracker;
     private readonly Dictionary<ParcelId, ParcelSnapshot> _parcelSnapshots = new();
     private Action<string>? _logAction;
 
@@ -22,9 +24,11 @@ public class ParcelLoadCoordinator
     /// 创建包裹装载协调器
     /// </summary>
     /// <param name="loadPlanner">装载计划器</param>
-    public ParcelLoadCoordinator(IParcelLoadPlanner loadPlanner)
+    /// <param name="lifecycleTracker">生命周期追踪器（可选）</param>
+    public ParcelLoadCoordinator(IParcelLoadPlanner loadPlanner, IParcelLifecycleTracker? lifecycleTracker = null)
     {
         _loadPlanner = loadPlanner ?? throw new ArgumentNullException(nameof(loadPlanner));
+        _lifecycleTracker = lifecycleTracker;
     }
 
     /// <summary>
@@ -68,7 +72,9 @@ public class ParcelLoadCoordinator
             {
                 ParcelId = e.ParcelId,
                 RouteState = ParcelRouteState.WaitingForRouting,
-                CreatedAt = e.InfeedTriggerTime
+                CreatedAt = e.InfeedTriggerTime,
+                Status = ParcelStatus.Created,
+                FailureReason = ParcelFailureReason.None
             };
             _parcelSnapshots[e.ParcelId] = waitingSnapshot;
             return;
@@ -83,13 +89,23 @@ public class ParcelLoadCoordinator
         {
             ParcelId = e.ParcelId,
             BoundCartId = predictedCartId.Value,
+            PredictedCartId = predictedCartId.Value,
             RouteState = ParcelRouteState.WaitingForRouting,
             CreatedAt = e.InfeedTriggerTime,
-            LoadedAt = loadedTime
+            LoadedAt = loadedTime,
+            Status = ParcelStatus.OnMainline,
+            FailureReason = ParcelFailureReason.None
         };
 
         // 更新快照集合
         _parcelSnapshots[e.ParcelId] = snapshot;
+
+        // 更新生命周期追踪器（如果可用）
+        _lifecycleTracker?.UpdateStatus(
+            e.ParcelId,
+            ParcelStatus.OnMainline,
+            ParcelFailureReason.None,
+            $"包裹已上车，预测小车: {predictedCartId.Value.Value}");
 
         // 发布装载事件
         ParcelLoadedOnCart?.Invoke(this, new ParcelLoadedOnCartEventArgs
