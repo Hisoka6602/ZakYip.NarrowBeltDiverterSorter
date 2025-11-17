@@ -6,7 +6,7 @@ namespace ZakYip.NarrowBeltDiverterSorter.Execution.MainLine;
 
 /// <summary>
 /// 生产环境主驱动线控制实现
-/// 包装真实的主线驱动端口（如 RemaMainLineDrive）和反馈端口
+/// 包装真实的主线驱动端口和反馈端口
 /// </summary>
 public sealed class ProductionMainLineDrive : IMainLineDrive
 {

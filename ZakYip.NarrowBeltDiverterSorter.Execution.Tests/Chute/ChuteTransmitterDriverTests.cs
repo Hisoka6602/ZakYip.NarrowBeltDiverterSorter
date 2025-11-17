@@ -1,9 +1,9 @@
 using Microsoft.Extensions.Logging;
 using ZakYip.NarrowBeltDiverterSorter.Communication;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
-using ZakYip.NarrowBeltDiverterSorter.Drivers.Chute;
+using ZakYip.NarrowBeltDiverterSorter.Execution.Chute;
 
-namespace ZakYip.NarrowBeltDiverterSorter.Drivers.Tests.Chute;
+namespace ZakYip.NarrowBeltDiverterSorter.Execution.Tests.Chute;
 
 /// <summary>
 /// ChuteTransmitterDriver测试

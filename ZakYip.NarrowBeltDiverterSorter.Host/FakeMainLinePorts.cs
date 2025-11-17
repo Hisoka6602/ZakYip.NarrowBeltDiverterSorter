@@ -1,240 +1,117 @@
 using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
-using ZakYip.NarrowBeltDiverterSorter.Core.Domain.MainLine;
-using ZakYip.NarrowBeltDiverterSorter.Execution.MainLine;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Host;
 
 /// <summary>
-/// 仿真主线驱动端口
-/// 用于模拟主线驱动行为
+/// 仿真主线驱动端口 (用于Host项目的仿真模式)
 /// </summary>
 internal sealed class FakeMainLineDrivePort : IMainLineDrivePort
 {
     private double _targetSpeed;
     private bool _isRunning;
-    private readonly object _lock = new();
+
+    public double TargetSpeed => _targetSpeed;
+    public bool IsRunning => _isRunning;
+
+    public Task<bool> SetTargetSpeedAsync(double speedMmPerSec, CancellationToken cancellationToken = default)
+    {
+        _targetSpeed = speedMmPerSec;
+        Console.WriteLine($"[主驱] 设置目标线速: {speedMmPerSec:F2} mm/s");
+        return Task.FromResult(true);
+    }
 
     public Task<bool> StartAsync(CancellationToken cancellationToken = default)
     {
-        lock (_lock)
-        {
-            _isRunning = true;
-        }
+        _isRunning = true;
+        Console.WriteLine($"[主驱] 主线已启动");
         return Task.FromResult(true);
     }
 
     public Task<bool> StopAsync(CancellationToken cancellationToken = default)
     {
-        lock (_lock)
-        {
-            _isRunning = false;
-            _targetSpeed = 0;
-        }
+        _isRunning = false;
+        Console.WriteLine($"[主驱] 主线已停止");
         return Task.FromResult(true);
     }
 
     public Task<bool> EmergencyStopAsync(CancellationToken cancellationToken = default)
     {
-        lock (_lock)
-        {
-            _isRunning = false;
-            _targetSpeed = 0;
-        }
+        _isRunning = false;
+        _targetSpeed = 0;
+        Console.WriteLine($"[主驱] 主线急停");
         return Task.FromResult(true);
-    }
-
-    public Task<bool> SetTargetSpeedAsync(double targetSpeedMmps, CancellationToken cancellationToken = default)
-    {
-        lock (_lock)
-        {
-            _targetSpeed = targetSpeedMmps;
-        }
-        return Task.FromResult(true);
-    }
-
-    public double GetTargetSpeed()
-    {
-        lock (_lock)
-        {
-            return _targetSpeed;
-        }
-    }
-
-    public bool IsRunning()
-    {
-        lock (_lock)
-        {
-            return _isRunning;
-        }
     }
 }
 
 /// <summary>
-/// 仿真主线反馈端口
-/// 用于模拟主线反馈信号
+/// 仿真主线反馈端口 (用于Host项目的仿真模式)
 /// </summary>
 internal sealed class FakeMainLineFeedbackPort : IMainLineFeedbackPort
 {
     private readonly FakeMainLineDrivePort _drivePort;
     private double _currentSpeed;
-    private readonly Timer _updateTimer;
-    private readonly object _lock = new();
 
     public FakeMainLineFeedbackPort(FakeMainLineDrivePort drivePort)
     {
         _drivePort = drivePort;
         _currentSpeed = 0;
         
-        // 创建定时器模拟速度变化（每50ms更新一次）
-        _updateTimer = new Timer(UpdateSpeed, null, TimeSpan.FromMilliseconds(50), TimeSpan.FromMilliseconds(50));
+        // 启动后台线程模拟速度变化
+        _ = Task.Run(async () =>
+        {
+            while (true)
+            {
+                await Task.Delay(100);
+                SimulateSpeedChange();
+            }
+        });
     }
 
-    private void UpdateSpeed(object? state)
+    private void SimulateSpeedChange()
     {
-        if (!_drivePort.IsRunning())
+        if (!_drivePort.IsRunning)
         {
-            lock (_lock)
+            // 停止时逐渐减速
+            if (_currentSpeed > 0)
             {
-                _currentSpeed = 0;
+                _currentSpeed = Math.Max(0, _currentSpeed - 50);
             }
             return;
         }
 
-        var targetSpeed = _drivePort.GetTargetSpeed();
+        var targetSpeed = _drivePort.TargetSpeed;
+        var diff = targetSpeed - _currentSpeed;
         
-        lock (_lock)
+        // 模拟逐渐接近目标速度
+        if (Math.Abs(diff) < 1)
         {
-            // 模拟速度渐变：每次更新接近目标速度
-            var difference = targetSpeed - _currentSpeed;
-            var maxChange = 50.0; // 每50ms最多变化50 mm/s
-            
-            if (Math.Abs(difference) <= maxChange)
-            {
-                _currentSpeed = targetSpeed;
-            }
-            else
-            {
-                _currentSpeed += Math.Sign(difference) * maxChange;
-            }
+            _currentSpeed = targetSpeed;
+        }
+        else
+        {
+            _currentSpeed += diff * 0.1; // 每次接近10%的差距
         }
     }
 
     public double GetCurrentSpeed()
     {
-        lock (_lock)
-        {
-            return _currentSpeed;
-        }
+        return _currentSpeed;
     }
 
     public MainLineStatus GetCurrentStatus()
     {
-        return _drivePort.IsRunning() ? MainLineStatus.Running : MainLineStatus.Stopped;
+        if (!_drivePort.IsRunning)
+            return MainLineStatus.Stopped;
+        
+        if (Math.Abs(_currentSpeed - _drivePort.TargetSpeed) < 10)
+            return MainLineStatus.Running;
+        
+        return MainLineStatus.Starting;
     }
 
     public int? GetFaultCode()
     {
-        // 仿真环境下没有故障
-        return null;
-    }
-}
-
-/// <summary>
-/// 仿真主线驱动实现
-/// 包装 FakeMainLineDrivePort 和 FakeMainLineFeedbackPort
-/// </summary>
-internal sealed class SimulatedMainLineDrive : IMainLineDrive
-{
-    private readonly FakeMainLineDrivePort _drivePort;
-    private readonly FakeMainLineFeedbackPort _feedbackPort;
-    private readonly IMainLineStabilityProvider _stabilityProvider;
-    private decimal _targetSpeedMmps;
-    private readonly object _lock = new();
-    private bool _isReady;
-
-    public SimulatedMainLineDrive(
-        FakeMainLineDrivePort drivePort,
-        FakeMainLineFeedbackPort feedbackPort,
-        IMainLineStabilityProvider stabilityProvider)
-    {
-        _drivePort = drivePort;
-        _feedbackPort = feedbackPort;
-        _stabilityProvider = stabilityProvider;
-        _targetSpeedMmps = 0m;
-        _isReady = false;
-    }
-
-    public async Task SetTargetSpeedAsync(decimal targetSpeedMmps, CancellationToken cancellationToken = default)
-    {
-        lock (_lock)
-        {
-            _targetSpeedMmps = targetSpeedMmps;
-        }
-        
-        await _drivePort.SetTargetSpeedAsync((double)targetSpeedMmps, cancellationToken);
-    }
-
-    public decimal CurrentSpeedMmps
-    {
-        get
-        {
-            return (decimal)_feedbackPort.GetCurrentSpeed();
-        }
-    }
-
-    public decimal TargetSpeedMmps
-    {
-        get
-        {
-            lock (_lock)
-            {
-                return _targetSpeedMmps;
-            }
-        }
-    }
-
-    public bool IsSpeedStable
-    {
-        get
-        {
-            return _stabilityProvider.IsStable;
-        }
-    }
-
-    public Task<decimal> GetCurrentSpeedAsync(CancellationToken cancellationToken = default)
-    {
-        return Task.FromResult(CurrentSpeedMmps);
-    }
-    
-    public bool IsReady
-    {
-        get
-        {
-            lock (_lock)
-            {
-                return _isReady;
-            }
-        }
-    }
-    
-    public Task<bool> InitializeAsync(CancellationToken cancellationToken = default)
-    {
-        // Fake implementation - always succeeds
-        lock (_lock)
-        {
-            _isReady = true;
-        }
-        return Task.FromResult(true);
-    }
-    
-    public Task<bool> ShutdownAsync(CancellationToken cancellationToken = default)
-    {
-        // Fake implementation - always succeeds
-        lock (_lock)
-        {
-            _isReady = false;
-        }
-        return Task.FromResult(true);
+        return null; // 仿真模式无故障
     }
 }
