@@ -1,6 +1,22 @@
 namespace ZakYip.NarrowBeltDiverterSorter.Core.Domain.Tracking;
 
 /// <summary>
+/// 小车通过事件参数
+/// </summary>
+public class CartPassedEventArgs : EventArgs
+{
+    /// <summary>
+    /// 小车ID
+    /// </summary>
+    public required CartId CartId { get; init; }
+
+    /// <summary>
+    /// 通过时间
+    /// </summary>
+    public required DateTimeOffset PassAt { get; init; }
+}
+
+/// <summary>
 /// 小车环构建器接口
 /// </summary>
 public interface ICartRingBuilder
@@ -9,6 +25,11 @@ public interface ICartRingBuilder
     /// 当前快照（如果已完成构建）
     /// </summary>
     CartRingSnapshot? CurrentSnapshot { get; }
+
+    /// <summary>
+    /// 小车通过事件（在检测到小车通过时触发）
+    /// </summary>
+    event EventHandler<CartPassedEventArgs>? OnCartPassed;
 
     /// <summary>
     /// 处理原点传感器触发事件

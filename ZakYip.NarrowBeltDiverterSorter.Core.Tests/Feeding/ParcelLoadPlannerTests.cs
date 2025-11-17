@@ -258,6 +258,8 @@ internal class MockCartRingBuilder : ICartRingBuilder
 
     public CartRingSnapshot? CurrentSnapshot { get; }
 
+    public event EventHandler<CartPassedEventArgs>? OnCartPassed;
+
     public void OnOriginSensorTriggered(bool isFirstSensor, bool isRisingEdge, DateTimeOffset timestamp)
     {
         // Not implemented for mock
