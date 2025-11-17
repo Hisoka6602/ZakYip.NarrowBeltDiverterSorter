@@ -6,12 +6,17 @@ namespace ZakYip.NarrowBeltDiverterSorter.Host.DTOs;
 public sealed record InfeedLayoutOptionsDto
 {
     /// <summary>
-    /// 入口到落车点距离（毫米）。
+    /// 入口IO到主线落车点距离（毫米）。
     /// </summary>
-    public required decimal InfeedToDropDistanceMm { get; init; }
+    public required decimal InfeedToMainLineDistanceMm { get; init; }
 
     /// <summary>
-    /// 入口输送线速度（毫米/秒）。
+    /// 时间容差（毫秒）。
     /// </summary>
-    public required decimal InfeedConveyorSpeedMmps { get; init; }
+    public required int TimeToleranceMs { get; init; }
+
+    /// <summary>
+    /// 以小车数计的偏移校准。
+    /// </summary>
+    public required int CartOffsetCalibration { get; init; }
 }

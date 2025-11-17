@@ -6,29 +6,14 @@ namespace ZakYip.NarrowBeltDiverterSorter.Host.DTOs;
 public sealed record MainLineControlOptionsDto
 {
     /// <summary>
-    /// 主线最大速度（毫米/秒）。
+    /// 目标速度（毫米/秒）。
     /// </summary>
-    public required decimal MaxSpeedMmps { get; init; }
+    public required decimal TargetSpeedMmps { get; init; }
 
     /// <summary>
-    /// 主线稳态速度（毫米/秒）。
+    /// 控制循环周期（毫秒）。
     /// </summary>
-    public required decimal SteadySpeedMmps { get; init; }
-
-    /// <summary>
-    /// 小车宽度（毫米）。
-    /// </summary>
-    public required decimal CartWidthMm { get; init; }
-
-    /// <summary>
-    /// 小车节距（毫米）。
-    /// </summary>
-    public required decimal CartSpacingMm { get; init; }
-
-    /// <summary>
-    /// 小车数量。
-    /// </summary>
-    public required int CartCount { get; init; }
+    public required int LoopPeriodMs { get; init; }
 
     /// <summary>
     /// PID 控制器比例系数。
@@ -44,4 +29,29 @@ public sealed record MainLineControlOptionsDto
     /// PID 控制器微分系数。
     /// </summary>
     public required decimal DerivativeGain { get; init; }
+
+    /// <summary>
+    /// 稳定判据死区（毫米/秒）。
+    /// </summary>
+    public required decimal StableDeadbandMmps { get; init; }
+
+    /// <summary>
+    /// 稳定判据保持时间（秒）。
+    /// </summary>
+    public required int StableHoldSeconds { get; init; }
+
+    /// <summary>
+    /// 输出限幅最小值（毫米/秒）。
+    /// </summary>
+    public required decimal MinOutputMmps { get; init; }
+
+    /// <summary>
+    /// 输出限幅最大值（毫米/秒）。
+    /// </summary>
+    public required decimal MaxOutputMmps { get; init; }
+
+    /// <summary>
+    /// 积分限幅。
+    /// </summary>
+    public required decimal IntegralLimit { get; init; }
 }

@@ -47,14 +47,16 @@ public class ConfigController : ControllerBase
             var options = await _mainLineRepo.LoadAsync(cancellationToken);
             var dto = new MainLineControlOptionsDto
             {
-                MaxSpeedMmps = options.MaxSpeedMmps,
-                SteadySpeedMmps = options.SteadySpeedMmps,
-                CartWidthMm = options.CartWidthMm,
-                CartSpacingMm = options.CartSpacingMm,
-                CartCount = options.CartCount,
+                TargetSpeedMmps = options.TargetSpeedMmps,
+                LoopPeriodMs = (int)options.LoopPeriod.TotalMilliseconds,
                 ProportionalGain = options.ProportionalGain,
                 IntegralGain = options.IntegralGain,
-                DerivativeGain = options.DerivativeGain
+                DerivativeGain = options.DerivativeGain,
+                StableDeadbandMmps = options.StableDeadbandMmps,
+                StableHoldSeconds = (int)options.StableHold.TotalSeconds,
+                MinOutputMmps = options.MinOutputMmps,
+                MaxOutputMmps = options.MaxOutputMmps,
+                IntegralLimit = options.IntegralLimit
             };
             return Ok(dto);
         }
@@ -78,28 +80,30 @@ public class ConfigController : ControllerBase
         try
         {
             // 基础验证
-            if (dto.CartCount <= 0)
-                return BadRequest(new { error = "小车数量必须大于 0" });
+            if (dto.TargetSpeedMmps <= 0)
+                return BadRequest(new { error = "目标速度必须大于 0" });
 
-            if (dto.SteadySpeedMmps <= 0)
-                return BadRequest(new { error = "主线速度必须大于 0" });
+            if (dto.LoopPeriodMs <= 0)
+                return BadRequest(new { error = "控制循环周期必须大于 0" });
 
-            if (dto.CartWidthMm <= 0)
-                return BadRequest(new { error = "小车宽度必须大于 0" });
+            if (dto.MinOutputMmps < 0)
+                return BadRequest(new { error = "最小输出不能小于 0" });
 
-            if (dto.CartSpacingMm <= 0)
-                return BadRequest(new { error = "小车节距必须大于 0" });
+            if (dto.MaxOutputMmps <= dto.MinOutputMmps)
+                return BadRequest(new { error = "最大输出必须大于最小输出" });
 
             var options = new MainLineControlOptions
             {
-                MaxSpeedMmps = dto.MaxSpeedMmps,
-                SteadySpeedMmps = dto.SteadySpeedMmps,
-                CartWidthMm = dto.CartWidthMm,
-                CartSpacingMm = dto.CartSpacingMm,
-                CartCount = dto.CartCount,
+                TargetSpeedMmps = dto.TargetSpeedMmps,
+                LoopPeriod = TimeSpan.FromMilliseconds(dto.LoopPeriodMs),
                 ProportionalGain = dto.ProportionalGain,
                 IntegralGain = dto.IntegralGain,
-                DerivativeGain = dto.DerivativeGain
+                DerivativeGain = dto.DerivativeGain,
+                StableDeadbandMmps = dto.StableDeadbandMmps,
+                StableHold = TimeSpan.FromSeconds(dto.StableHoldSeconds),
+                MinOutputMmps = dto.MinOutputMmps,
+                MaxOutputMmps = dto.MaxOutputMmps,
+                IntegralLimit = dto.IntegralLimit
             };
 
             await _mainLineRepo.SaveAsync(options, cancellationToken);
@@ -125,8 +129,9 @@ public class ConfigController : ControllerBase
             var options = await _infeedLayoutRepo.LoadAsync(cancellationToken);
             var dto = new InfeedLayoutOptionsDto
             {
-                InfeedToDropDistanceMm = options.InfeedToDropDistanceMm,
-                InfeedConveyorSpeedMmps = options.InfeedConveyorSpeedMmps
+                InfeedToMainLineDistanceMm = options.InfeedToMainLineDistanceMm,
+                TimeToleranceMs = options.TimeToleranceMs,
+                CartOffsetCalibration = options.CartOffsetCalibration
             };
             return Ok(dto);
         }
@@ -149,16 +154,17 @@ public class ConfigController : ControllerBase
     {
         try
         {
-            if (dto.InfeedToDropDistanceMm <= 0)
-                return BadRequest(new { error = "入口到落车点距离必须大于 0" });
+            if (dto.InfeedToMainLineDistanceMm <= 0)
+                return BadRequest(new { error = "入口到主线距离必须大于 0" });
 
-            if (dto.InfeedConveyorSpeedMmps <= 0)
-                return BadRequest(new { error = "入口输送线速度必须大于 0" });
+            if (dto.TimeToleranceMs <= 0)
+                return BadRequest(new { error = "时间容差必须大于 0" });
 
             var options = new InfeedLayoutOptions
             {
-                InfeedToDropDistanceMm = dto.InfeedToDropDistanceMm,
-                InfeedConveyorSpeedMmps = dto.InfeedConveyorSpeedMmps
+                InfeedToMainLineDistanceMm = dto.InfeedToMainLineDistanceMm,
+                TimeToleranceMs = dto.TimeToleranceMs,
+                CartOffsetCalibration = dto.CartOffsetCalibration
             };
 
             await _infeedLayoutRepo.SaveAsync(options, cancellationToken);
