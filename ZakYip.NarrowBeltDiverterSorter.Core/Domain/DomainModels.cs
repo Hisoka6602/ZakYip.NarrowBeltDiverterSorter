@@ -54,6 +54,36 @@ public record class ParcelSnapshot
     /// 丢弃原因（仅当被强排时有效）
     /// </summary>
     public ParcelDiscardReason? DiscardReason { get; init; }
+
+    /// <summary>
+    /// 包裹生命周期状态（用于可观测性和统一报告）
+    /// </summary>
+    public ParcelStatus Status { get; init; }
+
+    /// <summary>
+    /// 包裹失败原因（仅当 Status 为 Failed、DivertedToException 或 Expired 时有效）
+    /// </summary>
+    public ParcelFailureReason FailureReason { get; init; }
+
+    /// <summary>
+    /// 计划生成时间
+    /// </summary>
+    public DateTimeOffset? DivertPlannedAt { get; init; }
+
+    /// <summary>
+    /// 落格时间（实际执行分拣动作的时间）
+    /// </summary>
+    public DateTimeOffset? DivertedAt { get; init; }
+
+    /// <summary>
+    /// 完成时间（最终状态确定的时间）
+    /// </summary>
+    public DateTimeOffset? CompletedAt { get; init; }
+
+    /// <summary>
+    /// 预测的小车ID（用于验证小车匹配）
+    /// </summary>
+    public CartId? PredictedCartId { get; init; }
 }
 
 /// <summary>

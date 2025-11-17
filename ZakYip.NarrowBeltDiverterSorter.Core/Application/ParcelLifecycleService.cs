@@ -32,7 +32,9 @@ public class ParcelLifecycleService : IParcelLifecycleService
         {
             ParcelId = parcelId,
             RouteState = ParcelRouteState.WaitingForRouting,
-            CreatedAt = infeedTriggerTime
+            CreatedAt = infeedTriggerTime,
+            Status = ParcelStatus.Created,
+            FailureReason = ParcelFailureReason.None
         };
 
         if (!_parcels.TryAdd(parcelId, parcel))

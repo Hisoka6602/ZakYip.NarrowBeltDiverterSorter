@@ -397,6 +397,9 @@ builder.Services.AddSingleton<ICartPositionTracker, CartPositionTracker>();
 // 注册包裹生命周期服务（单例，内存存储）
 builder.Services.AddSingleton<IParcelLifecycleService, ParcelLifecycleService>();
 
+// 注册包裹生命周期追踪器（用于可观测性）
+builder.Services.AddSingleton<IParcelLifecycleTracker, ParcelLifecycleTracker>();
+
 // 注册小车生命周期服务
 builder.Services.AddSingleton<ICartLifecycleService, CartLifecycleService>();
 

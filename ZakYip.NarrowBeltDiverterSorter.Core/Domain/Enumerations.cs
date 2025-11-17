@@ -163,3 +163,129 @@ public enum ParcelDiscardReason
     [Description("其他")]
     Other = 99
 }
+
+/// <summary>
+/// 包裹生命周期状态（统一的包裹状态模型，用于可观测性和报告）
+/// </summary>
+public enum ParcelStatus
+{
+    /// <summary>
+    /// 已创建，尚未上主线
+    /// </summary>
+    [Description("已创建")]
+    Created = 0,
+
+    /// <summary>
+    /// 已上主线，在途中
+    /// </summary>
+    [Description("在途")]
+    OnMainline = 1,
+
+    /// <summary>
+    /// 已生成分拣计划，等待进入窗口
+    /// </summary>
+    [Description("计划中")]
+    DivertPlanning = 2,
+
+    /// <summary>
+    /// 已成功落入目标格口
+    /// </summary>
+    [Description("已落目标格口")]
+    DivertedToTarget = 3,
+
+    /// <summary>
+    /// 已落入异常格口（强排口）
+    /// </summary>
+    [Description("已落异常格口")]
+    DivertedToException = 4,
+
+    /// <summary>
+    /// 分拣失败（具体原因见 FailureReason）
+    /// </summary>
+    [Description("失败")]
+    Failed = 5,
+
+    /// <summary>
+    /// 被业务取消（例如上游指令撤销）
+    /// </summary>
+    [Description("已取消")]
+    Canceled = 6,
+
+    /// <summary>
+    /// 超时过期（在途过久或计划过期）
+    /// </summary>
+    [Description("已过期")]
+    Expired = 7
+}
+
+/// <summary>
+/// 包裹失败原因（当 ParcelStatus 为 Failed、DivertedToException 或 Expired 时的详细原因）
+/// </summary>
+public enum ParcelFailureReason
+{
+    /// <summary>
+    /// 无失败（成功状态使用）
+    /// </summary>
+    [Description("无失败")]
+    None = 0,
+
+    /// <summary>
+    /// 上游指令超时未返回
+    /// </summary>
+    [Description("上游指令超时")]
+    UpstreamTimeout = 1,
+
+    /// <summary>
+    /// 未获得任何有效分拣计划
+    /// </summary>
+    [Description("无分拣计划")]
+    NoPlan = 2,
+
+    /// <summary>
+    /// 计划在使用前已经超过有效期 TTL
+    /// </summary>
+    [Description("计划已过期")]
+    PlanExpired = 3,
+
+    /// <summary>
+    /// 未在分拣窗口内执行动作
+    /// </summary>
+    [Description("错过分拣窗口")]
+    MissedWindow = 4,
+
+    /// <summary>
+    /// 窗口内存在冲突（例如其他包裹或锁格）
+    /// </summary>
+    [Description("窗口冲突")]
+    WindowConflict = 5,
+
+    /// <summary>
+    /// PredictedCartId 与实际小车号不在允许容差范围内
+    /// </summary>
+    [Description("小车不匹配")]
+    CartMismatch = 6,
+
+    /// <summary>
+    /// 设备故障导致无法执行分拣动作
+    /// </summary>
+    [Description("设备故障")]
+    DeviceFault = 7,
+
+    /// <summary>
+    /// 安全停机导致计划中断
+    /// </summary>
+    [Description("安全停机")]
+    SafetyStop = 8,
+
+    /// <summary>
+    /// 人工干预导致流程中断
+    /// </summary>
+    [Description("人工干预")]
+    ManualIntervention = 9,
+
+    /// <summary>
+    /// 未分类或未来兼容保底原因
+    /// </summary>
+    [Description("未知原因")]
+    Unknown = 99
+}
