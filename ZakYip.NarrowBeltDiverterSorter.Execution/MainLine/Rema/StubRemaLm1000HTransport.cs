@@ -11,6 +11,11 @@ public sealed class StubRemaLm1000HTransport : IRemaLm1000HTransport
     private readonly ILogger<StubRemaLm1000HTransport> _logger;
     private readonly Dictionary<ushort, ushort> _registers = new();
     private readonly object _lock = new();
+    
+    /// <summary>
+    /// 模拟读取失败（用于测试）
+    /// </summary>
+    public bool SimulateReadFailure { get; set; }
 
     public StubRemaLm1000HTransport(ILogger<StubRemaLm1000HTransport> logger)
     {
@@ -32,6 +37,11 @@ public sealed class StubRemaLm1000HTransport : IRemaLm1000HTransport
     /// <inheritdoc/>
     public Task<ushort> ReadRegisterAsync(ushort address, CancellationToken cancellationToken = default)
     {
+        if (SimulateReadFailure)
+        {
+            throw new InvalidOperationException("模拟读取失败");
+        }
+        
         lock (_lock)
         {
             if (_registers.TryGetValue(address, out var value))

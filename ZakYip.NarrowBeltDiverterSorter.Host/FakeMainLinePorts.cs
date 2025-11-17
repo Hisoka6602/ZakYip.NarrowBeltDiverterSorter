@@ -199,4 +199,9 @@ internal sealed class SimulatedMainLineDrive : IMainLineDrive
             return _stabilityProvider.IsStable;
         }
     }
+
+    public Task<decimal> GetCurrentSpeedAsync(CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(CurrentSpeedMmps);
+    }
 }

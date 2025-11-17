@@ -75,4 +75,11 @@ public sealed class SimulatedMainLineDrive : IMainLineDrive
             return _stabilityProvider.IsStable;
         }
     }
+
+    /// <inheritdoc/>
+    public Task<decimal> GetCurrentSpeedAsync(CancellationToken cancellationToken = default)
+    {
+        // 仿真模式直接返回当前模拟速度
+        return Task.FromResult(CurrentSpeedMmps);
+    }
 }

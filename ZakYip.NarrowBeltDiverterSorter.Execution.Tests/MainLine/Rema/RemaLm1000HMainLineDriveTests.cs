@@ -267,4 +267,128 @@ public class RemaLm1000HMainLineDriveTests
         Assert.Equal(15.00m, 1500 * RemaScaling.C026_HzPerCount);
         Assert.Equal(20.00m, 2000 * RemaScaling.P005_HzPerCount);
     }
+
+    [Fact]
+    public async Task GetCurrentSpeedAsync_ReadsFromC026AndConvertsToMmps()
+    {
+        // Arrange
+        var logger = NullLogger<RemaLm1000HMainLineDrive>.Instance;
+        var options = Options.Create(_defaultOptions);
+        var transport = new StubRemaLm1000HTransport(NullLogger<StubRemaLm1000HTransport>.Instance);
+        var drive = new RemaLm1000HMainLineDrive(logger, options, transport);
+
+        // 模拟编码器反馈：1500 mm/s = 15 Hz = 1500 register value
+        var targetHz = 15.0m;
+        var targetRegisterValue = (ushort)Math.Round(targetHz / RemaScaling.C026_HzPerCount);
+        await transport.WriteRegisterAsync(RemaRegisters.C0_26_EncoderFrequency, targetRegisterValue);
+
+        // Act
+        var currentSpeed = await drive.GetCurrentSpeedAsync();
+
+        // Assert
+        Assert.Equal(1500m, currentSpeed);
+        Assert.True(drive.IsFeedbackAvailable);
+        
+        // Cleanup
+        drive.Dispose();
+    }
+
+    [Fact]
+    public async Task GetCurrentSpeedAsync_OnReadFailure_MarksFeedbackUnavailableAfterThreshold()
+    {
+        // Arrange
+        var logger = NullLogger<RemaLm1000HMainLineDrive>.Instance;
+        var options = Options.Create(_defaultOptions);
+        var transport = new StubRemaLm1000HTransport(NullLogger<StubRemaLm1000HTransport>.Instance);
+        var drive = new RemaLm1000HMainLineDrive(logger, options, transport);
+
+        // 模拟连续读取失败
+        transport.SimulateReadFailure = true;
+
+        // Act - 连续读取 6 次（超过阈值 5）
+        for (int i = 0; i < 6; i++)
+        {
+            try
+            {
+                await drive.GetCurrentSpeedAsync();
+            }
+            catch
+            {
+                // 忽略异常
+            }
+        }
+
+        // Assert - 反馈应该被标记为不可用
+        Assert.False(drive.IsFeedbackAvailable);
+
+        // Act - 恢复读取
+        transport.SimulateReadFailure = false;
+        await transport.WriteRegisterAsync(RemaRegisters.C0_26_EncoderFrequency, 1000);
+        var speed = await drive.GetCurrentSpeedAsync();
+
+        // Assert - 反馈应该恢复可用
+        Assert.True(drive.IsFeedbackAvailable);
+        Assert.Equal(1000m, speed);
+        
+        // Cleanup
+        drive.Dispose();
+    }
+
+    [Fact]
+    public async Task ControlLoop_OnReadFailure_MarksFeedbackUnavailableAfterThreshold()
+    {
+        // Arrange
+        var options = new RemaLm1000HOptions
+        {
+            LoopPeriod = TimeSpan.FromMilliseconds(50), // 快速循环用于测试
+            TorqueMax = 1000,
+            TorqueMaxWhenOverLimit = 800,
+            TorqueMaxWhenOverCurrent = 600,
+            TorqueMaxUnderHighLoad = 700,
+            LimitHz = 50.0m,
+            LimitOvershootHz = 0.35m,
+            StableDeadbandMmps = 10m,
+            StableHold = TimeSpan.FromMilliseconds(100),
+            UnstableThresholdMmps = 50m,
+            UnstableHold = TimeSpan.FromSeconds(5),
+            MicroBandMmps = 20m,
+            TorqueSlewPerLoop = 15,
+            Pid = new PidGains { Kp = 1.0m, Ki = 0.1m, Kd = 0.01m },
+            PidIntegralClamp = 1000m,
+            MinMmps = 0m,
+            MaxMmps = 5000m,
+            RatedCurrentScale = 1.0m,
+            FallbackRatedCurrentA = 6.0m,
+            CurrentLimitRatio = 1.2m,
+            OverCurrentIntegralDecay = 0.5m,
+            HighLoadRatio = 0.9m,
+            HighLoadHold = TimeSpan.FromSeconds(10),
+            LowSpeedBandMmps = 350m,
+            FrictionCmd = 50m,
+            LowSpeedKiBoost = 1.5m,
+            StartMoveCmdFloor = 60
+        };
+        
+        var logger = NullLogger<RemaLm1000HMainLineDrive>.Instance;
+        var optionsWrapper = Options.Create(options);
+        var transport = new StubRemaLm1000HTransport(NullLogger<StubRemaLm1000HTransport>.Instance);
+        var drive = new RemaLm1000HMainLineDrive(logger, optionsWrapper, transport);
+
+        // 模拟读取失败
+        transport.SimulateReadFailure = true;
+
+        // Act - 启动驱动，控制循环会尝试读取
+        await drive.StartAsync();
+        await drive.SetTargetSpeedAsync(1000m);
+
+        // 等待足够的循环来触发失败阈值（5次失败）
+        await Task.Delay(TimeSpan.FromMilliseconds(300));
+
+        // Assert - 反馈应该被标记为不可用
+        Assert.False(drive.IsFeedbackAvailable);
+
+        // Cleanup
+        await drive.StopAsync();
+        drive.Dispose();
+    }
 }

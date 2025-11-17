@@ -164,6 +164,11 @@ public record class MainDriveInfo
     /// 最大速度（mm/s）
     /// </summary>
     public decimal MaxSpeedMmps { get; init; }
+    
+    /// <summary>
+    /// 反馈是否可用（Rema 模式下，如果连续读取失败，则为 false）
+    /// </summary>
+    public bool? IsFeedbackAvailable { get; init; }
 }
 
 /// <summary>

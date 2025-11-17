@@ -8,6 +8,7 @@ using ZakYip.NarrowBeltDiverterSorter.Core.Domain.MainLine;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Parcels;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Sorting;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Tracking;
+using ZakYip.NarrowBeltDiverterSorter.Execution.MainLine;
 using ZakYip.NarrowBeltDiverterSorter.Simulation.Fakes;
 using ZakYip.NarrowBeltDiverterSorter.UpstreamContracts.Models;
 
@@ -35,6 +36,7 @@ public class EndToEndSimulationRunner
     private readonly FakeInfeedSensorPort _infeedSensor;
     private readonly FakeChuteTransmitterPort _chuteTransmitter;
     private readonly InfeedLayoutOptions _infeedLayout;
+    private readonly IMainLineDrive? _mainLineDrive;
 
     private readonly List<SpeedSample> _speedSamples = new();
 
@@ -54,7 +56,8 @@ public class EndToEndSimulationRunner
         FakeOriginSensorPort originSensor,
         FakeInfeedSensorPort infeedSensor,
         FakeChuteTransmitterPort chuteTransmitter,
-        InfeedLayoutOptions infeedLayout)
+        InfeedLayoutOptions infeedLayout,
+        IMainLineDrive? mainLineDrive = null)
     {
         _config = config;
         _logger = logger;
@@ -72,6 +75,7 @@ public class EndToEndSimulationRunner
         _infeedSensor = infeedSensor;
         _chuteTransmitter = chuteTransmitter;
         _infeedLayout = infeedLayout;
+        _mainLineDrive = mainLineDrive;
     }
 
     /// <summary>
@@ -463,6 +467,18 @@ public class EndToEndSimulationRunner
 
     private MainDriveInfo CalculateMainDriveInfo()
     {
+        // 检查反馈是否可用（仅适用于 Rema 模式）
+        bool? isFeedbackAvailable = null;
+        if (_mainLineDrive is Execution.MainLine.Rema.RemaLm1000HMainLineDrive remaDrive)
+        {
+            isFeedbackAvailable = remaDrive.IsFeedbackAvailable;
+            
+            if (!isFeedbackAvailable.Value)
+            {
+                _logger.LogWarning("主线速度反馈不可用 (Rema 模式)，速度统计数据可能不准确");
+            }
+        }
+        
         if (_speedSamples.Count == 0)
         {
             _logger.LogWarning("主线速度采样为空，速度统计数据不可用");
@@ -473,7 +489,8 @@ public class EndToEndSimulationRunner
                 AverageSpeedMmps = 0,
                 SpeedStdDevMmps = 0,
                 MinSpeedMmps = 0,
-                MaxSpeedMmps = 0
+                MaxSpeedMmps = 0,
+                IsFeedbackAvailable = isFeedbackAvailable
             };
         }
 
@@ -495,7 +512,8 @@ public class EndToEndSimulationRunner
             AverageSpeedMmps = avgSpeed,
             SpeedStdDevMmps = stdDev,
             MinSpeedMmps = speeds.Min(),
-            MaxSpeedMmps = speeds.Max()
+            MaxSpeedMmps = speeds.Max(),
+            IsFeedbackAvailable = isFeedbackAvailable
         };
     }
 
