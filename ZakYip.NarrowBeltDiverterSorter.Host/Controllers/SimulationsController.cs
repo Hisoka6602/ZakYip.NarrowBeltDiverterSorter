@@ -1,5 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
+using ZakYip.NarrowBeltDiverterSorter.Core.Configuration;
 using ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
+using ZakYip.NarrowBeltDiverterSorter.Simulation;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Host.Controllers;
 
@@ -12,16 +15,31 @@ public class SimulationsController : ControllerBase
 {
     private readonly ILongRunLoadTestOptionsRepository _longRunRepo;
     private readonly IMainLineOptionsRepository _mainLineRepo;
+    private readonly INarrowBeltSimulationScenarioRunner? _scenarioRunner;
+    private readonly INarrowBeltSimulationReportService? _reportService;
+    private readonly IOptions<NarrowBeltSimulationOptions> _simulationOptions;
+    private readonly IOptions<ChuteLayoutProfile> _chuteLayoutOptions;
+    private readonly IOptions<TargetChuteAssignmentProfile> _assignmentOptions;
     private readonly ILogger<SimulationsController> _logger;
 
     public SimulationsController(
         ILongRunLoadTestOptionsRepository longRunRepo,
         IMainLineOptionsRepository mainLineRepo,
-        ILogger<SimulationsController> logger)
+        IOptions<NarrowBeltSimulationOptions> simulationOptions,
+        IOptions<ChuteLayoutProfile> chuteLayoutOptions,
+        IOptions<TargetChuteAssignmentProfile> assignmentOptions,
+        ILogger<SimulationsController> logger,
+        INarrowBeltSimulationScenarioRunner? scenarioRunner = null,
+        INarrowBeltSimulationReportService? reportService = null)
     {
         _longRunRepo = longRunRepo ?? throw new ArgumentNullException(nameof(longRunRepo));
         _mainLineRepo = mainLineRepo ?? throw new ArgumentNullException(nameof(mainLineRepo));
+        _simulationOptions = simulationOptions ?? throw new ArgumentNullException(nameof(simulationOptions));
+        _chuteLayoutOptions = chuteLayoutOptions ?? throw new ArgumentNullException(nameof(chuteLayoutOptions));
+        _assignmentOptions = assignmentOptions ?? throw new ArgumentNullException(nameof(assignmentOptions));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _scenarioRunner = scenarioRunner;
+        _reportService = reportService;
     }
 
     /// <summary>
@@ -84,6 +102,114 @@ public class SimulationsController : ControllerBase
             return StatusCode(500, new { error = "启动长跑仿真失败", message = ex.Message });
         }
     }
+
+    /// <summary>
+    /// 执行配置化窄带仿真场景。
+    /// </summary>
+    [HttpPost("narrow-belt/run")]
+    [ProducesResponseType(typeof(NarrowBeltSimulationRunResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+    public async Task<IActionResult> RunNarrowBeltSimulation(CancellationToken cancellationToken)
+    {
+        if (_scenarioRunner == null || _reportService == null)
+        {
+            return StatusCode(503, new { error = "仿真服务未启用", message = "场景运行器或报告服务未注册" });
+        }
+
+        try
+        {
+            var runId = $"nb-{DateTime.UtcNow:yyyyMMdd-HHmmss}-{Guid.NewGuid():N}";
+            
+            _logger.LogInformation("开始执行窄带仿真场景，RunId: {RunId}", runId);
+
+            var simulationOpts = _simulationOptions.Value;
+            var chuteLayout = _chuteLayoutOptions.Value;
+            var assignment = _assignmentOptions.Value;
+
+            // 执行仿真
+            var report = await _scenarioRunner.RunAsync(simulationOpts, chuteLayout, assignment, cancellationToken);
+
+            // 保存报告
+            await _reportService.SaveReportAsync(runId, report, cancellationToken);
+
+            _logger.LogInformation(
+                "窄带仿真完成，RunId: {RunId}, 成功率: {SuccessRate:P2}",
+                runId,
+                report.Statistics.SuccessRate);
+
+            return Ok(new NarrowBeltSimulationRunResponse
+            {
+                RunId = runId,
+                Status = "completed",
+                Statistics = report.Statistics
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "执行窄带仿真场景失败");
+            return StatusCode(500, new { error = "执行窄带仿真场景失败", message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// 获取仿真报告。
+    /// </summary>
+    [HttpGet("narrow-belt/report/{runId}")]
+    [ProducesResponseType(typeof(SimulationReport), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+    public async Task<IActionResult> GetNarrowBeltSimulationReport(string runId, CancellationToken cancellationToken)
+    {
+        if (_reportService == null)
+        {
+            return StatusCode(503, new { error = "仿真服务未启用", message = "报告服务未注册" });
+        }
+
+        var report = await _reportService.GetReportAsync(runId, cancellationToken);
+        
+        if (report == null)
+        {
+            return NotFound(new { error = "报告未找到", runId });
+        }
+
+        return Ok(report);
+    }
+
+    /// <summary>
+    /// 获取所有仿真报告的运行ID列表。
+    /// </summary>
+    [HttpGet("narrow-belt/reports")]
+    [ProducesResponseType(typeof(List<string>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+    public async Task<IActionResult> GetAllNarrowBeltSimulationReports(CancellationToken cancellationToken)
+    {
+        if (_reportService == null)
+        {
+            return StatusCode(503, new { error = "仿真服务未启用", message = "报告服务未注册" });
+        }
+
+        var runIds = await _reportService.GetAllRunIdsAsync(cancellationToken);
+        return Ok(runIds);
+    }
+
+    /// <summary>
+    /// 删除仿真报告。
+    /// </summary>
+    [HttpDelete("narrow-belt/report/{runId}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+    public async Task<IActionResult> DeleteNarrowBeltSimulationReport(string runId, CancellationToken cancellationToken)
+    {
+        if (_reportService == null)
+        {
+            return StatusCode(503, new { error = "仿真服务未启用", message = "报告服务未注册" });
+        }
+
+        await _reportService.DeleteReportAsync(runId, cancellationToken);
+        return NoContent();
+    }
 }
 
 /// <summary>
@@ -110,4 +236,25 @@ public class LongRunSimulationStartResponse
     /// 仿真配置摘要。
     /// </summary>
     public required object Configuration { get; init; }
+}
+
+/// <summary>
+/// 窄带仿真运行响应。
+/// </summary>
+public class NarrowBeltSimulationRunResponse
+{
+    /// <summary>
+    /// 仿真运行 ID。
+    /// </summary>
+    public required string RunId { get; init; }
+
+    /// <summary>
+    /// 仿真状态。
+    /// </summary>
+    public required string Status { get; init; }
+
+    /// <summary>
+    /// 仿真统计信息。
+    /// </summary>
+    public required SimulationStatistics Statistics { get; init; }
 }
