@@ -120,7 +120,7 @@ public class SafetyScenarioOutputTests
 
         // 配置日志
         builder.Logging.ClearProviders();
-        builder.Logging.AddProvider(new XunitLoggerProvider(_output));
+        builder.Logging.AddProvider(new TestLoggerProvider(_output));
         builder.Logging.SetMinimumLevel(LogLevel.Warning);
 
         // 注册 Fake 硬件

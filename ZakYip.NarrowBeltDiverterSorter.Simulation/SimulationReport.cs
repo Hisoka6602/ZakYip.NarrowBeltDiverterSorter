@@ -28,6 +28,11 @@ public record class SimulationReport
     public required SortingConfigInfo SortingConfig { get; init; }
 
     /// <summary>
+    /// 格口IO信息（可选）
+    /// </summary>
+    public ChuteIoInfo? ChuteIo { get; init; }
+
+    /// <summary>
     /// 逐包裹详细信息（可选）
     /// </summary>
     public List<ParcelDetail>? ParcelDetails { get; init; }
@@ -241,4 +246,71 @@ public record class ParcelDetail
     /// 失败原因
     /// </summary>
     public string? FailureReason { get; init; }
+}
+
+/// <summary>
+/// 格口IO信息
+/// </summary>
+public record class ChuteIoInfo
+{
+    /// <summary>
+    /// 格口IO模式（例如：Simulation, ZhiQian32Relay）
+    /// </summary>
+    public string? Mode { get; init; }
+
+    /// <summary>
+    /// 已映射的格口数量
+    /// </summary>
+    public int MappedChuteCount { get; init; }
+
+    /// <summary>
+    /// 使用的IP节点数量
+    /// </summary>
+    public int NodeCount { get; init; }
+
+    /// <summary>
+    /// 节点详情列表
+    /// </summary>
+    public List<ChuteIoNodeInfo>? Nodes { get; init; }
+
+    /// <summary>
+    /// 仿真期间成功执行的开操作次数
+    /// </summary>
+    public int OpenActionCount { get; init; }
+
+    /// <summary>
+    /// 仿真期间成功执行的关操作次数
+    /// </summary>
+    public int CloseActionCount { get; init; }
+
+    /// <summary>
+    /// 是否在停止时执行了 CloseAll
+    /// </summary>
+    public bool CloseAllExecuted { get; init; }
+}
+
+/// <summary>
+/// 格口IO节点信息
+/// </summary>
+public record class ChuteIoNodeInfo
+{
+    /// <summary>
+    /// 节点键
+    /// </summary>
+    public required string NodeKey { get; init; }
+
+    /// <summary>
+    /// IP地址
+    /// </summary>
+    public string? IpAddress { get; init; }
+
+    /// <summary>
+    /// 端口
+    /// </summary>
+    public int? Port { get; init; }
+
+    /// <summary>
+    /// 该节点控制的格口ID列表
+    /// </summary>
+    public required List<long> ControlledChutes { get; init; }
 }

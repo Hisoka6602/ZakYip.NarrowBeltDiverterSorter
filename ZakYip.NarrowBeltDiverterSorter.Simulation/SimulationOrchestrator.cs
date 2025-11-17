@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.MainLine;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Tracking;
@@ -28,6 +29,7 @@ public class SimulationOrchestrator : BackgroundService
     private readonly ICartPositionTracker _cartPositionTracker;
     private readonly IMainLineControlService _mainLineControl;
     private readonly SimulationMainLineSetpoint _setpointProvider;
+    private readonly IChuteIoService? _chuteIoService;
     private readonly ILogger<SimulationOrchestrator> _logger;
 
     public SimulationOrchestrator(
@@ -43,7 +45,8 @@ public class SimulationOrchestrator : BackgroundService
         ICartPositionTracker cartPositionTracker,
         IMainLineControlService mainLineControl,
         SimulationMainLineSetpoint setpointProvider,
-        ILogger<SimulationOrchestrator> logger)
+        ILogger<SimulationOrchestrator> logger,
+        IChuteIoService? chuteIoService = null)
     {
         _config = config;
         _mainLineDrive = mainLineDrive;
@@ -57,6 +60,7 @@ public class SimulationOrchestrator : BackgroundService
         _cartPositionTracker = cartPositionTracker;
         _mainLineControl = mainLineControl;
         _setpointProvider = setpointProvider;
+        _chuteIoService = chuteIoService;
         _logger = logger;
     }
 
@@ -159,6 +163,22 @@ public class SimulationOrchestrator : BackgroundService
     private async Task StopSystemAsync()
     {
         Console.WriteLine("\n[仿真停止] 正在停止系统...");
+        
+        // 关闭所有格口（安全策略）
+        if (_chuteIoService != null)
+        {
+            Console.WriteLine("[仿真停止] 关闭所有格口...");
+            _logger.LogInformation("仿真停止: 调用 IChuteIoService.CloseAllAsync");
+            try
+            {
+                await _chuteIoService.CloseAllAsync();
+                Console.WriteLine("[仿真停止] 已关闭所有格口");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "仿真停止: 关闭所有格口时发生异常");
+            }
+        }
         
         _setpointProvider.SetSetpoint(false, 0);
         await _fakeMainLineDrivePort.StopAsync();

@@ -436,7 +436,7 @@ public class SimulationOutputTests
 
         // 配置日志（禁用日志以加快测试）
         builder.Logging.ClearProviders();
-        builder.Logging.AddProvider(new XunitLoggerProvider(_output));
+        builder.Logging.AddProvider(new TestLoggerProvider(_output));
         builder.Logging.SetMinimumLevel(LogLevel.Warning);
 
         var app = builder.Build();
@@ -488,61 +488,5 @@ public class SimulationOutputTests
         }
         
         return report;
-    }
-}
-
-/// <summary>
-/// Xunit logger provider for test output
-/// </summary>
-internal class XunitLoggerProvider : ILoggerProvider
-{
-    private readonly ITestOutputHelper _output;
-
-    public XunitLoggerProvider(ITestOutputHelper output)
-    {
-        _output = output;
-    }
-
-    public ILogger CreateLogger(string categoryName)
-    {
-        return new XunitLogger(_output, categoryName);
-    }
-
-    public void Dispose()
-    {
-    }
-}
-
-/// <summary>
-/// Xunit logger implementation
-/// </summary>
-internal class XunitLogger : ILogger
-{
-    private readonly ITestOutputHelper _output;
-    private readonly string _categoryName;
-
-    public XunitLogger(ITestOutputHelper output, string categoryName)
-    {
-        _output = output;
-        _categoryName = categoryName;
-    }
-
-    public IDisposable? BeginScope<TState>(TState state) where TState : notnull => default;
-
-    public bool IsEnabled(LogLevel logLevel) => logLevel >= LogLevel.Warning;
-
-    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
-    {
-        if (!IsEnabled(logLevel))
-            return;
-
-        try
-        {
-            _output.WriteLine($"[{logLevel}] {_categoryName}: {formatter(state, exception)}");
-        }
-        catch
-        {
-            // Ignore if output is not available
-        }
     }
 }
