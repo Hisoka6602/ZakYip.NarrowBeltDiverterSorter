@@ -6,6 +6,7 @@ using ZakYip.NarrowBeltDiverterSorter.Core.Domain.MainLine;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Parcels;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Sorting;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Tracking;
+using ZakYip.NarrowBeltDiverterSorter.Core.Domain.SystemState;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Sorting;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Execution.Tests.Sorting;
@@ -15,6 +16,13 @@ namespace ZakYip.NarrowBeltDiverterSorter.Execution.Tests.Sorting;
 /// </summary>
 public class SortingPlannerTests
 {
+    private static ISystemRunStateService CreateRunningStateService()
+    {
+        var mock = new Mock<ISystemRunStateService>();
+        mock.Setup(x => x.Current).Returns(SystemRunState.Running);
+        mock.Setup(x => x.ValidateCanCreateParcel()).Returns(OperationResult.Success());
+        return mock.Object;
+    }
     [Fact]
     public void PlanEjects_WithNoCartRing_ShouldReturnEmptyList()
     {
@@ -73,7 +81,7 @@ public class SortingPlannerTests
         cartLifecycleService.InitializeCart(cartId, new CartIndex(5), DateTimeOffset.UtcNow);
         cartLifecycleService.LoadParcel(cartId, parcelId);
 
-        var parcelLifecycleService = new ParcelLifecycleService();
+        var parcelLifecycleService = new ParcelLifecycleService(CreateRunningStateService());
         parcelLifecycleService.CreateParcel(parcelId, "TEST123", DateTimeOffset.UtcNow);
         parcelLifecycleService.BindChuteId(parcelId, chuteId);
         parcelLifecycleService.BindCartId(parcelId, cartId, DateTimeOffset.UtcNow);
@@ -135,7 +143,7 @@ public class SortingPlannerTests
         cartLifecycleService.InitializeCart(cartId, new CartIndex(5), DateTimeOffset.UtcNow);
         cartLifecycleService.LoadParcel(cartId, parcelId);
 
-        var parcelLifecycleService = new ParcelLifecycleService();
+        var parcelLifecycleService = new ParcelLifecycleService(CreateRunningStateService());
 
         var mockChuteConfigProvider = new Mock<IChuteConfigProvider>();
         mockChuteConfigProvider.Setup(x => x.GetAllConfigs()).Returns(new[]
@@ -225,7 +233,7 @@ public class SortingPlannerTests
             cartRingBuilder ?? Mock.Of<ICartRingBuilder>(),
             cartPositionTracker ?? Mock.Of<ICartPositionTracker>(),
             cartLifecycleService ?? new CartLifecycleService(),
-            parcelLifecycleService ?? new ParcelLifecycleService(),
+            parcelLifecycleService ?? new ParcelLifecycleService(CreateRunningStateService()),
             chuteConfigProvider ?? Mock.Of<IChuteConfigProvider>(),
             mainLineSpeedProvider ?? Mock.Of<IMainLineSpeedProvider>(),
             stabilityProvider ?? Mock.Of<IMainLineStabilityProvider>(p => p.IsStable == true),

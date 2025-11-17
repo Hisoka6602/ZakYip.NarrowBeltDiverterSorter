@@ -1,6 +1,7 @@
 using ZakYip.NarrowBeltDiverterSorter.Core.Application;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Parcels;
+using ZakYip.NarrowBeltDiverterSorter.Core.Tests.Fakes;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Core.Tests.Parcels;
 
@@ -9,11 +10,18 @@ namespace ZakYip.NarrowBeltDiverterSorter.Core.Tests.Parcels;
 /// </summary>
 public class ParcelLifecycleServiceTests
 {
+    private static ParcelLifecycleService CreateServiceInRunningState()
+    {
+        var systemRunStateService = new FakeSystemRunStateService();
+        systemRunStateService.SetState(SystemRunState.Running);
+        return new ParcelLifecycleService(systemRunStateService);
+    }
+
     [Fact]
     public void CreateParcel_Should_Create_New_Parcel_With_WaitingForRouting_State()
     {
         // Arrange
-        var service = new ParcelLifecycleService();
+        var service = CreateServiceInRunningState();
         var parcelId = new ParcelId(1234567890123);
         var barcode = "TEST001";
         var infeedTime = DateTimeOffset.UtcNow;
@@ -34,7 +42,7 @@ public class ParcelLifecycleServiceTests
     public void CreateParcel_Should_Throw_When_Parcel_Already_Exists()
     {
         // Arrange
-        var service = new ParcelLifecycleService();
+        var service = CreateServiceInRunningState();
         var parcelId = new ParcelId(1234567890123);
         var barcode = "TEST001";
         var infeedTime = DateTimeOffset.UtcNow;
@@ -50,7 +58,7 @@ public class ParcelLifecycleServiceTests
     public void BindChuteId_Should_Set_ChuteId_And_Update_State_To_Routed()
     {
         // Arrange
-        var service = new ParcelLifecycleService();
+        var service = CreateServiceInRunningState();
         var parcelId = new ParcelId(1234567890123);
         var chuteId = new ChuteId(5);
 
@@ -70,7 +78,7 @@ public class ParcelLifecycleServiceTests
     public void BindChuteId_Should_Throw_When_Parcel_Not_Exists()
     {
         // Arrange
-        var service = new ParcelLifecycleService();
+        var service = CreateServiceInRunningState();
         var parcelId = new ParcelId(1234567890123);
         var chuteId = new ChuteId(5);
 
@@ -83,7 +91,7 @@ public class ParcelLifecycleServiceTests
     public void BindCartId_Should_Set_CartId_And_Update_State_To_Sorting()
     {
         // Arrange
-        var service = new ParcelLifecycleService();
+        var service = CreateServiceInRunningState();
         var parcelId = new ParcelId(1234567890123);
         var chuteId = new ChuteId(5);
         var cartId = new CartId(10);
@@ -107,7 +115,7 @@ public class ParcelLifecycleServiceTests
     public void UnbindCartId_Should_Clear_CartId()
     {
         // Arrange
-        var service = new ParcelLifecycleService();
+        var service = CreateServiceInRunningState();
         var parcelId = new ParcelId(1234567890123);
         var chuteId = new ChuteId(5);
         var cartId = new CartId(10);
@@ -130,7 +138,7 @@ public class ParcelLifecycleServiceTests
     public void UpdateRouteState_Should_Update_State()
     {
         // Arrange
-        var service = new ParcelLifecycleService();
+        var service = CreateServiceInRunningState();
         var parcelId = new ParcelId(1234567890123);
 
         service.CreateParcel(parcelId, "TEST001", DateTimeOffset.UtcNow);
@@ -148,7 +156,7 @@ public class ParcelLifecycleServiceTests
     public void MarkSorted_Should_Set_SortedAt_And_Update_State()
     {
         // Arrange
-        var service = new ParcelLifecycleService();
+        var service = CreateServiceInRunningState();
         var parcelId = new ParcelId(1234567890123);
         var chuteId = new ChuteId(5);
         var cartId = new CartId(10);
@@ -172,7 +180,7 @@ public class ParcelLifecycleServiceTests
     public void Get_Should_Return_Null_When_Parcel_Not_Exists()
     {
         // Arrange
-        var service = new ParcelLifecycleService();
+        var service = CreateServiceInRunningState();
         var parcelId = new ParcelId(1234567890123);
 
         // Act
@@ -186,7 +194,7 @@ public class ParcelLifecycleServiceTests
     public void Get_Should_Return_Parcel_When_Exists()
     {
         // Arrange
-        var service = new ParcelLifecycleService();
+        var service = CreateServiceInRunningState();
         var parcelId = new ParcelId(1234567890123);
         var barcode = "TEST001";
         var infeedTime = DateTimeOffset.UtcNow;
