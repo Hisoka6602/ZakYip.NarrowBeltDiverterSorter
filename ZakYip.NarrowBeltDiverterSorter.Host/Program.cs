@@ -32,10 +32,17 @@ using ZakYip.NarrowBeltDiverterSorter.Host;
 var startupConfig = StartupModeConfiguration.ParseFromArgs(args);
 Console.WriteLine($"启动模式: {startupConfig.GetModeDescription()}");
 
-var builder = Host.CreateApplicationBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
 // 注册启动模式配置为单例
 builder.Services.AddSingleton(startupConfig);
+
+// ============================================================================
+// 配置 Web API 支持
+// ============================================================================
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 // ============================================================================
 // 配置选项
@@ -46,6 +53,7 @@ builder.Services.AddSingleton<IMainLineOptionsRepository, LiteDbMainLineOptionsR
 builder.Services.AddSingleton<IInfeedLayoutOptionsRepository, LiteDbInfeedLayoutOptionsRepository>();
 builder.Services.AddSingleton<IChuteConfigRepository, LiteDbChuteConfigRepository>();
 builder.Services.AddSingleton<IUpstreamConnectionOptionsRepository, LiteDbUpstreamConnectionOptionsRepository>();
+builder.Services.AddSingleton<ILongRunLoadTestOptionsRepository, LiteDbLongRunLoadTestOptionsRepository>();
 
 // 配置上游分拣系统API选项（保留用于非核心配置）
 builder.Services.Configure<UpstreamSortingApiOptions>(
@@ -425,10 +433,21 @@ builder.Services.AddHostedService<Worker>();
 // 注册安全控制工作器（确保最早启动，最晚停止）
 builder.Services.AddHostedService<SafetyControlWorker>();
 
-var host = builder.Build();
+var app = builder.Build();
+
+// ============================================================================
+// 配置 HTTP 请求管道
+// ============================================================================
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+app.MapControllers();
 
 // 输出启动信息
-var logger = host.Services.GetRequiredService<ILogger<Program>>();
+var logger = app.Services.GetRequiredService<ILogger<Program>>();
 logger.LogInformation("=== 系统启动模式: {Mode} ===", startupConfig.GetModeDescription());
 logger.LogInformation("主线驱动实现: {Implementation}", mainLineDriveOptions.GetImplementationDescription());
 
@@ -463,4 +482,6 @@ if (startupConfig.ShouldStartChuteIoMonitor())
 if (startupConfig.ShouldStartParcelRoutingWorker())
     logger.LogInformation("  - 包裹路由工作器 (ParcelRoutingWorker)");
 
-host.Run();
+logger.LogInformation("Web API 已启用，Swagger UI: /swagger");
+
+app.Run();
