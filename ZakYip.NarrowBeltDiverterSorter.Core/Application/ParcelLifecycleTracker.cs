@@ -75,7 +75,7 @@ public class ParcelLifecycleTracker : IParcelLifecycleTracker
         // 更新内存中的快照
         _parcels.AddOrUpdate(parcelId, updatedSnapshot, (_, _) => updatedSnapshot);
 
-        // 如果包裹已完成，移到历史记录
+        // 如果包裹已完成，移到历史记录并从在线字典中移除
         if (IsCompletedStatus(status))
         {
             lock (_lockObject)
@@ -87,6 +87,9 @@ public class ParcelLifecycleTracker : IParcelLifecycleTracker
                     _completedHistory.Dequeue();
                 }
             }
+            
+            // 从在线字典中移除已完成的包裹
+            _parcels.TryRemove(parcelId, out _);
         }
 
         // 发布生命周期变化事件
@@ -199,17 +202,8 @@ public class ParcelLifecycleTracker : IParcelLifecycleTracker
                 _completedHistory.Dequeue();
             }
         }
-
-        // 从内存中移除已完成的包裹（只保留在线的）
-        var completedParcelIds = _parcels
-            .Where(kvp => IsCompletedStatus(kvp.Value.Status))
-            .Select(kvp => kvp.Key)
-            .ToList();
-
-        foreach (var parcelId in completedParcelIds)
-        {
-            _parcels.TryRemove(parcelId, out _);
-        }
+        
+        // No need to remove from _parcels as completed parcels are already removed during UpdateStatus
     }
 
     private static bool IsCompletedStatus(ParcelStatus status)
