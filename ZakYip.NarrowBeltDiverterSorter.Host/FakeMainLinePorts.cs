@@ -151,6 +151,7 @@ internal sealed class SimulatedMainLineDrive : IMainLineDrive
     private readonly IMainLineStabilityProvider _stabilityProvider;
     private decimal _targetSpeedMmps;
     private readonly object _lock = new();
+    private bool _isReady;
 
     public SimulatedMainLineDrive(
         FakeMainLineDrivePort drivePort,
@@ -161,6 +162,7 @@ internal sealed class SimulatedMainLineDrive : IMainLineDrive
         _feedbackPort = feedbackPort;
         _stabilityProvider = stabilityProvider;
         _targetSpeedMmps = 0m;
+        _isReady = false;
     }
 
     public async Task SetTargetSpeedAsync(decimal targetSpeedMmps, CancellationToken cancellationToken = default)
@@ -203,5 +205,36 @@ internal sealed class SimulatedMainLineDrive : IMainLineDrive
     public Task<decimal> GetCurrentSpeedAsync(CancellationToken cancellationToken = default)
     {
         return Task.FromResult(CurrentSpeedMmps);
+    }
+    
+    public bool IsReady
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _isReady;
+            }
+        }
+    }
+    
+    public Task<bool> InitializeAsync(CancellationToken cancellationToken = default)
+    {
+        // Fake implementation - always succeeds
+        lock (_lock)
+        {
+            _isReady = true;
+        }
+        return Task.FromResult(true);
+    }
+    
+    public Task<bool> ShutdownAsync(CancellationToken cancellationToken = default)
+    {
+        // Fake implementation - always succeeds
+        lock (_lock)
+        {
+            _isReady = false;
+        }
+        return Task.FromResult(true);
     }
 }

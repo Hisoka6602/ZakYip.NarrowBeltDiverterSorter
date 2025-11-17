@@ -25,6 +25,7 @@ public sealed class RemaLm1000HMainLineDrive : IMainLineDrive, IDisposable
     private readonly object _lock = new();
     private bool _isRunning;
     private bool _disposed;
+    private bool _isReady;
     
     // 反馈失败保护
     private int _consecutiveReadFailures = 0;
@@ -48,6 +49,7 @@ public sealed class RemaLm1000HMainLineDrive : IMainLineDrive, IDisposable
         _wasStable = false;
         _wasUnstable = false;
         _isRunning = false;
+        _isReady = false;
         
         // 创建控制循环定时器
         _controlLoopTimer = new Timer(
@@ -131,6 +133,18 @@ public sealed class RemaLm1000HMainLineDrive : IMainLineDrive, IDisposable
             }
         }
     }
+    
+    /// <inheritdoc/>
+    public bool IsReady
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _isReady;
+            }
+        }
+    }
 
     /// <summary>
     /// 异步读取当前速度（mm/s）
@@ -186,6 +200,217 @@ public sealed class RemaLm1000HMainLineDrive : IMainLineDrive, IDisposable
             return CurrentSpeedMmps;
         }
     }
+    
+    /// <inheritdoc/>
+    public async Task<bool> InitializeAsync(CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("开始初始化雷马 LM1000H 主线驱动");
+        
+        try
+        {
+            // 步骤 1: 发送停止命令，确保频率为 0（避免带载启动）
+            _logger.LogInformation("发送停止命令，确保当前频率为 0");
+            await _transport.WriteRegisterAsync(
+                RemaRegisters.ControlWord,
+                RemaScaling.ControlCmd_Decelerate,
+                cancellationToken);
+            
+            // 等待一小段时间确保停止命令生效
+            await Task.Delay(TimeSpan.FromMilliseconds(500), cancellationToken);
+            
+            // 步骤 2: 读取关键参数并校验
+            _logger.LogInformation("读取关键参数进行校验");
+            
+            // 读取 P0.05 顶频（基准频率）
+            ushort baseFreqRegister;
+            try
+            {
+                baseFreqRegister = await _transport.ReadRegisterAsync(
+                    RemaRegisters.P0_05_BaseFrequency,
+                    cancellationToken);
+                var baseFreqHz = ConvertRegisterValueToHz(baseFreqRegister);
+                _logger.LogInformation("读取到 P0.05 顶频: {BaseFreqHz:F2} Hz", baseFreqHz);
+                
+                // 校验顶频是否合理（应该大于配置的限频）
+                if (baseFreqHz < _options.LimitHz)
+                {
+                    _logger.LogWarning(
+                        "警告：P0.05 顶频 ({BaseFreqHz:F2} Hz) 小于配置的限频 ({LimitHz:F2} Hz)，可能导致速度受限",
+                        baseFreqHz, _options.LimitHz);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "读取 P0.05 顶频失败，将继续初始化");
+            }
+            
+            // 读取 P2.06 电机额定电流
+            ushort ratedCurrentRegister;
+            try
+            {
+                ratedCurrentRegister = await _transport.ReadRegisterAsync(
+                    RemaRegisters.P2_06_RatedCurrent,
+                    cancellationToken);
+                var ratedCurrentA = ratedCurrentRegister * _options.RatedCurrentScale;
+                _logger.LogInformation("读取到 P2.06 电机额定电流: {RatedCurrent:F2} A", ratedCurrentA);
+                
+                // 校验额定电流是否在合理范围内（通常 2A - 10A）
+                if (ratedCurrentA < 2m || ratedCurrentA > 10m)
+                {
+                    _logger.LogWarning(
+                        "警告：P2.06 额定电流 ({RatedCurrent:F2} A) 超出常规范围 (2-10A)，请确认配置正确",
+                        ratedCurrentA);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "读取 P2.06 额定电流失败，将使用兜底值 {FallbackCurrent:F2} A",
+                    _options.FallbackRatedCurrentA);
+            }
+            
+            // 步骤 3: 设置限频/限扭矩相关参数
+            _logger.LogInformation("设置限频和限扭矩参数");
+            
+            // P0.01 - 运行命令源选择 (RS485 通讯)
+            await _transport.WriteRegisterAsync(
+                RemaRegisters.P0_01_RunCmdSource,
+                2,
+                cancellationToken);
+            
+            // P0.07 - 限速频率
+            var limitRegisterValue = ConvertHzToRegisterValue(_options.LimitHz);
+            await _transport.WriteRegisterAsync(
+                RemaRegisters.P0_07_LimitFrequency,
+                limitRegisterValue,
+                cancellationToken);
+            _logger.LogInformation("设置 P0.07 限速频率: {LimitHz:F2} Hz", _options.LimitHz);
+            
+            // P3.10 - 转矩给定值上限
+            var torqueValue = (ushort)Math.Min(_options.TorqueMax, RemaScaling.TorqueMaxAbsolute);
+            await _transport.WriteRegisterAsync(
+                RemaRegisters.P3_10_TorqueRef,
+                torqueValue,
+                cancellationToken);
+            _logger.LogInformation("设置 P3.10 转矩上限: {TorqueMax}", _options.TorqueMax);
+            
+            // 如果配置了面板显示位，写入 P7.07
+            if (_options.PanelBits.HasValue)
+            {
+                await _transport.WriteRegisterAsync(
+                    RemaRegisters.P7_07_PanelDisplayBits,
+                    (ushort)_options.PanelBits.Value,
+                    cancellationToken);
+                _logger.LogInformation("设置 P7.07 面板显示位: 0x{PanelBits:X}", _options.PanelBits.Value);
+            }
+            
+            // 如果配置了继电器定义，写入 P6.02
+            if (_options.RelayDefine.HasValue)
+            {
+                await _transport.WriteRegisterAsync(
+                    RemaRegisters.P6_02_RelayDefine,
+                    (ushort)_options.RelayDefine.Value,
+                    cancellationToken);
+                _logger.LogInformation("设置 P6.02 继电器定义: {RelayDefine}", _options.RelayDefine.Value);
+            }
+            
+            // 标记为已就绪
+            lock (_lock)
+            {
+                _isReady = true;
+            }
+            
+            _logger.LogInformation("雷马 LM1000H 主线驱动初始化完成");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "初始化雷马 LM1000H 主线驱动失败");
+            
+            lock (_lock)
+            {
+                _isReady = false;
+            }
+            
+            return false;
+        }
+    }
+    
+    /// <inheritdoc/>
+    public async Task<bool> ShutdownAsync(CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("开始停机雷马 LM1000H 主线驱动");
+        
+        try
+        {
+            // 步骤 1: 将目标速度设置为 0
+            _logger.LogInformation("设置目标速度为 0");
+            await SetTargetSpeedAsync(0m, cancellationToken);
+            
+            // 步骤 2: 等待当前速度降到阈值以下
+            var shutdownThreshold = 50m; // 50 mm/s 作为停机阈值
+            var maxWaitTime = TimeSpan.FromSeconds(30);
+            var startTime = DateTime.UtcNow;
+            
+            _logger.LogInformation("等待主线速度降到 {Threshold} mm/s 以下（最多等待 {MaxWait} 秒）",
+                shutdownThreshold, maxWaitTime.TotalSeconds);
+            
+            while (true)
+            {
+                var currentSpeed = await GetCurrentSpeedAsync(cancellationToken);
+                
+                if (currentSpeed <= shutdownThreshold)
+                {
+                    _logger.LogInformation("主线速度已降到 {CurrentSpeed:F1} mm/s，可以安全停机", currentSpeed);
+                    break;
+                }
+                
+                var elapsed = DateTime.UtcNow - startTime;
+                if (elapsed >= maxWaitTime)
+                {
+                    _logger.LogWarning(
+                        "等待主线减速超时（{Elapsed:F1} 秒），当前速度: {CurrentSpeed:F1} mm/s，强制停机",
+                        elapsed.TotalSeconds, currentSpeed);
+                    break;
+                }
+                
+                // 每 500ms 检查一次
+                await Task.Delay(TimeSpan.FromMilliseconds(500), cancellationToken);
+            }
+            
+            // 步骤 3: 发送停止命令
+            _logger.LogInformation("发送停机命令");
+            await _transport.WriteRegisterAsync(
+                RemaRegisters.ControlWord,
+                RemaScaling.ControlCmd_Decelerate,
+                cancellationToken);
+            
+            // 设置安全速度 (0 Hz)
+            await _transport.WriteRegisterAsync(
+                RemaRegisters.P0_07_LimitFrequency,
+                0,
+                cancellationToken);
+            
+            // 标记为未就绪
+            lock (_lock)
+            {
+                _isReady = false;
+            }
+            
+            _logger.LogInformation("雷马 LM1000H 主线驱动已安全停机");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "停机雷马 LM1000H 主线驱动失败");
+            
+            lock (_lock)
+            {
+                _isReady = false;
+            }
+            
+            return false;
+        }
+    }
 
     /// <summary>
     /// 启动主线驱动
@@ -194,8 +419,11 @@ public sealed class RemaLm1000HMainLineDrive : IMainLineDrive, IDisposable
     {
         _logger.LogInformation("启动雷马 LM1000H 主线驱动");
         
-        // 初始化 Rema 寄存器
-        await InitializeRemaAsync(cancellationToken);
+        // 发送正转运行命令
+        await _transport.WriteRegisterAsync(
+            RemaRegisters.ControlWord,
+            RemaScaling.ControlCmd_Forward,
+            cancellationToken);
         
         lock (_lock)
         {
@@ -239,59 +467,6 @@ public sealed class RemaLm1000HMainLineDrive : IMainLineDrive, IDisposable
         _logger.LogInformation("主线驱动已停止，已设置安全速度 0 Hz");
     }
 
-    /// <summary>
-    /// 初始化 Rema 寄存器
-    /// </summary>
-    private async Task InitializeRemaAsync(CancellationToken cancellationToken)
-    {
-        _logger.LogInformation("初始化雷马 LM1000H 寄存器");
-        
-        // P0.01 - 运行命令源选择 (RS485 通讯)
-        await _transport.WriteRegisterAsync(
-            RemaRegisters.P0_01_RunCmdSource, 
-            2, 
-            cancellationToken);
-        
-        // P0.07 - 限速频率
-        var limitRegisterValue = ConvertHzToRegisterValue(_options.LimitHz);
-        await _transport.WriteRegisterAsync(
-            RemaRegisters.P0_07_LimitFrequency, 
-            limitRegisterValue, 
-            cancellationToken);
-        
-        // P3.10 - 转矩给定值上限
-        await _transport.WriteRegisterAsync(
-            RemaRegisters.P3_10_TorqueRef, 
-            (ushort)Math.Min(_options.TorqueMax, RemaScaling.TorqueMaxAbsolute), 
-            cancellationToken);
-        
-        // 如果配置了面板显示位，写入 P7.07
-        if (_options.PanelBits.HasValue)
-        {
-            await _transport.WriteRegisterAsync(
-                RemaRegisters.P7_07_PanelDisplayBits, 
-                (ushort)_options.PanelBits.Value, 
-                cancellationToken);
-        }
-        
-        // 如果配置了继电器定义，写入 P6.02
-        if (_options.RelayDefine.HasValue)
-        {
-            await _transport.WriteRegisterAsync(
-                RemaRegisters.P6_02_RelayDefine, 
-                (ushort)_options.RelayDefine.Value, 
-                cancellationToken);
-        }
-        
-        // 发送正转运行命令
-        await _transport.WriteRegisterAsync(
-            RemaRegisters.ControlWord, 
-            RemaScaling.ControlCmd_Forward, 
-            cancellationToken);
-        
-        _logger.LogInformation("雷马寄存器初始化完成 - 限速：{LimitHz:F2} Hz，最大扭矩：{TorqueMax}", 
-            _options.LimitHz, _options.TorqueMax);
-    }
 
     /// <summary>
     /// 控制循环回调

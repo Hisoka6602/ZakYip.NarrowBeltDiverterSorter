@@ -38,11 +38,24 @@ public class MainLineControlWorker : BackgroundService
     {
         _logger.LogInformation("主线控制工作器已启动");
 
+        // 初始化主线驱动
+        _logger.LogInformation("开始初始化主线驱动");
+        var initialized = await _mainLineDrive.InitializeAsync(stoppingToken);
+        if (!initialized)
+        {
+            _logger.LogError("主线驱动初始化失败，主线控制服务将不会启动");
+            _logger.LogWarning("主线未就绪，系统无法进行正常分拣，请检查驱动连接和配置");
+            return;
+        }
+        
+        _logger.LogInformation("主线驱动初始化成功");
+
         // 启动控制服务
         var started = await _controlService.StartAsync(stoppingToken);
         if (!started)
         {
             _logger.LogError("主线控制服务启动失败");
+            _logger.LogWarning("主线未就绪，系统无法进行正常分拣，请等待人工处理");
             return;
         }
 
@@ -88,12 +101,29 @@ public class MainLineControlWorker : BackgroundService
             catch (Exception ex)
             {
                 _logger.LogError(ex, "主线控制循环发生异常");
+                
+                // 如果是通讯异常，标记主线未就绪（通过日志提醒）
+                if (ex is TimeoutException || ex is System.IO.IOException || 
+                    ex.Message.Contains("通讯") || ex.Message.Contains("Modbus"))
+                {
+                    _logger.LogWarning("主线通讯失败，主线未就绪，系统无法进行正常分拣");
+                }
+                
                 await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
             }
         }
 
         // 停止控制服务
         await _controlService.StopAsync(CancellationToken.None);
+        
+        // 安全关闭主线驱动
+        _logger.LogInformation("开始安全关闭主线驱动");
+        var shutdown = await _mainLineDrive.ShutdownAsync(CancellationToken.None);
+        if (!shutdown)
+        {
+            _logger.LogWarning("主线驱动安全关闭失败");
+        }
+        
         _logger.LogInformation("主线控制工作器已停止");
     }
 
