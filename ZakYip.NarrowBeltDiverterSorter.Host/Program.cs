@@ -24,6 +24,9 @@ using ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
 using ZakYip.NarrowBeltDiverterSorter.Infrastructure.LiteDb;
 using ZakYip.NarrowBeltDiverterSorter.Communication.Upstream;
 using ZakYip.NarrowBeltDiverterSorter.Host;
+// Note: Simulation types cannot be used due to circular dependency
+// using ZakYip.NarrowBeltDiverterSorter.Simulation;
+// using ZakYip.NarrowBeltDiverterSorter.Simulation.Fakes;
 
 // ============================================================================
 // 解析启动模式参数
@@ -102,6 +105,18 @@ builder.Services.Configure<RemaLm1000HOptions>(
 // 配置格口 IO 选项
 builder.Services.Configure<ChuteIoOptions>(
     builder.Configuration.GetSection(ChuteIoOptions.SectionName));
+
+// 配置窄带仿真选项
+builder.Services.Configure<NarrowBeltSimulationOptions>(
+    builder.Configuration.GetSection("NarrowBeltSimulation"));
+
+// 配置格口布局
+builder.Services.Configure<ChuteLayoutProfile>(
+    builder.Configuration.GetSection("ChuteLayout"));
+
+// 配置目标格口分配策略
+builder.Services.Configure<TargetChuteAssignmentProfile>(
+    builder.Configuration.GetSection("TargetChuteAssignment"));
 
 // ============================================================================
 // 注册事件总线 (Observability)
@@ -382,6 +397,32 @@ builder.Services.AddSingleton<IChuteSafetyService, ChuteSafetyService>();
 
 builder.Services.AddHealthChecks()
     .AddCheck<SystemHealthCheck>("system");
+
+// ============================================================================
+// 注册仿真服务（可选，仅在仿真模式下可用）
+// ============================================================================
+// Note: Commented out due to circular dependency between Host and Simulation projects
+/*
+// 注册仿真报告服务
+builder.Services.AddSingleton<INarrowBeltSimulationReportService, InMemoryNarrowBeltSimulationReportService>();
+
+// 注册场景运行器（可选，如果依赖的服务不可用则不注册）
+// 场景运行器需要仿真驱动和时间线记录器
+if (mainLineDriveOptions.Implementation == MainLineDriveImplementation.Simulation)
+{
+    // 注册时间线记录器
+    builder.Services.AddSingleton<ParcelTimelineRecorder>();
+    
+    // 注册场景运行器
+    builder.Services.AddTransient<INarrowBeltSimulationScenarioRunner, NarrowBeltSimulationScenarioRunner>();
+    
+    Console.WriteLine("仿真场景运行器已启用");
+}
+else
+{
+    Console.WriteLine("仿真场景运行器已禁用（需要仿真主线驱动）");
+}
+*/
 
 // ============================================================================
 // 根据启动模式注册后台工作器
