@@ -2,7 +2,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using ZakYip.NarrowBeltDiverterSorter.Core.Configuration;
 using ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
-using ZakYip.NarrowBeltDiverterSorter.Simulation;
+// Note: INarrowBeltSimulationScenarioRunner and related types cannot be used due to circular dependency
+// between Host and Simulation projects. This will be resolved in a future PR.
+// using ZakYip.NarrowBeltDiverterSorter.Simulation;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Host.Controllers;
 
@@ -15,8 +17,9 @@ public class SimulationsController : ControllerBase
 {
     private readonly ILongRunLoadTestOptionsRepository _longRunRepo;
     private readonly IMainLineOptionsRepository _mainLineRepo;
-    private readonly INarrowBeltSimulationScenarioRunner? _scenarioRunner;
-    private readonly INarrowBeltSimulationReportService? _reportService;
+    // Note: These services are commented out due to circular dependency with Simulation project
+    // private readonly INarrowBeltSimulationScenarioRunner? _scenarioRunner;
+    // private readonly INarrowBeltSimulationReportService? _reportService;
     private readonly IOptions<NarrowBeltSimulationOptions> _simulationOptions;
     private readonly IOptions<ChuteLayoutProfile> _chuteLayoutOptions;
     private readonly IOptions<TargetChuteAssignmentProfile> _assignmentOptions;
@@ -28,9 +31,7 @@ public class SimulationsController : ControllerBase
         IOptions<NarrowBeltSimulationOptions> simulationOptions,
         IOptions<ChuteLayoutProfile> chuteLayoutOptions,
         IOptions<TargetChuteAssignmentProfile> assignmentOptions,
-        ILogger<SimulationsController> logger,
-        INarrowBeltSimulationScenarioRunner? scenarioRunner = null,
-        INarrowBeltSimulationReportService? reportService = null)
+        ILogger<SimulationsController> logger)
     {
         _longRunRepo = longRunRepo ?? throw new ArgumentNullException(nameof(longRunRepo));
         _mainLineRepo = mainLineRepo ?? throw new ArgumentNullException(nameof(mainLineRepo));
@@ -38,8 +39,6 @@ public class SimulationsController : ControllerBase
         _chuteLayoutOptions = chuteLayoutOptions ?? throw new ArgumentNullException(nameof(chuteLayoutOptions));
         _assignmentOptions = assignmentOptions ?? throw new ArgumentNullException(nameof(assignmentOptions));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _scenarioRunner = scenarioRunner;
-        _reportService = reportService;
     }
 
     /// <summary>
@@ -103,6 +102,10 @@ public class SimulationsController : ControllerBase
         }
     }
 
+    // Note: The following endpoints are commented out due to circular dependency between Host and Simulation projects.
+    // This will be resolved in a future PR by moving shared types to Core or restructuring projects.
+    
+    /*
     /// <summary>
     /// 执行配置化窄带仿真场景。
     /// </summary>
@@ -210,6 +213,7 @@ public class SimulationsController : ControllerBase
         await _reportService.DeleteReportAsync(runId, cancellationToken);
         return NoContent();
     }
+    */
 }
 
 /// <summary>
@@ -238,6 +242,8 @@ public class LongRunSimulationStartResponse
     public required object Configuration { get; init; }
 }
 
+// Note: NarrowBeltSimulationRunResponse is commented out due to circular dependency
+/*
 /// <summary>
 /// 窄带仿真运行响应。
 /// </summary>
@@ -258,3 +264,4 @@ public class NarrowBeltSimulationRunResponse
     /// </summary>
     public required SimulationStatistics Statistics { get; init; }
 }
+*/

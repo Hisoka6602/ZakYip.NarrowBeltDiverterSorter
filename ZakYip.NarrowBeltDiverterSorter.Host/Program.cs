@@ -24,8 +24,9 @@ using ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
 using ZakYip.NarrowBeltDiverterSorter.Infrastructure.LiteDb;
 using ZakYip.NarrowBeltDiverterSorter.Communication.Upstream;
 using ZakYip.NarrowBeltDiverterSorter.Host;
-using ZakYip.NarrowBeltDiverterSorter.Simulation;
-using ZakYip.NarrowBeltDiverterSorter.Simulation.Fakes;
+// Note: Simulation types cannot be used due to circular dependency
+// using ZakYip.NarrowBeltDiverterSorter.Simulation;
+// using ZakYip.NarrowBeltDiverterSorter.Simulation.Fakes;
 
 // ============================================================================
 // 解析启动模式参数
@@ -400,7 +401,8 @@ builder.Services.AddHealthChecks()
 // ============================================================================
 // 注册仿真服务（可选，仅在仿真模式下可用）
 // ============================================================================
-
+// Note: Commented out due to circular dependency between Host and Simulation projects
+/*
 // 注册仿真报告服务
 builder.Services.AddSingleton<INarrowBeltSimulationReportService, InMemoryNarrowBeltSimulationReportService>();
 
@@ -420,6 +422,7 @@ else
 {
     Console.WriteLine("仿真场景运行器已禁用（需要仿真主线驱动）");
 }
+*/
 
 // ============================================================================
 // 根据启动模式注册后台工作器
