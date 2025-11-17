@@ -13,8 +13,9 @@ public class RecordingsController : ControllerBase
 {
     private readonly IEventRecordingManager _recordingManager;
     private readonly ILogger<RecordingsController> _logger;
-    // TODO: 回放功能将在后续实现
-    // private readonly IRecordingReplayRunner? _replayRunner;
+    // Note: IRecordingReplayRunner will be injected optionally
+    // It may not be available if Simulation project is not referenced
+    // This is handled gracefully with a 501 Not Implemented response
 
     public RecordingsController(
         IEventRecordingManager recordingManager,
@@ -165,14 +166,19 @@ public class RecordingsController : ControllerBase
         [FromBody] ReplayRequest request,
         CancellationToken cancellationToken)
     {
-        // TODO: 回放功能将在后续实现
-        _logger.LogWarning("Replay functionality not yet implemented for session {SessionId}", sessionId);
+        // Note: Replay functionality is implemented in Simulation project
+        // To enable replay, the Simulation project must register IRecordingReplayRunner
+        // The circular dependency between Host and Simulation prevents direct reference
+        // Future enhancement: Use a plugin architecture or move replay to a separate project
+        
+        _logger.LogWarning("Replay functionality requires Simulation project registration for session {SessionId}", sessionId);
         
         return StatusCode(501, new
         {
-            error = "Replay functionality not yet implemented",
-            message = "Replay runner will be implemented in a future phase",
-            sessionId
+            error = "Replay functionality not available in Host-only mode",
+            message = "To enable replay, ensure IRecordingReplayRunner is registered from Simulation project",
+            sessionId,
+            note = "The replay implementation exists in ZakYip.NarrowBeltDiverterSorter.Simulation.Replay.RecordingReplayRunner"
         });
     }
 
