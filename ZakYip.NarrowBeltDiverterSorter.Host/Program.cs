@@ -115,6 +115,11 @@ builder.Services.AddSingleton<IEventBus, InMemoryEventBus>();
 
 builder.Services.AddSingleton<ISorterConfigurationStore, LiteDbSorterConfigurationStore>();
 
+// 注册旧的 IConfigStore 用于兼容性（已废弃但某些代码仍在使用）
+#pragma warning disable CS0618 // Type or member is obsolete
+builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration.IConfigStore, ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration.LiteDbConfigStore>();
+#pragma warning restore CS0618 // Type or member is obsolete
+
 // ============================================================================
 // 注册上游客户端
 // ============================================================================
