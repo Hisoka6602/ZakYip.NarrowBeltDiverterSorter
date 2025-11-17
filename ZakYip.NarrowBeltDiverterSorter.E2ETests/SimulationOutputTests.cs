@@ -355,6 +355,7 @@ public class SimulationOutputTests
         builder.Services.AddSingleton<IMainLineSetpointProvider>(e2eSetpoint);
 
         builder.Services.AddSingleton<ICartRingBuilder, CartRingBuilder>();
+        builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Domain.SystemState.ISystemRunStateService, ZakYip.NarrowBeltDiverterSorter.Core.Domain.SystemState.SystemRunStateService>();
         builder.Services.AddSingleton<IParcelLifecycleService, ParcelLifecycleService>();
         builder.Services.AddSingleton<ICartLifecycleService, CartLifecycleService>();
         builder.Services.AddSingleton<IParcelLoadPlanner, ParcelLoadPlanner>();
@@ -364,19 +365,21 @@ public class SimulationOutputTests
         builder.Services.AddSingleton<IMainLineSpeedProvider, MainLineSpeedProvider>();
         builder.Services.AddSingleton<IMainLineStabilityProvider, MainLineStabilityProvider>();
         builder.Services.AddSingleton<ICartPositionTracker, CartPositionTracker>();
+        
+        // 注册轨道拓扑
+        builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Domain.Topology.ITrackTopology>(sp =>
+        {
+            return TrackTopologyBuilder.BuildFromSimulationConfig(simulationConfig);
+        });
+        
         builder.Services.AddSingleton<IChuteConfigProvider>(sp =>
         {
+            var topology = sp.GetRequiredService<ZakYip.NarrowBeltDiverterSorter.Core.Domain.Topology.ITrackTopology>();
             var provider = new ChuteConfigProvider();
-            for (int i = 1; i <= simulationConfig.NumberOfChutes; i++)
+            var configs = TrackTopologyBuilder.BuildChuteConfigs(topology, simulationConfig.ForceEjectChuteId);
+            foreach (var config in configs)
             {
-                provider.AddOrUpdate(new ZakYip.NarrowBeltDiverterSorter.Core.Domain.ChuteConfig
-                {
-                    ChuteId = new ZakYip.NarrowBeltDiverterSorter.Core.Domain.ChuteId(i),
-                    IsEnabled = true,
-                    IsForceEject = (i == simulationConfig.ForceEjectChuteId),
-                    CartOffsetFromOrigin = i * 5,
-                    MaxOpenDuration = TimeSpan.FromMilliseconds(300)
-                });
+                provider.AddOrUpdate(config);
             }
             return provider;
         });
