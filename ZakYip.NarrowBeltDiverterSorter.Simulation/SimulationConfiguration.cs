@@ -108,6 +108,7 @@ public class SimulationConfiguration
     /// - "e2e-speed-unstable": 速度不稳定场景
     /// - "ChuteIoHardwareDryRun": 格口IO硬件空跑场景，验证格口开闭逻辑
     /// - "cart-self-check": 小车环自检场景，验证小车数量和节距配置
+    /// - "chute-cart-mapping-self-check": 格口-小车映射自检场景，验证格口与小车映射关系
     /// </summary>
     public string? Scenario { get; set; } = null;
     
@@ -120,4 +121,19 @@ public class SimulationConfiguration
     /// 速度波动频率（Hz），用于不稳定速度场景
     /// </summary>
     public double SpeedOscillationFrequency { get; set; } = 0.5;
+
+    /// <summary>
+    /// 格口-小车映射自检圈数（默认5圈）
+    /// </summary>
+    public int ChuteCartMappingLoopCount { get; set; } = 5;
+
+    /// <summary>
+    /// 格口-小车映射自检小车编号容忍度（默认0）
+    /// </summary>
+    public int ChuteCartMappingCartIdTolerance { get; set; } = 0;
+
+    /// <summary>
+    /// 格口-小车映射自检位置容忍度（mm，默认10mm）
+    /// </summary>
+    public decimal ChuteCartMappingPositionToleranceMm { get; set; } = 10m;
 }

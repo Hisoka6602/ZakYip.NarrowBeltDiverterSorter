@@ -25,6 +25,8 @@ using ZakYip.NarrowBeltDiverterSorter.Ingress.Infeed;
 using ZakYip.NarrowBeltDiverterSorter.Ingress.Origin;
 using ZakYip.NarrowBeltDiverterSorter.Simulation;
 using ZakYip.NarrowBeltDiverterSorter.Simulation.Fakes;
+using ZakYip.NarrowBeltDiverterSorter.Core.SelfCheck;
+using ZakYip.NarrowBeltDiverterSorter.Simulation.Scenarios;
 
 Console.OutputEncoding = System.Text.Encoding.UTF8;
 Console.WriteLine("════════════════════════════════════════");
@@ -90,6 +92,10 @@ static async Task RunSimulationAsync(string? scenario, int parcelCount, string? 
     else if (scenario == "safety-chute-reset")
     {
         await RunSafetyScenarioAsync();
+    }
+    else if (scenario == "chute-cart-mapping-self-check")
+    {
+        await RunChuteCartMappingSelfCheckScenarioAsync(resetConfig);
     }
     else
     {
@@ -973,4 +979,157 @@ static void PrintSafetyReport(SafetyScenarioReport report)
     }
     Console.WriteLine();
     Console.WriteLine("════════════════════════════════════════\n");
+}
+
+static async Task RunChuteCartMappingSelfCheckScenarioAsync(bool resetConfig)
+{
+    Console.WriteLine("═══ 运行格口-小车映射自检场景 (chute-cart-mapping-self-check) ═══\n");
+
+    // ============================================================================
+    // 配置数据库
+    // ============================================================================
+
+    var dbPath = Path.Combine(Environment.CurrentDirectory, "simulation.db");
+    if (resetConfig && File.Exists(dbPath))
+    {
+        Console.WriteLine($"删除现有配置数据库: {dbPath}");
+        File.Delete(dbPath);
+    }
+
+    await SeedConfigurationIfNeededAsync(dbPath);
+    Console.WriteLine("配置加载完成\n");
+
+    var builder = Host.CreateApplicationBuilder();
+
+    // ============================================================================
+    // 配置仿真参数
+    // ============================================================================
+    
+    var simulationConfig = new SimulationConfiguration
+    {
+        NumberOfCarts = 20,
+        CartSpacingMm = 500m,
+        CartWidthMm = 200m,
+        NumberOfChutes = 32,
+        ChuteWidthMm = 500m,
+        ForceEjectChuteId = 32,
+        MainLineSpeedMmPerSec = 1000.0,
+        Scenario = "chute-cart-mapping-self-check",
+        ChuteCartMappingLoopCount = 5,
+        ChuteCartMappingCartIdTolerance = 0,
+        ChuteCartMappingPositionToleranceMm = 10m
+    };
+
+    Console.WriteLine($"仿真配置:");
+    Console.WriteLine($"  小车数量: {simulationConfig.NumberOfCarts}");
+    Console.WriteLine($"  小车节距: {simulationConfig.CartSpacingMm} mm");
+    Console.WriteLine($"  小车宽度: {simulationConfig.CartWidthMm} mm");
+    Console.WriteLine($"  格口数量: {simulationConfig.NumberOfChutes}");
+    Console.WriteLine($"  格口宽度: {simulationConfig.ChuteWidthMm} mm");
+    Console.WriteLine($"  自检圈数: {simulationConfig.ChuteCartMappingLoopCount}");
+    Console.WriteLine($"  容忍度: {simulationConfig.ChuteCartMappingCartIdTolerance} 辆车");
+    Console.WriteLine();
+
+    builder.Services.AddSingleton(simulationConfig);
+
+    // ============================================================================
+    // 配置日志
+    // ============================================================================
+
+    builder.Logging.ClearProviders();
+    builder.Logging.AddConsole();
+    builder.Logging.SetMinimumLevel(LogLevel.Information);
+
+    // ============================================================================
+    // 注册轨道拓扑
+    // ============================================================================
+    
+    builder.Services.AddSingleton<ITrackTopology>(sp =>
+    {
+        return TrackTopologyBuilder.BuildFromSimulationConfig(simulationConfig);
+    });
+
+    // ============================================================================
+    // 注册 Fake 硬件实现
+    // ============================================================================
+
+    var fakeMainLineDrive = new FakeMainLineDrivePort();
+    var fakeMainLineFeedback = new FakeMainLineFeedbackPort(fakeMainLineDrive);
+    
+    builder.Services.AddSingleton(fakeMainLineDrive);
+    builder.Services.AddSingleton<IMainLineDrivePort>(fakeMainLineDrive);
+    builder.Services.AddSingleton(fakeMainLineFeedback);
+    builder.Services.AddSingleton<IMainLineFeedbackPort>(fakeMainLineFeedback);
+
+    // 注册 SimulatedMainLineDrive（IMainLineDrive 实现）
+    builder.Services.AddSingleton<IMainLineDrive, SimulatedMainLineDrive>();
+
+    // ============================================================================
+    // 注册主线控制相关服务
+    // ============================================================================
+
+    builder.Services.Configure<MainLineControlOptions>(options =>
+    {
+        options.TargetSpeedMmps = (decimal)simulationConfig.MainLineSpeedMmPerSec;
+        options.LoopPeriod = TimeSpan.FromMilliseconds(100);
+        options.StableDeadbandMmps = 50m;
+    });
+
+    builder.Services.AddSingleton<IMainLineControlService, MainLineControlService>();
+    builder.Services.AddSingleton<IMainLineSpeedProvider, MainLineSpeedProvider>();
+
+    // ============================================================================
+    // 注册自检服务和场景运行器
+    // ============================================================================
+
+    builder.Services.AddSingleton<IChuteCartMappingSelfCheckService, ChuteCartMappingSelfCheckService>();
+    
+    builder.Services.AddSingleton(sp => new ChuteCartMappingSelfCheckOptions
+    {
+        LoopCount = simulationConfig.ChuteCartMappingLoopCount,
+        CartIdTolerance = simulationConfig.ChuteCartMappingCartIdTolerance,
+        PositionToleranceMm = simulationConfig.ChuteCartMappingPositionToleranceMm
+    });
+
+    builder.Services.AddSingleton<ChuteCartMappingSelfCheckScenario>();
+
+    // ============================================================================
+    // 构建并运行自检场景
+    // ============================================================================
+
+    var app = builder.Build();
+
+    Console.WriteLine("开始格口-小车映射自检...\n");
+
+    try
+    {
+        using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(5));
+        
+        var runner = app.Services.GetRequiredService<ChuteCartMappingSelfCheckScenario>();
+        var result = await runner.RunAsync(cts.Token);
+
+        // 输出报告总结
+        Console.WriteLine("\n════════════════════════════════════════");
+        if (result.IsAllPassed)
+        {
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine("✓ 格口-小车映射自检通过");
+            Console.ResetColor();
+        }
+        else
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("✗ 格口-小车映射自检失败");
+            Console.ResetColor();
+            Console.WriteLine($"  失败格口数: {result.ChuteItems.Count(item => !item.IsPassed)} / {result.ChuteCount}");
+        }
+        Console.WriteLine("════════════════════════════════════════\n");
+    }
+    catch (Exception ex)
+    {
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine($"\n✗ 格口-小车映射自检运行失败: {ex.Message}");
+        Console.WriteLine(ex.StackTrace);
+        Console.ResetColor();
+    }
 }
