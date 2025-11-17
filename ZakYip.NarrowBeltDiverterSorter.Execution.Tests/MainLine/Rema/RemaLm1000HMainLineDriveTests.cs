@@ -392,4 +392,115 @@ public class RemaLm1000HMainLineDriveTests
         await drive.StopAsync();
         drive.Dispose();
     }
+
+    [Fact]
+    public async Task InitializeAsync_SuccessfullyInitializesAndSetsReady()
+    {
+        // Arrange
+        var logger = NullLogger<RemaLm1000HMainLineDrive>.Instance;
+        var options = Options.Create(_defaultOptions);
+        var transport = new StubRemaLm1000HTransport(NullLogger<StubRemaLm1000HTransport>.Instance);
+        var drive = new RemaLm1000HMainLineDrive(logger, options, transport);
+
+        // Assert initial state
+        Assert.False(drive.IsReady);
+
+        // Act
+        var result = await drive.InitializeAsync();
+
+        // Assert
+        Assert.True(result);
+        Assert.True(drive.IsReady);
+        
+        // Verify stop command was sent (first step)
+        var controlWord = await transport.ReadRegisterAsync(RemaRegisters.ControlWord);
+        
+        // Verify P0.01 was set to RS485 mode
+        var runCmdSource = await transport.ReadRegisterAsync(RemaRegisters.P0_01_RunCmdSource);
+        Assert.Equal(2, runCmdSource);
+        
+        // Verify P0.07 limit frequency was set
+        var limitFreq = await transport.ReadRegisterAsync(RemaRegisters.P0_07_LimitFrequency);
+        var expectedLimitRegister = (ushort)Math.Round(_defaultOptions.LimitHz / RemaScaling.P005_HzPerCount);
+        Assert.Equal(expectedLimitRegister, limitFreq);
+        
+        // Verify P3.10 torque max was set
+        var torqueRef = await transport.ReadRegisterAsync(RemaRegisters.P3_10_TorqueRef);
+        Assert.Equal(_defaultOptions.TorqueMax, torqueRef);
+
+        // Cleanup
+        await drive.ShutdownAsync();
+        drive.Dispose();
+    }
+
+    [Fact]
+    public async Task ShutdownAsync_SuccessfullyShutdownAndClearsReady()
+    {
+        // Arrange
+        var logger = NullLogger<RemaLm1000HMainLineDrive>.Instance;
+        var options = Options.Create(_defaultOptions);
+        var transport = new StubRemaLm1000HTransport(NullLogger<StubRemaLm1000HTransport>.Instance);
+        var drive = new RemaLm1000HMainLineDrive(logger, options, transport);
+
+        // Initialize first
+        await drive.InitializeAsync();
+        Assert.True(drive.IsReady);
+
+        // Act
+        var result = await drive.ShutdownAsync();
+
+        // Assert
+        Assert.True(result);
+        Assert.False(drive.IsReady);
+        
+        // Verify stop command was sent
+        var controlWord = await transport.ReadRegisterAsync(RemaRegisters.ControlWord);
+        Assert.Equal(RemaScaling.ControlCmd_Decelerate, controlWord);
+        
+        // Verify P0.07 was set to 0 (safe speed)
+        var limitFreq = await transport.ReadRegisterAsync(RemaRegisters.P0_07_LimitFrequency);
+        Assert.Equal(0, limitFreq);
+
+        // Cleanup
+        drive.Dispose();
+    }
+
+    [Fact]
+    public async Task InitializeAsync_WhenAlreadyInitialized_SucceedsAndRemainsReady()
+    {
+        // Arrange
+        var logger = NullLogger<RemaLm1000HMainLineDrive>.Instance;
+        var options = Options.Create(_defaultOptions);
+        var transport = new StubRemaLm1000HTransport(NullLogger<StubRemaLm1000HTransport>.Instance);
+        var drive = new RemaLm1000HMainLineDrive(logger, options, transport);
+
+        // Act - initialize twice
+        var result1 = await drive.InitializeAsync();
+        var result2 = await drive.InitializeAsync();
+
+        // Assert
+        Assert.True(result1);
+        Assert.True(result2);
+        Assert.True(drive.IsReady);
+
+        // Cleanup
+        await drive.ShutdownAsync();
+        drive.Dispose();
+    }
+
+    [Fact]
+    public async Task IsReady_StartsAsFalse()
+    {
+        // Arrange
+        var logger = NullLogger<RemaLm1000HMainLineDrive>.Instance;
+        var options = Options.Create(_defaultOptions);
+        var transport = new StubRemaLm1000HTransport(NullLogger<StubRemaLm1000HTransport>.Instance);
+        var drive = new RemaLm1000HMainLineDrive(logger, options, transport);
+
+        // Assert
+        Assert.False(drive.IsReady);
+
+        // Cleanup
+        drive.Dispose();
+    }
 }
