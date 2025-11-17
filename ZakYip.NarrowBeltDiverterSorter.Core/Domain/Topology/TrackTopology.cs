@@ -26,8 +26,16 @@ public class TrackTopology : ITrackTopology
         if (options.CartSpacingMm <= 0)
             throw new ArgumentException("小车节距必须大于0", nameof(options));
 
+        if (options.ChuteWidthMm <= 0)
+            throw new ArgumentException("格口宽度必须大于0", nameof(options));
+
+        if (options.CartWidthMm <= 0)
+            throw new ArgumentException("小车宽度必须大于0", nameof(options));
+
         CartCount = options.CartCount;
         CartSpacingMm = options.CartSpacingMm;
+        CartWidthMm = options.CartWidthMm;
+        ChuteWidthMm = options.ChuteWidthMm;
         RingTotalLengthMm = CartCount * CartSpacingMm;
         InfeedDropPointOffsetMm = options.InfeedDropPointOffsetMm;
 
@@ -39,6 +47,9 @@ public class TrackTopology : ITrackTopology
         }
 
         ChuteCount = _chutePositions.Count;
+
+        // 计算主线长度：格口宽度 × 格口数量 / 2
+        TrackLengthMm = ChuteWidthMm * ChuteCount / 2;
 
         // 设置强排口
         if (options.ForceEjectChuteId.HasValue && options.ForceEjectChuteId.Value > 0)
@@ -62,6 +73,15 @@ public class TrackTopology : ITrackTopology
 
     /// <inheritdoc/>
     public int ChuteCount { get; }
+
+    /// <inheritdoc/>
+    public decimal ChuteWidthMm { get; }
+
+    /// <inheritdoc/>
+    public decimal CartWidthMm { get; }
+
+    /// <inheritdoc/>
+    public decimal TrackLengthMm { get; }
 
     /// <inheritdoc/>
     public decimal InfeedDropPointOffsetMm { get; }

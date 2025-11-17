@@ -22,6 +22,8 @@ public static class TrackTopologyBuilder
         {
             CartCount = config.NumberOfCarts,
             CartSpacingMm = config.CartSpacingMm,
+            CartWidthMm = config.CartWidthMm,
+            ChuteWidthMm = config.ChuteWidthMm,
             ForceEjectChuteId = config.ForceEjectChuteId > 0 ? config.ForceEjectChuteId : null,
             InfeedDropPointOffsetMm = config.InfeedToDropDistanceMm,
             ChutePositions = new List<ChutePositionConfig>()

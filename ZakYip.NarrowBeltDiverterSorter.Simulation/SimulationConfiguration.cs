@@ -42,6 +42,16 @@ public class SimulationConfiguration
     public int NumberOfChutes { get; set; } = 10;
 
     /// <summary>
+    /// 格口宽度（mm）
+    /// </summary>
+    public decimal ChuteWidthMm { get; set; } = 500m;
+
+    /// <summary>
+    /// 小车宽度（mm）
+    /// </summary>
+    public decimal CartWidthMm { get; set; } = 200m;
+
+    /// <summary>
     /// 强排口ID（0表示无强排口）
     /// </summary>
     public int ForceEjectChuteId { get; set; } = 10;
