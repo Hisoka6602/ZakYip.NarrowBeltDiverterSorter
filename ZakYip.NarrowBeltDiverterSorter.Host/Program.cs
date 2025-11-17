@@ -204,11 +204,18 @@ switch (mainLineDriveOptions.Implementation)
 // 注册小车参数驱动
 builder.Services.AddSingleton<ICartParameterPort, CartParameterDriver>();
 
-// 注册格口发信器驱动
+// 注册格口发信器驱动（底层实现，由 SortingExecutionWorker 和 ChuteSafetyService 使用）
+// 注意：IChuteTransmitterPort 是底层硬件端口抽象，用于现有代码兼容性
+// 新代码应优先使用 IChuteIoService，它提供了更通用的多 IP 端点支持
 builder.Services.AddSingleton<IChuteTransmitterPort, ChuteTransmitterDriver>();
 
 // ============================================================================
 // 根据配置注册格口 IO 服务实现
+// ============================================================================
+// IChuteIoService 是新的通用格口 IO 服务接口，支持：
+// 1. 多个 IP 端点（每个端点可以是不同的品牌/型号）
+// 2. 灵活的通道映射配置（避免硬编码魔法数字）
+// 3. 品牌无关的抽象（不暴露具体硬件细节）
 // ============================================================================
 
 var chuteIoOptions = builder.Configuration
