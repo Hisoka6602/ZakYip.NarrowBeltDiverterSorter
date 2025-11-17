@@ -40,8 +40,8 @@ public sealed class ZhiQian32RelayChuteIoService : IChuteIoService, IDisposable
     {
         if (!_chuteMapping.TryGetValue(chuteId, out var mapping))
         {
-            _logger.LogWarning(
-                "[智嵌继电器格口IO服务] 格口 {ChuteId} 未配置映射关系",
+            _logger.LogError(
+                "[智嵌继电器格口IO服务] 格口 {ChuteId} 未配置映射关系 - 无法打开格口",
                 chuteId);
             return;
         }
@@ -60,8 +60,8 @@ public sealed class ZhiQian32RelayChuteIoService : IChuteIoService, IDisposable
     {
         if (!_chuteMapping.TryGetValue(chuteId, out var mapping))
         {
-            _logger.LogWarning(
-                "[智嵌继电器格口IO服务] 格口 {ChuteId} 未配置映射关系",
+            _logger.LogError(
+                "[智嵌继电器格口IO服务] 格口 {ChuteId} 未配置映射关系 - 无法关闭格口",
                 chuteId);
             return;
         }

@@ -6,22 +6,32 @@ using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Sorting;
 namespace ZakYip.NarrowBeltDiverterSorter.Execution.Sorting;
 
 /// <summary>
-/// 格口安全控制服务实现（面向真实硬件）
+/// 格口安全控制服务实现
+/// 优先使用 IChuteIoService（支持多IP端点），回退到 IChuteTransmitterPort（向后兼容）
 /// </summary>
 public class ChuteSafetyService : IChuteSafetyService
 {
-    private readonly IChuteTransmitterPort _chuteTransmitterPort;
-    private readonly IChuteConfigProvider _chuteConfigProvider;
+    private readonly IChuteIoService? _chuteIoService;
+    private readonly IChuteTransmitterPort? _chuteTransmitterPort;
+    private readonly IChuteConfigProvider? _chuteConfigProvider;
     private readonly ILogger<ChuteSafetyService> _logger;
 
     public ChuteSafetyService(
-        IChuteTransmitterPort chuteTransmitterPort,
-        IChuteConfigProvider chuteConfigProvider,
-        ILogger<ChuteSafetyService> logger)
+        ILogger<ChuteSafetyService> logger,
+        IChuteIoService? chuteIoService = null,
+        IChuteTransmitterPort? chuteTransmitterPort = null,
+        IChuteConfigProvider? chuteConfigProvider = null)
     {
-        _chuteTransmitterPort = chuteTransmitterPort ?? throw new ArgumentNullException(nameof(chuteTransmitterPort));
-        _chuteConfigProvider = chuteConfigProvider ?? throw new ArgumentNullException(nameof(chuteConfigProvider));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _chuteIoService = chuteIoService;
+        _chuteTransmitterPort = chuteTransmitterPort;
+        _chuteConfigProvider = chuteConfigProvider;
+
+        // At least one implementation should be provided
+        if (_chuteIoService == null && _chuteTransmitterPort == null)
+        {
+            _logger.LogWarning("安全控制: 既没有 IChuteIoService 也没有 IChuteTransmitterPort，CloseAllChutesAsync 将无操作");
+        }
     }
 
     /// <inheritdoc/>
@@ -29,18 +39,34 @@ public class ChuteSafetyService : IChuteSafetyService
     {
         try
         {
-            var allChutes = _chuteConfigProvider.GetAllConfigs();
-            _logger.LogInformation("安全控制: 正在关闭全部 {Count} 个格口发信器...", allChutes.Count);
-
-            var closeTasks = new List<Task>();
-            foreach (var chute in allChutes)
+            // 优先使用 IChuteIoService（支持多IP端点）
+            if (_chuteIoService != null)
             {
-                closeTasks.Add(CloseChuteSafelyAsync(chute.ChuteId, cancellationToken));
+                _logger.LogInformation("安全控制: 正在通过 IChuteIoService 关闭全部格口...");
+                await _chuteIoService.CloseAllAsync(cancellationToken);
+                _logger.LogInformation("安全控制: 已通过 IChuteIoService 关闭全部格口");
+                return;
             }
 
-            await Task.WhenAll(closeTasks);
-            
-            _logger.LogInformation("安全控制: 已关闭全部格口发信器");
+            // 回退到传统的 IChuteTransmitterPort 方式
+            if (_chuteTransmitterPort != null && _chuteConfigProvider != null)
+            {
+                var allChutes = _chuteConfigProvider.GetAllConfigs();
+                _logger.LogInformation("安全控制: 正在通过 IChuteTransmitterPort 关闭全部 {Count} 个格口发信器...", allChutes.Count);
+
+                var closeTasks = new List<Task>();
+                foreach (var chute in allChutes)
+                {
+                    closeTasks.Add(CloseChuteSafelyAsync(chute.ChuteId, cancellationToken));
+                }
+
+                await Task.WhenAll(closeTasks);
+                
+                _logger.LogInformation("安全控制: 已通过 IChuteTransmitterPort 关闭全部格口发信器");
+                return;
+            }
+
+            _logger.LogWarning("安全控制: 无可用的格口关闭实现");
         }
         catch (Exception ex)
         {
@@ -53,7 +79,10 @@ public class ChuteSafetyService : IChuteSafetyService
     {
         try
         {
-            await _chuteTransmitterPort.ForceCloseAsync(chuteId, cancellationToken);
+            if (_chuteTransmitterPort != null)
+            {
+                await _chuteTransmitterPort.ForceCloseAsync(chuteId, cancellationToken);
+            }
         }
         catch (Exception ex)
         {

@@ -93,6 +93,10 @@ public class SimulationConfiguration
     
     /// <summary>
     /// 仿真场景（例如：e2e-speed-unstable 用于测试速度不稳定场景）
+    /// 可选值：
+    /// - null 或 "e2e-report": 标准E2E报告场景
+    /// - "e2e-speed-unstable": 速度不稳定场景
+    /// - "ChuteIoHardwareDryRun": 格口IO硬件空跑场景，验证格口开闭逻辑
     /// </summary>
     public string? Scenario { get; set; } = null;
     

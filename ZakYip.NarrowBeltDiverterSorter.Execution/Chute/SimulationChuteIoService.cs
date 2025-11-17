@@ -34,8 +34,8 @@ public class SimulationChuteIoService : IChuteIoService
     {
         if (!_chuteMapping.TryGetValue(chuteId, out var mapping))
         {
-            _logger.LogWarning(
-                "[模拟格口IO服务] 格口 {ChuteId} 未配置映射关系",
+            _logger.LogError(
+                "[模拟格口IO服务] 格口 {ChuteId} 未配置映射关系 - 无法打开格口",
                 chuteId);
             return;
         }
@@ -54,8 +54,8 @@ public class SimulationChuteIoService : IChuteIoService
     {
         if (!_chuteMapping.TryGetValue(chuteId, out var mapping))
         {
-            _logger.LogWarning(
-                "[模拟格口IO服务] 格口 {ChuteId} 未配置映射关系",
+            _logger.LogError(
+                "[模拟格口IO服务] 格口 {ChuteId} 未配置映射关系 - 无法关闭格口",
                 chuteId);
             return;
         }
