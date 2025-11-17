@@ -18,7 +18,9 @@ using ZakYip.NarrowBeltDiverterSorter.Execution.Feeding;
 using ZakYip.NarrowBeltDiverterSorter.Execution.MainLine;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Sorting;
 using ZakYip.NarrowBeltDiverterSorter.Host;
+using ZakYip.NarrowBeltDiverterSorter.Core.Configuration;
 using ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
+using ZakYip.NarrowBeltDiverterSorter.Infrastructure.LiteDb;
 using ZakYip.NarrowBeltDiverterSorter.Ingress.Infeed;
 using ZakYip.NarrowBeltDiverterSorter.Ingress.Origin;
 using ZakYip.NarrowBeltDiverterSorter.Simulation;
@@ -583,15 +585,15 @@ static async Task SeedConfigurationIfNeededAsync(string dbPath)
     var tempBuilder = Host.CreateApplicationBuilder();
     tempBuilder.Logging.ClearProviders();
 
-    tempBuilder.Services.AddSingleton<IConfigStore>(sp =>
-        new LiteDbConfigStore(sp.GetRequiredService<ILogger<LiteDbConfigStore>>(), dbPath));
+    tempBuilder.Services.AddSingleton<ISorterConfigurationStore>(sp =>
+        new LiteDbSorterConfigurationStore(sp.GetRequiredService<ILogger<LiteDbSorterConfigurationStore>>(), dbPath));
     tempBuilder.Services.AddSingleton<IMainLineOptionsRepository, LiteDbMainLineOptionsRepository>();
     tempBuilder.Services.AddSingleton<IInfeedLayoutOptionsRepository, LiteDbInfeedLayoutOptionsRepository>();
     tempBuilder.Services.AddSingleton<IChuteConfigRepository, LiteDbChuteConfigRepository>();
     tempBuilder.Services.AddSingleton<IUpstreamConnectionOptionsRepository, LiteDbUpstreamConnectionOptionsRepository>();
 
     var tempHost = tempBuilder.Build();
-    var configStore = tempHost.Services.GetRequiredService<IConfigStore>();
+    var configStore = tempHost.Services.GetRequiredService<ISorterConfigurationStore>();
     var mainLineRepo = tempHost.Services.GetRequiredService<IMainLineOptionsRepository>();
     var infeedRepo = tempHost.Services.GetRequiredService<IInfeedLayoutOptionsRepository>();
     var chuteRepo = tempHost.Services.GetRequiredService<IChuteConfigRepository>();

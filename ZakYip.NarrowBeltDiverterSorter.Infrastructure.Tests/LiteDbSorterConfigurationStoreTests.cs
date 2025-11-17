@@ -1,26 +1,25 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
-using ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
+using ZakYip.NarrowBeltDiverterSorter.Core.Configuration;
+using ZakYip.NarrowBeltDiverterSorter.Infrastructure.LiteDb;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Infrastructure.Tests;
 
 /// <summary>
-/// LiteDbConfigStore 单元测试
-/// 注意：此类测试已过时的 LiteDbConfigStore，新代码应使用 LiteDbSorterConfigurationStoreTests
+/// LiteDbSorterConfigurationStore 单元测试
 /// </summary>
-#pragma warning disable CS0618 // 类型或成员已过时
-public class LiteDbConfigStoreTests : IDisposable
+public class LiteDbSorterConfigurationStoreTests : IDisposable
 {
-    private readonly LiteDbConfigStore _configStore;
+    private readonly LiteDbSorterConfigurationStore _configStore;
     private readonly string _testDbPath;
 
-    public LiteDbConfigStoreTests()
+    public LiteDbSorterConfigurationStoreTests()
     {
         // 为每个测试使用一个唯一的数据库文件
         _testDbPath = Path.Combine(Path.GetTempPath(), $"test_narrowbelt.config.{Guid.NewGuid()}.db");
         
-        var logger = NullLogger<LiteDbConfigStore>.Instance;
+        var logger = NullLogger<LiteDbSorterConfigurationStore>.Instance;
         
         // 删除测试数据库（如果存在）
         if (File.Exists(_testDbPath))
@@ -28,7 +27,7 @@ public class LiteDbConfigStoreTests : IDisposable
             File.Delete(_testDbPath);
         }
         
-        _configStore = new LiteDbConfigStore(logger);
+        _configStore = new LiteDbSorterConfigurationStore(logger, _testDbPath);
     }
 
     [Fact]
@@ -138,9 +137,9 @@ public class LiteDbConfigStoreTests : IDisposable
         // 清理测试数据库文件
         try
         {
-            if (File.Exists("narrowbelt.config.db"))
+            if (File.Exists(_testDbPath))
             {
-                File.Delete("narrowbelt.config.db");
+                File.Delete(_testDbPath);
             }
         }
         catch
@@ -159,4 +158,3 @@ public class LiteDbConfigStoreTests : IDisposable
         public bool IsEnabled { get; set; }
     }
 }
-#pragma warning restore CS0618 // 类型或成员已过时

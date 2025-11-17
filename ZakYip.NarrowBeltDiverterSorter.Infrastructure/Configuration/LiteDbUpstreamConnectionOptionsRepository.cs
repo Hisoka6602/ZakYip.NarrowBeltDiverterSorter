@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using ZakYip.NarrowBeltDiverterSorter.Core.Configuration;
 using ZakYip.NarrowBeltDiverterSorter.Communication.Upstream;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
@@ -9,14 +10,14 @@ namespace ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
 public class LiteDbUpstreamConnectionOptionsRepository : IUpstreamConnectionOptionsRepository
 {
     private const string ConfigKey = "UpstreamConnectionOptions";
-    private readonly IConfigStore _configStore;
+    private readonly ISorterConfigurationStore _configStore;
     private readonly ILogger<LiteDbUpstreamConnectionOptionsRepository> _logger;
 
     /// <summary>
     /// 初始化上游连接选项仓储
     /// </summary>
     public LiteDbUpstreamConnectionOptionsRepository(
-        IConfigStore configStore,
+        ISorterConfigurationStore configStore,
         ILogger<LiteDbUpstreamConnectionOptionsRepository> logger)
     {
         _configStore = configStore ?? throw new ArgumentNullException(nameof(configStore));

@@ -18,8 +18,10 @@ using ZakYip.NarrowBeltDiverterSorter.Execution.Sorting;
 using ChuteSafetyService = ZakYip.NarrowBeltDiverterSorter.Execution.Sorting.ChuteSafetyService;
 using ZakYip.NarrowBeltDiverterSorter.Observability;
 using ZakYip.NarrowBeltDiverterSorter.Ingress.Chute;
+using ZakYip.NarrowBeltDiverterSorter.Core.Configuration;
 using ZakYip.NarrowBeltDiverterSorter.Infrastructure;
 using ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
+using ZakYip.NarrowBeltDiverterSorter.Infrastructure.LiteDb;
 using ZakYip.NarrowBeltDiverterSorter.Communication.Upstream;
 using ZakYip.NarrowBeltDiverterSorter.Host;
 
@@ -103,7 +105,7 @@ builder.Services.AddSingleton<IEventBus, InMemoryEventBus>();
 // 注册配置存储 (Infrastructure)
 // ============================================================================
 
-builder.Services.AddSingleton<IConfigStore, LiteDbConfigStore>();
+builder.Services.AddSingleton<ISorterConfigurationStore, LiteDbSorterConfigurationStore>();
 
 // ============================================================================
 // 注册上游客户端

@@ -1,13 +1,14 @@
-namespace ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
+namespace ZakYip.NarrowBeltDiverterSorter.Core.Configuration;
 
 /// <summary>
-/// 通用配置存储接口
+/// 分拣机配置存储接口
+/// 此接口仅用于系统运行所需的配置对象（如拓扑、分拣模式、设备连接参数等），
+/// 不用于日志、高频事件或统计数据。
 /// </summary>
-[Obsolete("请使用 Core.Configuration.ISorterConfigurationStore 和 Infrastructure.LiteDb.LiteDbSorterConfigurationStore 代替。此接口将在未来版本中移除。")]
-public interface IConfigStore
+public interface ISorterConfigurationStore
 {
     /// <summary>
-    /// 异步加载配置
+    /// 异步加载配置对象
     /// </summary>
     /// <typeparam name="T">配置对象类型</typeparam>
     /// <param name="key">配置键</param>
@@ -16,13 +17,13 @@ public interface IConfigStore
     Task<T?> LoadAsync<T>(string key, CancellationToken cancellationToken = default) where T : class;
 
     /// <summary>
-    /// 异步保存配置
+    /// 异步保存配置对象
     /// </summary>
     /// <typeparam name="T">配置对象类型</typeparam>
     /// <param name="key">配置键</param>
-    /// <param name="options">配置对象</param>
+    /// <param name="value">配置对象</param>
     /// <param name="cancellationToken">取消令牌</param>
-    Task SaveAsync<T>(string key, T options, CancellationToken cancellationToken = default) where T : class;
+    Task SaveAsync<T>(string key, T value, CancellationToken cancellationToken = default) where T : class;
 
     /// <summary>
     /// 检查配置是否存在

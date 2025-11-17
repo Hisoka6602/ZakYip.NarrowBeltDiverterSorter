@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using ZakYip.NarrowBeltDiverterSorter.Core.Configuration;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Feeding;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
@@ -9,14 +10,14 @@ namespace ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
 public class LiteDbInfeedLayoutOptionsRepository : IInfeedLayoutOptionsRepository
 {
     private const string ConfigKey = "InfeedLayoutOptions";
-    private readonly IConfigStore _configStore;
+    private readonly ISorterConfigurationStore _configStore;
     private readonly ILogger<LiteDbInfeedLayoutOptionsRepository> _logger;
 
     /// <summary>
     /// 初始化入口布局选项仓储
     /// </summary>
     public LiteDbInfeedLayoutOptionsRepository(
-        IConfigStore configStore,
+        ISorterConfigurationStore configStore,
         ILogger<LiteDbInfeedLayoutOptionsRepository> logger)
     {
         _configStore = configStore ?? throw new ArgumentNullException(nameof(configStore));

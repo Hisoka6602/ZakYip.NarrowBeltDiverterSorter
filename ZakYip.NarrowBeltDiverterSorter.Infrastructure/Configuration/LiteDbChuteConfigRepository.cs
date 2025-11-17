@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using ZakYip.NarrowBeltDiverterSorter.Core.Configuration;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Sorting;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
@@ -9,14 +10,14 @@ namespace ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
 public class LiteDbChuteConfigRepository : IChuteConfigRepository
 {
     private const string ConfigKey = "ChuteConfigs";
-    private readonly IConfigStore _configStore;
+    private readonly ISorterConfigurationStore _configStore;
     private readonly ILogger<LiteDbChuteConfigRepository> _logger;
 
     /// <summary>
     /// 初始化格口配置仓储
     /// </summary>
     public LiteDbChuteConfigRepository(
-        IConfigStore configStore,
+        ISorterConfigurationStore configStore,
         ILogger<LiteDbChuteConfigRepository> logger)
     {
         _configStore = configStore ?? throw new ArgumentNullException(nameof(configStore));

@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using ZakYip.NarrowBeltDiverterSorter.Core.Configuration;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.MainLine;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
@@ -9,14 +10,14 @@ namespace ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
 public class LiteDbMainLineOptionsRepository : IMainLineOptionsRepository
 {
     private const string ConfigKey = "MainLineControlOptions";
-    private readonly IConfigStore _configStore;
+    private readonly ISorterConfigurationStore _configStore;
     private readonly ILogger<LiteDbMainLineOptionsRepository> _logger;
 
     /// <summary>
     /// 初始化主线控制选项仓储
     /// </summary>
     public LiteDbMainLineOptionsRepository(
-        IConfigStore configStore,
+        ISorterConfigurationStore configStore,
         ILogger<LiteDbMainLineOptionsRepository> logger)
     {
         _configStore = configStore ?? throw new ArgumentNullException(nameof(configStore));
