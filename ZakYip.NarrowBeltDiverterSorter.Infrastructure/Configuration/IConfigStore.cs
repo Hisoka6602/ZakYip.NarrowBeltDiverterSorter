@@ -3,6 +3,7 @@ namespace ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
 /// <summary>
 /// 通用配置存储接口
 /// </summary>
+[Obsolete("请使用 Core.Configuration.ISorterConfigurationStore 和 Infrastructure.LiteDb.LiteDbSorterConfigurationStore 代替。此接口将在未来版本中移除。")]
 public interface IConfigStore
 {
     /// <summary>

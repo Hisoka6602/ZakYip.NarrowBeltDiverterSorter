@@ -6,6 +6,7 @@ namespace ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
 /// <summary>
 /// 基于 LiteDB 的配置存储实现
 /// </summary>
+[Obsolete("请使用 Infrastructure.LiteDb.LiteDbSorterConfigurationStore 代替。此类将在未来版本中移除。")]
 public class LiteDbConfigStore : IConfigStore, IDisposable
 {
     private const string DatabaseFileName = "narrowbelt.config.db";

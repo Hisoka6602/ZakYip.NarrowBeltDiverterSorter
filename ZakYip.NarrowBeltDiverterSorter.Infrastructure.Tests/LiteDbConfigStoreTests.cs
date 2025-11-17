@@ -7,7 +7,9 @@ namespace ZakYip.NarrowBeltDiverterSorter.Infrastructure.Tests;
 
 /// <summary>
 /// LiteDbConfigStore 单元测试
+/// 注意：此类测试已过时的 LiteDbConfigStore，新代码应使用 LiteDbSorterConfigurationStoreTests
 /// </summary>
+#pragma warning disable CS0618 // 类型或成员已过时
 public class LiteDbConfigStoreTests : IDisposable
 {
     private readonly LiteDbConfigStore _configStore;
@@ -157,3 +159,4 @@ public class LiteDbConfigStoreTests : IDisposable
         public bool IsEnabled { get; set; }
     }
 }
+#pragma warning restore CS0618 // 类型或成员已过时
