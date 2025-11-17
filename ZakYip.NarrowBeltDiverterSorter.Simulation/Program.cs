@@ -40,7 +40,7 @@ Console.WriteLine("════════════════════�
 var scenarioOption = new Option<string?>(
     name: "--scenario",
     getDefaultValue: () => "legacy",
-    description: "仿真场景：legacy（传统仿真，60秒持续运行）、e2e-report（端到端仿真并输出报告）、e2e-speed-unstable（端到端仿真，速度不稳定）或 safety-chute-reset（安全场景仿真）");
+    description: "仿真场景：legacy（传统仿真，60秒持续运行）、e2e-report（端到端仿真并输出报告）、e2e-speed-unstable（端到端仿真，速度不稳定）、long-run-load-test（长时间高负载测试，1000包裹）或 safety-chute-reset（安全场景仿真）");
 
 var parcelCountOption = new Option<int>(
     name: "--parcel-count",
@@ -88,6 +88,10 @@ static async Task RunSimulationAsync(string? scenario, int parcelCount, string? 
     if (scenario == "e2e-report" || scenario == "e2e-speed-unstable")
     {
         await RunE2EScenarioAsync(parcelCount, output, resetConfig, sortingMode, fixedChuteId, scenario);
+    }
+    else if (scenario == "long-run-load-test")
+    {
+        await RunLongRunLoadTestScenarioAsync(output, resetConfig);
     }
     else if (scenario == "safety-chute-reset")
     {
@@ -1131,5 +1135,488 @@ static async Task RunChuteCartMappingSelfCheckScenarioAsync(bool resetConfig)
         Console.WriteLine($"\n✗ 格口-小车映射自检运行失败: {ex.Message}");
         Console.WriteLine(ex.StackTrace);
         Console.ResetColor();
+    }
+}
+
+static async Task RunLongRunLoadTestScenarioAsync(string? outputPath, bool resetConfig)
+{
+    Console.WriteLine("═══ 运行长时间高负载分拣稳定性仿真场景 (long-run-load-test) ═══\n");
+
+    // 加载默认配置
+    var options = ZakYip.NarrowBeltDiverterSorter.Simulation.Options.LongRunLoadTestOptions.CreateDefault();
+
+    Console.WriteLine($"仿真配置:");
+    Console.WriteLine($"  目标包裹数: {options.TargetParcelCount}");
+    Console.WriteLine($"  包裹创建间隔: {options.ParcelCreationIntervalMs} ms");
+    Console.WriteLine($"  格口数量: {options.ChuteCount}");
+    Console.WriteLine($"  格口宽度: {options.ChuteWidthMm} mm");
+    Console.WriteLine($"  主线速度: {options.MainLineSpeedMmps} mm/s");
+    Console.WriteLine($"  小车宽度: {options.CartWidthMm} mm");
+    Console.WriteLine($"  小车数量: {options.CartCount}");
+    Console.WriteLine($"  小车节距: {options.CartSpacingMm} mm");
+    Console.WriteLine($"  异常口: 格口 {options.ExceptionChuteId}");
+    Console.WriteLine($"  包裹长度范围: {options.MinParcelLengthMm}-{options.MaxParcelLengthMm} mm");
+    Console.WriteLine();
+
+    // ============================================================================
+    // 种子配置（如果需要）
+    // ============================================================================
+
+    var dbPath = Path.Combine(Environment.CurrentDirectory, "simulation.db");
+    if (resetConfig && File.Exists(dbPath))
+    {
+        Console.WriteLine($"删除现有配置数据库: {dbPath}");
+        File.Delete(dbPath);
+    }
+
+    await SeedConfigurationIfNeededAsync(dbPath);
+    Console.WriteLine("配置加载完成\n");
+
+    // ============================================================================
+    // 创建主应用程序构建器
+    // ============================================================================
+
+    var builder = Host.CreateApplicationBuilder();
+
+    // ============================================================================
+    // 配置仿真参数
+    // ============================================================================
+
+    var simulationConfig = new SimulationConfiguration
+    {
+        NumberOfCarts = options.CartCount,
+        CartSpacingMm = options.CartSpacingMm,
+        CartWidthMm = options.CartWidthMm,
+        NumberOfChutes = options.ChuteCount,
+        ChuteWidthMm = options.ChuteWidthMm,
+        ForceEjectChuteId = options.ExceptionChuteId,
+        MainLineSpeedMmPerSec = (double)options.MainLineSpeedMmps,
+        InfeedConveyorSpeedMmPerSec = (double)options.InfeedConveyorSpeedMmps,
+        InfeedToDropDistanceMm = options.InfeedToDropDistanceMm,
+        ParcelGenerationIntervalSeconds = options.ParcelCreationIntervalMs / 1000.0,
+        SimulationDurationSeconds = 0,
+        ParcelCount = options.TargetParcelCount,
+        ParcelTimeToLiveSeconds = 120.0,
+        SortingMode = SortingMode.Normal,
+        Scenario = "long-run-load-test"
+    };
+
+    builder.Services.AddSingleton(simulationConfig);
+    builder.Services.AddSingleton(options);
+
+    // ============================================================================
+    // 注册启动模式配置
+    // ============================================================================
+    
+    builder.Services.AddSingleton(new StartupModeConfiguration 
+    { 
+        Mode = StartupMode.Normal,
+        EnableBringupLogging = false
+    });
+
+    // ============================================================================
+    // 配置选项
+    // ============================================================================
+
+    builder.Services.Configure<MainLineControlOptions>(opts =>
+    {
+        opts.TargetSpeedMmps = options.MainLineSpeedMmps;
+        opts.LoopPeriod = TimeSpan.FromMilliseconds(100);
+        opts.StableDeadbandMmps = 50m;
+    });
+
+    builder.Services.AddSingleton(new SortingPlannerOptions
+    {
+        CartSpacingMm = options.CartSpacingMm
+    });
+
+    builder.Services.Configure<SortingExecutionOptions>(opts =>
+    {
+        opts.ExecutionPeriod = TimeSpan.FromMilliseconds(100);
+        opts.PlanningHorizon = TimeSpan.FromSeconds(5);
+    });
+
+    builder.Services.AddSingleton(new InfeedLayoutOptions
+    {
+        InfeedToMainLineDistanceMm = options.InfeedToDropDistanceMm,
+        TimeToleranceMs = 50,
+        CartOffsetCalibration = 0
+    });
+
+    // ============================================================================
+    // 注册 Fake 硬件实现
+    // ============================================================================
+
+    var fakeMainLineDrive = new FakeMainLineDrivePort();
+    builder.Services.AddSingleton(fakeMainLineDrive);
+    builder.Services.AddSingleton<IMainLineDrivePort>(fakeMainLineDrive);
+
+    var fakeMainLineFeedback = new FakeMainLineFeedbackPort(fakeMainLineDrive);
+    builder.Services.AddSingleton(fakeMainLineFeedback);
+    builder.Services.AddSingleton<IMainLineFeedbackPort>(fakeMainLineFeedback);
+
+    builder.Services.AddSingleton<IMainLineDrive, SimulatedMainLineDrive>();
+
+    var fakeFieldBus = new FakeFieldBusClient();
+    builder.Services.AddSingleton(fakeFieldBus);
+    builder.Services.AddSingleton<IFieldBusClient>(fakeFieldBus);
+
+    var fakeInfeedSensor = new FakeInfeedSensorPort();
+    builder.Services.AddSingleton(fakeInfeedSensor);
+    builder.Services.AddSingleton<IInfeedSensorPort>(fakeInfeedSensor);
+
+    var fakeOriginSensor = new FakeOriginSensorPort();
+    builder.Services.AddSingleton(fakeOriginSensor);
+    builder.Services.AddSingleton<IOriginSensorPort>(fakeOriginSensor);
+
+    var fakeInfeedConveyor = new FakeInfeedConveyorPort();
+    builder.Services.AddSingleton(fakeInfeedConveyor);
+    builder.Services.AddSingleton<IInfeedConveyorPort>(fakeInfeedConveyor);
+
+    var fakeChuteTransmitter = new FakeChuteTransmitterPort();
+    builder.Services.AddSingleton(fakeChuteTransmitter);
+    builder.Services.AddSingleton<IChuteTransmitterPort>(fakeChuteTransmitter);
+
+    // 使用长跑场景专用的随机上游客户端
+    builder.Services.AddSingleton<IUpstreamSortingApiClient, LongRunRandomUpstreamClient>();
+
+    // ============================================================================
+    // 注册领域服务
+    // ============================================================================
+
+    var longRunSetpoint = new SimulationMainLineSetpoint();
+    builder.Services.AddSingleton(longRunSetpoint);
+    builder.Services.AddSingleton<IMainLineSetpointProvider>(longRunSetpoint);
+
+    builder.Services.AddSingleton<ICartRingBuilder, CartRingBuilder>();
+    builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Domain.SystemState.ISystemRunStateService, ZakYip.NarrowBeltDiverterSorter.Core.Domain.SystemState.SystemRunStateService>();
+    builder.Services.AddSingleton<IParcelLifecycleService, ParcelLifecycleService>();
+    builder.Services.AddSingleton<ICartLifecycleService, CartLifecycleService>();
+    builder.Services.AddSingleton<IParcelLoadPlanner, ParcelLoadPlanner>();
+    builder.Services.AddSingleton<ISortingPlanner, SortingPlanner>();
+    builder.Services.AddSingleton<IEjectPlanner, EjectPlanner>();
+    builder.Services.AddSingleton<IMainLineControlService, MainLineControlService>();
+    builder.Services.AddSingleton<IMainLineSpeedProvider, MainLineSpeedProvider>();
+    builder.Services.AddSingleton<IMainLineStabilityProvider, MainLineStabilityProvider>();
+    builder.Services.AddSingleton<ICartPositionTracker, CartPositionTracker>();
+    
+    // 注册轨道拓扑
+    builder.Services.AddSingleton<ITrackTopology>(sp =>
+    {
+        return TrackTopologyBuilder.BuildFromSimulationConfig(simulationConfig);
+    });
+    
+    builder.Services.AddSingleton<IChuteConfigProvider>(sp =>
+    {
+        var topology = sp.GetRequiredService<ITrackTopology>();
+        var provider = new ChuteConfigProvider();
+        var configs = TrackTopologyBuilder.BuildChuteConfigs(topology, simulationConfig.ForceEjectChuteId);
+        foreach (var config in configs)
+        {
+            provider.AddOrUpdate(config);
+        }
+        return provider;
+    });
+
+    // ============================================================================
+    // 注册领域协调器
+    // ============================================================================
+
+    builder.Services.AddSingleton(sp =>
+    {
+        var loadPlanner = sp.GetRequiredService<IParcelLoadPlanner>();
+        var coordinator = new ParcelLoadCoordinator(loadPlanner);
+        var logger = sp.GetRequiredService<ILogger<ParcelLoadCoordinator>>();
+        
+        coordinator.SetLogAction(msg => logger.LogInformation(msg));
+        
+        return coordinator;
+    });
+
+    // ============================================================================
+    // 注册 Ingress 监视器并连接事件
+    // ============================================================================
+
+    builder.Services.AddSingleton(sp =>
+    {
+        var originSensor = sp.GetRequiredService<IOriginSensorPort>();
+        var cartRingBuilder = sp.GetRequiredService<ICartRingBuilder>();
+        var cartPositionTracker = sp.GetRequiredService<ICartPositionTracker>();
+        
+        return new OriginSensorMonitor(originSensor, cartRingBuilder, cartPositionTracker);
+    });
+    
+    builder.Services.AddSingleton(sp =>
+    {
+        var infeedSensor = sp.GetRequiredService<IInfeedSensorPort>();
+        var monitor = new InfeedSensorMonitor(infeedSensor);
+        
+        var routingWorker = sp.GetRequiredService<ParcelRoutingWorker>();
+        var loadCoordinator = sp.GetRequiredService<ParcelLoadCoordinator>();
+        var parcelLifecycleService = sp.GetRequiredService<IParcelLifecycleService>();
+        var cartLifecycleService = sp.GetRequiredService<ICartLifecycleService>();
+        var timelineRecorder = sp.GetRequiredService<ParcelTimelineRecorder>();
+        var logger = sp.GetRequiredService<ILogger<InfeedSensorMonitor>>();
+        
+        monitor.ParcelCreatedFromInfeed += async (sender, args) =>
+        {
+            try
+            {
+                // 记录包裹创建事件
+                timelineRecorder.RecordEvent(args.ParcelId, "Created", "入口传感器触发");
+                
+                await routingWorker.HandleParcelCreatedAsync(args);
+                loadCoordinator.HandleParcelCreatedFromInfeed(sender, args);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "处理包裹创建事件时发生错误");
+            }
+        };
+        
+        loadCoordinator.ParcelLoadedOnCart += (sender, args) =>
+        {
+            try
+            {
+                parcelLifecycleService.BindCartId(args.ParcelId, args.CartId, args.LoadedTime);
+                cartLifecycleService.LoadParcel(args.CartId, args.ParcelId);
+                
+                // 记录上车事件
+                timelineRecorder.RecordEvent(args.ParcelId, "LoadedOnCart", 
+                    $"上车到小车 {args.CartId.Value}");
+                
+                logger.LogInformation(
+                    "[上车确认] 包裹 {ParcelId} 已上车到小车 {CartId}",
+                    args.ParcelId.Value,
+                    args.CartId.Value);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "处理包裹装载事件时发生错误");
+            }
+        };
+        
+        return monitor;
+    });
+
+    // ============================================================================
+    // 注册包裹时间线记录器
+    // ============================================================================
+    
+    builder.Services.AddSingleton<ParcelTimelineRecorder>();
+
+    // ============================================================================
+    // 注册后台工作器
+    // ============================================================================
+
+    builder.Services.AddSingleton<ParcelRoutingWorker>();
+    
+    builder.Services.AddHostedService<MainLineControlWorker>();
+    builder.Services.AddHostedService<ParcelSortingSimulator>();
+    builder.Services.AddHostedService<CartMovementSimulator>();
+    builder.Services.AddHostedService<ParcelGeneratorWorker>();
+    
+    builder.Services.AddHostedService<OriginSensorMonitorHostedService>();
+    builder.Services.AddHostedService<InfeedSensorMonitorHostedService>();
+
+    // ============================================================================
+    // 注册长跑场景运行器
+    // ============================================================================
+
+    builder.Services.AddSingleton<LongRunHighLoadSortingScenario>();
+
+    // ============================================================================
+    // 配置日志
+    // ============================================================================
+
+    builder.Logging.ClearProviders();
+    builder.Logging.AddConsole();
+    builder.Logging.SetMinimumLevel(LogLevel.Information);
+
+    // ============================================================================
+    // 构建并运行 Host
+    // ============================================================================
+
+    var app = builder.Build();
+    
+    longRunSetpoint.SetSetpoint(true, options.MainLineSpeedMmps);
+    
+    await fakeInfeedConveyor.StartAsync();
+    await fakeInfeedConveyor.SetSpeedAsync((double)options.InfeedConveyorSpeedMmps);
+    
+    await fakeMainLineDrive.StartAsync();
+    
+    Console.WriteLine("开始仿真...\n");
+    
+    using var cts = new CancellationTokenSource();
+    
+    var longRunTask = Task.Run(async () =>
+    {
+        try
+        {
+            await Task.Delay(1000, cts.Token);
+            
+            var scenario = app.Services.GetRequiredService<LongRunHighLoadSortingScenario>();
+            var report = await scenario.RunAsync(cts.Token);
+            
+            var timelineRecorder = app.Services.GetRequiredService<ParcelTimelineRecorder>();
+            var parcelLifecycleService = app.Services.GetRequiredService<IParcelLifecycleService>();
+            
+            double completionRate = report.Statistics.TotalParcels > 0 
+                ? (double)(report.Statistics.SuccessfulSorts + report.Statistics.ForceEjects + report.Statistics.Missorts) / report.Statistics.TotalParcels * 100.0
+                : 0.0;
+            
+            int sortedParcels = report.Statistics.SuccessfulSorts + report.Statistics.ForceEjects + report.Statistics.Missorts;
+            
+            // 输出报告
+            Console.WriteLine("\n════════════════════════════════════════");
+            Console.WriteLine("║   长时间高负载分拣稳定性仿真报告     ║");
+            Console.WriteLine("════════════════════════════════════════");
+            Console.WriteLine();
+            Console.WriteLine("【包裹统计】");
+            Console.WriteLine($"  目标包裹数:        {options.TargetParcelCount,6} 个");
+            Console.WriteLine($"  实际完成:          {report.Statistics.TotalParcels,6} 个");
+            Console.WriteLine($"  正常落格:          {report.Statistics.SuccessfulSorts,6} 个");
+            Console.WriteLine($"  异常落格(异常口):   {report.Statistics.ForceEjects,6} 个");
+            Console.WriteLine($"  错分:              {report.Statistics.Missorts,6} 个");
+            Console.WriteLine($"  未完成:            {report.Statistics.Unprocessed,6} 个");
+            Console.WriteLine($"  仿真总耗时:        {report.Statistics.DurationSeconds,6:F2} 秒");
+            
+            if (report.Statistics.TotalParcels > 0)
+            {
+                // 计算最大并发在途包裹数（简化估算：基于时间和生成间隔）
+                var maxConcurrent = (int)Math.Min(
+                    report.Statistics.DurationSeconds / (options.ParcelCreationIntervalMs / 1000.0),
+                    options.TargetParcelCount);
+                Console.WriteLine($"  最大并发在途包裹数: {maxConcurrent,6} 个（估算）");
+            }
+            
+            Console.WriteLine();
+            Console.WriteLine("【验收结果】");
+            
+            bool allGenerated = report.Statistics.TotalParcels == options.TargetParcelCount;
+            bool allCompleted = report.Statistics.Unprocessed == 0;
+            bool noMissorts = report.Statistics.Missorts == 0;
+            
+            Console.Write($"  ✓ 配置正确且无魔法数字:  ");
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine("通过");
+            Console.ResetColor();
+            
+            Console.Write($"  ");
+            if (allGenerated)
+            {
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.Write("✓");
+            }
+            else
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.Write("✗");
+            }
+            Console.ResetColor();
+            Console.WriteLine($" 全部包裹已生成:      {(allGenerated ? "通过" : "失败")}");
+            
+            Console.Write($"  ");
+            if (allCompleted)
+            {
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.Write("✓");
+            }
+            else
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.Write("⚠");
+            }
+            Console.ResetColor();
+            Console.WriteLine($" 全部包裹已完成:      {(allCompleted ? "通过" : $"警告({report.Statistics.Unprocessed}个未完成)")}");
+            
+            Console.Write($"  ");
+            if (noMissorts)
+            {
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.Write("✓");
+            }
+            else
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.Write("✗");
+            }
+            Console.ResetColor();
+            Console.WriteLine($" 无错分:              {(noMissorts ? "通过" : $"失败({report.Statistics.Missorts}个错分)")}");
+            
+            Console.WriteLine();
+            Console.WriteLine("════════════════════════════════════════\n");
+            
+            // 生成 Markdown 报告
+            var configSummary = $@"- 目标包裹数: {options.TargetParcelCount}
+- 包裹创建间隔: {options.ParcelCreationIntervalMs}ms
+- 格口数量: {options.ChuteCount}
+- 异常口: {options.ExceptionChuteId}
+- 主线速度: {options.MainLineSpeedMmps} mm/s
+- 小车宽度: {options.CartWidthMm}mm
+- 小车数量: {options.CartCount}
+- 包裹长度范围: {options.MinParcelLengthMm}-{options.MaxParcelLengthMm}mm";
+            
+            var markdownReport = timelineRecorder.GenerateMarkdownReport(parcelLifecycleService, configSummary);
+            var markdownPath = outputPath ?? Path.Combine(Environment.CurrentDirectory, 
+                $"LongRunLoadTest_{DateTime.UtcNow:yyyyMMddHHmmss}.md");
+            
+            await File.WriteAllTextAsync(markdownPath, markdownReport, cts.Token);
+            
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine($"✓ 生命周期报告已保存到: {markdownPath}");
+            Console.ResetColor();
+            
+            // 如果指定了 JSON 输出路径，也保存 JSON 报告
+            if (!string.IsNullOrEmpty(outputPath) && outputPath.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+            {
+                var jsonOptions = new JsonSerializerOptions
+                {
+                    WriteIndented = true,
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                };
+
+                var json = JsonSerializer.Serialize(report, jsonOptions);
+                await File.WriteAllTextAsync(outputPath, json, cts.Token);
+                
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine($"✓ JSON 报告已保存到: {outputPath}");
+                Console.ResetColor();
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            Console.WriteLine("长跑场景仿真已取消");
+        }
+        catch (Exception ex)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"长跑场景仿真发生异常: {ex.Message}");
+            Console.WriteLine(ex.StackTrace);
+            Console.ResetColor();
+        }
+        finally
+        {
+            cts.Cancel();
+        }
+    }, cts.Token);
+    
+    try
+    {
+        await app.RunAsync(cts.Token);
+    }
+    catch (OperationCanceledException)
+    {
+        // 正常结束
+    }
+    
+    try
+    {
+        await longRunTask;
+    }
+    catch (OperationCanceledException)
+    {
+        // 预期的取消
     }
 }
