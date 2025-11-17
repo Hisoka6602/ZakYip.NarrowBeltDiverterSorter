@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Safety;
 using ZakYip.NarrowBeltDiverterSorter.Execution.MainLine;
+using ZakYip.NarrowBeltDiverterSorter.Observability;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Execution.Safety;
 
@@ -12,6 +13,7 @@ namespace ZakYip.NarrowBeltDiverterSorter.Execution.Safety;
 public class LineSafetyOrchestrator : ILineSafetyOrchestrator
 {
     private readonly IMainLineDrive _mainLineDrive;
+    private readonly IEventBus _eventBus;
     private readonly ILogger<LineSafetyOrchestrator> _logger;
     private readonly object _stateLock = new();
     
@@ -23,9 +25,11 @@ public class LineSafetyOrchestrator : ILineSafetyOrchestrator
 
     public LineSafetyOrchestrator(
         IMainLineDrive mainLineDrive,
+        IEventBus eventBus,
         ILogger<LineSafetyOrchestrator> logger)
     {
         _mainLineDrive = mainLineDrive ?? throw new ArgumentNullException(nameof(mainLineDrive));
+        _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -268,8 +272,18 @@ public class LineSafetyOrchestrator : ILineSafetyOrchestrator
                     newSafetyState,
                     eventArgs.Source);
 
-                // 发布安全状态变化事件
+                // 发布安全状态变化事件 (Core层接口事件)
                 SafetyStateChanged?.Invoke(this, safetyEventArgs);
+
+                // 同时发布到事件总线 (Observability层事件)
+                var observabilitySafetyEvent = new Observability.Events.SafetyStateChangedEventArgs
+                {
+                    State = newSafetyState.ToString(),
+                    Source = eventArgs.Source,
+                    Message = safetyEventArgs.Message,
+                    OccurredAt = safetyEventArgs.OccurredAt
+                };
+                _ = _eventBus.PublishAsync(observabilitySafetyEvent);
 
                 // 如果安全状态变为不安全，且线体正在运行，触发安全停机
                 if (newSafetyState != SafetyState.Safe && 
@@ -357,7 +371,16 @@ public class LineSafetyOrchestrator : ILineSafetyOrchestrator
             newState,
             message);
 
-        // 发布状态变化事件
+        // 发布状态变化事件 (Core层接口事件)
         LineRunStateChanged?.Invoke(this, eventArgs);
+
+        // 同时发布到事件总线 (Observability层事件)
+        var observabilityEvent = new Observability.Events.LineRunStateChangedEventArgs
+        {
+            State = newState.ToString(),
+            Message = message,
+            OccurredAt = eventArgs.OccurredAt
+        };
+        _ = _eventBus.PublishAsync(observabilityEvent);
     }
 }

@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using ZakYip.NarrowBeltDiverterSorter.Observability;
 using ZakYip.NarrowBeltDiverterSorter.Observability.LiveView;
+using ZakYip.NarrowBeltDiverterSorter.Observability.Events;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Host.SignalR;
 
@@ -55,6 +56,8 @@ public class LiveViewBridgeService : BackgroundService
         _eventBus.Subscribe<ParcelDivertedEventArgs>(OnParcelDivertedAsync);
         _eventBus.Subscribe<DeviceStatusChangedEventArgs>(OnDeviceStatusChangedAsync);
         _eventBus.Subscribe<CartLayoutChangedEventArgs>(OnCartLayoutChangedAsync);
+        _eventBus.Subscribe<LineRunStateChangedEventArgs>(OnLineRunStateChangedAsync);
+        _eventBus.Subscribe<SafetyStateChangedEventArgs>(OnSafetyStateChangedAsync);
 
         _logger.LogInformation("实时推送桥接服务已启动");
         _logger.LogInformation("推送间隔配置: 速度={0}ms, 格口小车={1}ms, 原点小车={2}ms, 包裹创建={3}ms, 包裹落格={4}ms, 设备状态={5}ms, 小车布局={6}ms",
@@ -307,6 +310,47 @@ public class LiveViewBridgeService : BackgroundService
         catch (Exception ex)
         {
             _logger.LogError(ex, "推送小车布局更新失败");
+        }
+    }
+
+    private async Task OnLineRunStateChangedAsync(LineRunStateChangedEventArgs eventArgs, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var dto = new LineRunStateDto
+            {
+                State = eventArgs.State,
+                Message = eventArgs.Message,
+                LastUpdatedAt = eventArgs.OccurredAt
+            };
+
+            await _hubContext.Clients.All.SendAsync("LineRunStateUpdated", dto, cancellationToken);
+            _logger.LogInformation("已推送线体运行状态更新: {State}", eventArgs.State);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "推送线体运行状态更新失败");
+        }
+    }
+
+    private async Task OnSafetyStateChangedAsync(SafetyStateChangedEventArgs eventArgs, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var dto = new SafetyStateDto
+            {
+                State = eventArgs.State,
+                Source = eventArgs.Source,
+                Message = eventArgs.Message,
+                LastUpdatedAt = eventArgs.OccurredAt
+            };
+
+            await _hubContext.Clients.All.SendAsync("SafetyStateUpdated", dto, cancellationToken);
+            _logger.LogWarning("已推送安全状态更新: {State}, 源: {Source}", eventArgs.State, eventArgs.Source);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "推送安全状态更新失败");
         }
     }
 

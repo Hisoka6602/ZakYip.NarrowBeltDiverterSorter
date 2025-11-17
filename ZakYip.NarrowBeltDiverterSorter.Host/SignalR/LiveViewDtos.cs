@@ -166,3 +166,50 @@ public record class OriginCartDto
     /// </summary>
     public DateTimeOffset LastUpdatedAt { get; init; }
 }
+
+/// <summary>
+/// 线体运行状态 DTO
+/// </summary>
+public record class LineRunStateDto
+{
+    /// <summary>
+    /// 运行状态
+    /// </summary>
+    public string State { get; init; } = string.Empty;
+
+    /// <summary>
+    /// 状态消息
+    /// </summary>
+    public string? Message { get; init; }
+
+    /// <summary>
+    /// 最后更新时间
+    /// </summary>
+    public DateTimeOffset LastUpdatedAt { get; init; }
+}
+
+/// <summary>
+/// 安全状态 DTO
+/// </summary>
+public record class SafetyStateDto
+{
+    /// <summary>
+    /// 安全状态
+    /// </summary>
+    public string State { get; init; } = string.Empty;
+
+    /// <summary>
+    /// 安全事件源
+    /// </summary>
+    public string? Source { get; init; }
+
+    /// <summary>
+    /// 状态消息
+    /// </summary>
+    public string? Message { get; init; }
+
+    /// <summary>
+    /// 最后更新时间
+    /// </summary>
+    public DateTimeOffset LastUpdatedAt { get; init; }
+}

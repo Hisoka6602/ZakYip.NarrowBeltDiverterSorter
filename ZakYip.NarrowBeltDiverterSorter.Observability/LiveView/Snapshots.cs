@@ -140,3 +140,50 @@ public record class CartLayoutSnapshot
     /// </summary>
     public DateTimeOffset LastUpdatedAt { get; init; }
 }
+
+/// <summary>
+/// 线体运行状态快照
+/// </summary>
+public record class LineRunStateSnapshot
+{
+    /// <summary>
+    /// 当前线体运行状态
+    /// </summary>
+    public string State { get; init; } = string.Empty;
+
+    /// <summary>
+    /// 状态消息
+    /// </summary>
+    public string? Message { get; init; }
+
+    /// <summary>
+    /// 最后更新时间
+    /// </summary>
+    public DateTimeOffset LastUpdatedAt { get; init; }
+}
+
+/// <summary>
+/// 安全状态快照
+/// </summary>
+public record class SafetyStateSnapshot
+{
+    /// <summary>
+    /// 当前安全状态
+    /// </summary>
+    public string State { get; init; } = string.Empty;
+
+    /// <summary>
+    /// 安全事件源
+    /// </summary>
+    public string? Source { get; init; }
+
+    /// <summary>
+    /// 状态消息
+    /// </summary>
+    public string? Message { get; init; }
+
+    /// <summary>
+    /// 最后更新时间
+    /// </summary>
+    public DateTimeOffset LastUpdatedAt { get; init; }
+}
