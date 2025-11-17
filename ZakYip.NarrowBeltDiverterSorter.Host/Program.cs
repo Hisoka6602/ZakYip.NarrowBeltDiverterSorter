@@ -125,6 +125,10 @@ builder.Services.Configure<ChuteLayoutProfile>(
 builder.Services.Configure<TargetChuteAssignmentProfile>(
     builder.Configuration.GetSection("TargetChuteAssignment"));
 
+// 配置实时推送选项
+builder.Services.Configure<LiveViewPushOptions>(
+    builder.Configuration.GetSection(LiveViewPushOptions.SectionName));
+
 // ============================================================================
 // 注册事件总线 (Observability)
 // ============================================================================
