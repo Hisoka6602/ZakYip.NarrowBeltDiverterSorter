@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Options;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.MainLine;
 using ZakYip.NarrowBeltDiverterSorter.Execution.MainLine;
+using ZakYip.NarrowBeltDiverterSorter.Execution.MainLine.Rema;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Host;
 
@@ -16,6 +17,7 @@ public class MainLineControlWorker : BackgroundService
     private readonly IMainLineSetpointProvider _setpointProvider;
     private readonly MainLineControlOptions _options;
     private readonly bool _enableBringupLogging;
+    private readonly MainLineDriveOptions _driveOptions;
 
     public MainLineControlWorker(
         ILogger<MainLineControlWorker> logger,
@@ -23,6 +25,7 @@ public class MainLineControlWorker : BackgroundService
         IMainLineDrive mainLineDrive,
         IMainLineSetpointProvider setpointProvider,
         IOptions<MainLineControlOptions> options,
+        IOptions<MainLineDriveOptions> driveOptions,
         StartupModeConfiguration startupConfig)
     {
         _logger = logger;
@@ -30,6 +33,7 @@ public class MainLineControlWorker : BackgroundService
         _mainLineDrive = mainLineDrive;
         _setpointProvider = setpointProvider;
         _options = options.Value;
+        _driveOptions = driveOptions.Value;
         _enableBringupLogging = startupConfig.EnableBringupLogging && 
                                 startupConfig.Mode >= StartupMode.BringupMainline;
     }
@@ -142,6 +146,13 @@ public class MainLineControlWorker : BackgroundService
             _logger.LogInformation(
                 "[主线状态] 目标速度: {TargetSpeed:F1} mm/s, 实际速度: {CurrentSpeed:F1} mm/s, 速度稳定: {IsStable}",
                 targetSpeed, currentSpeed, isStable ? "是" : "否");
+            
+            // 如果是 Rema 驱动，输出额外的诊断信息
+            if (_driveOptions.Implementation == MainLineDriveImplementation.RemaLm1000H &&
+                _mainLineDrive is RemaLm1000HMainLineDrive remaDrive)
+            {
+                LogRemaDiagnosticInfo(remaDrive);
+            }
         }
         else
         {
@@ -158,6 +169,56 @@ public class MainLineControlWorker : BackgroundService
                     "主线运行状态 - 当前速度: {CurrentSpeed:F1} mm/s, 目标速度: {TargetSpeed:F1} mm/s, 速度稳定: 否",
                     currentSpeed, targetSpeed);
             }
+        }
+    }
+    
+    /// <summary>
+    /// 输出 Rema 驱动的诊断信息（Bring-up 模式专用）
+    /// </summary>
+    private void LogRemaDiagnosticInfo(RemaLm1000HMainLineDrive remaDrive)
+    {
+        // 输出串口配置和站号
+        if (_driveOptions.Rema != null)
+        {
+            _logger.LogInformation(
+                "[Rema 连接] 串口: {PortName}, 波特率: {BaudRate}, 站号: {SlaveAddress}",
+                _driveOptions.Rema.PortName,
+                _driveOptions.Rema.BaudRate,
+                _driveOptions.Rema.SlaveAddress);
+        }
+        
+        // 输出最近一次成功下发的目标速度
+        var lastSuccessfulSpeed = remaDrive.LastSuccessfulTargetSpeedMmps;
+        var lastSetTime = remaDrive.LastSuccessfulSpeedSetTime;
+        if (lastSetTime != DateTime.MinValue)
+        {
+            var elapsed = DateTime.UtcNow - lastSetTime;
+            _logger.LogInformation(
+                "[Rema 命令] 最后成功下发速度: {LastSpeed:F1} mm/s ({ElapsedSeconds:F1}秒前)",
+                lastSuccessfulSpeed,
+                elapsed.TotalSeconds);
+        }
+        else
+        {
+            _logger.LogInformation("[Rema 命令] 尚未成功下发速度命令");
+        }
+        
+        // 输出 C0.26 反馈频率和换算后的线速度
+        var encoderFreqRaw = remaDrive.LastEncoderFreqRegisterValue;
+        var encoderFreqHz = remaDrive.LastEncoderFreqHz;
+        var feedbackAvailable = remaDrive.IsFeedbackAvailable;
+        
+        if (feedbackAvailable)
+        {
+            _logger.LogInformation(
+                "[Rema 反馈] C0.26 寄存器值: {RegisterValue}, 反馈频率: {FreqHz:F2} Hz, 换算线速: {CurrentSpeed:F1} mm/s",
+                encoderFreqRaw,
+                encoderFreqHz,
+                remaDrive.CurrentSpeedMmps);
+        }
+        else
+        {
+            _logger.LogWarning("[Rema 反馈] 速度反馈不可用（通讯失败）");
         }
     }
 }

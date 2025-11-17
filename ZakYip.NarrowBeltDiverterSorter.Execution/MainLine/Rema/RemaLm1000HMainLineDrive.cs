@@ -31,6 +31,12 @@ public sealed class RemaLm1000HMainLineDrive : IMainLineDrive, IDisposable
     private int _consecutiveReadFailures = 0;
     private const int MaxConsecutiveFailures = 5;
     private bool _feedbackUnavailable = false;
+    
+    // Bring-up 诊断信息追踪
+    private decimal _lastSuccessfulTargetSpeedMmps = 0m;
+    private DateTime _lastSuccessfulSpeedSetTime = DateTime.MinValue;
+    private ushort _lastEncoderFreqRegisterValue = 0;
+    private decimal _lastEncoderFreqHz = 0m;
 
     public RemaLm1000HMainLineDrive(
         ILogger<RemaLm1000HMainLineDrive> logger,
@@ -82,6 +88,13 @@ public sealed class RemaLm1000HMainLineDrive : IMainLineDrive, IDisposable
             RemaRegisters.P0_07_LimitFrequency, 
             registerValue, 
             cancellationToken);
+        
+        // 记录成功下发的目标速度（用于 Bring-up 诊断）
+        lock (_lock)
+        {
+            _lastSuccessfulTargetSpeedMmps = clampedSpeed;
+            _lastSuccessfulSpeedSetTime = DateTime.UtcNow;
+        }
     }
 
     /// <inheritdoc/>
@@ -145,6 +158,62 @@ public sealed class RemaLm1000HMainLineDrive : IMainLineDrive, IDisposable
             }
         }
     }
+    
+    /// <summary>
+    /// 最后一次成功下发的目标速度（mm/s）
+    /// </summary>
+    public decimal LastSuccessfulTargetSpeedMmps
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _lastSuccessfulTargetSpeedMmps;
+            }
+        }
+    }
+    
+    /// <summary>
+    /// 最后一次成功下发目标速度的时间
+    /// </summary>
+    public DateTime LastSuccessfulSpeedSetTime
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _lastSuccessfulSpeedSetTime;
+            }
+        }
+    }
+    
+    /// <summary>
+    /// 最后读取的 C0.26 编码器反馈频率寄存器原始值
+    /// </summary>
+    public ushort LastEncoderFreqRegisterValue
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _lastEncoderFreqRegisterValue;
+            }
+        }
+    }
+    
+    /// <summary>
+    /// 最后读取的 C0.26 编码器反馈频率（Hz）
+    /// </summary>
+    public decimal LastEncoderFreqHz
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _lastEncoderFreqHz;
+            }
+        }
+    }
 
     /// <summary>
     /// 异步读取当前速度（mm/s）
@@ -164,10 +233,13 @@ public sealed class RemaLm1000HMainLineDrive : IMainLineDrive, IDisposable
             var currentHz = ConvertRegisterValueToHz(encoderFreqRegister);
             var currentMmps = ConvertHzToMmps(currentHz);
             
-            // 读取成功，重置失败计数器
+            // 读取成功，重置失败计数器并记录编码器反馈频率（用于 Bring-up 诊断）
             lock (_lock)
             {
                 _consecutiveReadFailures = 0;
+                _lastEncoderFreqRegisterValue = encoderFreqRegister;
+                _lastEncoderFreqHz = currentHz;
+                
                 if (_feedbackUnavailable)
                 {
                     _feedbackUnavailable = false;
@@ -508,6 +580,10 @@ public sealed class RemaLm1000HMainLineDrive : IMainLineDrive, IDisposable
             {
                 _currentSpeedMmps = currentMmps;
                 targetMmps = _targetSpeedMmps;
+                
+                // 记录编码器反馈频率（用于 Bring-up 诊断）
+                _lastEncoderFreqRegisterValue = encoderFreqRegister;
+                _lastEncoderFreqHz = currentHz;
                 
                 // 读取成功，重置失败计数器
                 _consecutiveReadFailures = 0;

@@ -212,6 +212,67 @@ dotnet run --project ZakYip.NarrowBeltDiverterSorter.Host --mode bringup-chutes
 
 ---
 
+## Rema LM1000H 实机调试
+
+### 切换到 Rema 模式
+
+如果使用 Rema LM1000H 变频驱动器进行实机调试，需要在 `appsettings.json` 中切换主线驱动实现：
+
+```json
+{
+  "Sorter": {
+    "MainLine": {
+      "Mode": "RemaLm1000H",  // 切换为 Rema 驱动
+      "Rema": {
+        "PortName": "COM3",              // 修改为实际串口号
+        "BaudRate": 38400,               // 与变频器设置一致
+        "SlaveAddress": 1,               // 与变频器站号一致
+        "ReadTimeout": "00:00:01.200",
+        "WriteTimeout": "00:00:01.200"
+      }
+    }
+  }
+}
+```
+
+### Rema Bring-up 模式特性
+
+在 Bring-up 模式下使用 Rema 驱动时，系统会额外输出以下诊断信息：
+
+1. **串口配置和站号**
+   ```
+   [Rema 连接] 串口: COM3, 波特率: 38400, 站号: 1
+   ```
+
+2. **最近一次成功下发的目标速度**
+   ```
+   [Rema 命令] 最后成功下发速度: 1000.0 mm/s (2.3秒前)
+   ```
+
+3. **C0.26 反馈频率和换算后的线速度**
+   ```
+   [Rema 反馈] C0.26 寄存器值: 1654, 反馈频率: 16.54 Hz, 换算线速: 998.5 mm/s
+   ```
+
+这些信息可用于：
+- 排查串口通讯问题
+- 验证命令下发是否成功
+- 检查编码器反馈是否正常
+- 调试速度换算系数
+
+### Rema 实机调试详细指南
+
+详细的 Rema LM1000H 实机调试步骤请参考：[RemaLm1000HBringUpGuide.md](RemaLm1000HBringUpGuide.md)
+
+包括：
+- 变频器参数配置
+- 串口通讯验证
+- 速度标定步骤
+- 常见问题排查
+- PID 参数整定
+
+---
+
 ## 常见问题
 
 ### Q: 如何切换启动模式？
