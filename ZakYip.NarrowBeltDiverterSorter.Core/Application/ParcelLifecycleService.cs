@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Parcels;
+using ZakYip.NarrowBeltDiverterSorter.Core.Domain.SystemState;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Core.Application;
 
@@ -11,10 +12,22 @@ namespace ZakYip.NarrowBeltDiverterSorter.Core.Application;
 public class ParcelLifecycleService : IParcelLifecycleService
 {
     private readonly ConcurrentDictionary<ParcelId, ParcelSnapshot> _parcels = new();
+    private readonly ISystemRunStateService _systemRunStateService;
+
+    public ParcelLifecycleService(ISystemRunStateService systemRunStateService)
+    {
+        _systemRunStateService = systemRunStateService;
+    }
 
     /// <inheritdoc/>
     public ParcelSnapshot CreateParcel(ParcelId parcelId, string barcode, DateTimeOffset infeedTriggerTime)
     {
+        // 验证系统状态：只有运行状态才能创建包裹
+        var validationResult = _systemRunStateService.ValidateCanCreateParcel();
+        if (!validationResult.IsSuccess)
+        {
+            throw new InvalidOperationException(validationResult.ErrorMessage);
+        }
         var parcel = new ParcelSnapshot
         {
             ParcelId = parcelId,
