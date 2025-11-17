@@ -20,6 +20,7 @@ public class SortingExecutionWorker : BackgroundService
     private readonly IChuteTransmitterPort _chuteTransmitterPort;
     private readonly ICartLifecycleService _cartLifecycleService;
     private readonly IParcelLifecycleService _parcelLifecycleService;
+    private readonly IParcelLifecycleTracker _lifecycleTracker;
     private readonly IUpstreamSortingApiClient _upstreamApiClient;
     private readonly IChuteConfigProvider _chuteConfigProvider;
     private readonly IMainLineDrive _mainLineDrive;
@@ -32,6 +33,7 @@ public class SortingExecutionWorker : BackgroundService
         IChuteTransmitterPort chuteTransmitterPort,
         ICartLifecycleService cartLifecycleService,
         IParcelLifecycleService parcelLifecycleService,
+        IParcelLifecycleTracker lifecycleTracker,
         IUpstreamSortingApiClient upstreamApiClient,
         IChuteConfigProvider chuteConfigProvider,
         IMainLineDrive mainLineDrive,
@@ -43,6 +45,7 @@ public class SortingExecutionWorker : BackgroundService
         _chuteTransmitterPort = chuteTransmitterPort;
         _cartLifecycleService = cartLifecycleService;
         _parcelLifecycleService = parcelLifecycleService;
+        _lifecycleTracker = lifecycleTracker;
         _upstreamApiClient = upstreamApiClient;
         _chuteConfigProvider = chuteConfigProvider;
         _mainLineDrive = mainLineDrive;
@@ -163,6 +166,13 @@ public class SortingExecutionWorker : BackgroundService
                         isSuccess: false,
                         failureReason: "ForceEjected",
                         cancellationToken);
+
+                    // 更新生命周期状态：已落入异常格口
+                    _lifecycleTracker.UpdateStatus(
+                        plan.ParcelId,
+                        ParcelStatus.DivertedToException,
+                        ParcelFailureReason.None,
+                        $"包裹被强排到格口 {plan.ChuteId.Value}");
                 }
             }
             else
@@ -171,6 +181,13 @@ public class SortingExecutionWorker : BackgroundService
                 _cartLifecycleService.UnloadCart(plan.CartId, DateTimeOffset.UtcNow);
                 _parcelLifecycleService.MarkSorted(plan.ParcelId, DateTimeOffset.UtcNow);
                 _parcelLifecycleService.UnbindCartId(plan.ParcelId);
+
+                // 更新生命周期状态：已成功落入目标格口
+                _lifecycleTracker.UpdateStatus(
+                    plan.ParcelId,
+                    ParcelStatus.DivertedToTarget,
+                    ParcelFailureReason.None,
+                    $"包裹成功落入目标格口 {plan.ChuteId.Value}");
 
                 _logger.LogInformation(
                     "[落格完成] 包裹 {ParcelId} 已落入格口 {ChuteId}（小车 {CartId}）",
@@ -198,6 +215,13 @@ public class SortingExecutionWorker : BackgroundService
 
             // Update parcel state to failed
             _parcelLifecycleService.UpdateRouteState(plan.ParcelId, ParcelRouteState.Failed);
+
+            // 更新生命周期状态：失败
+            _lifecycleTracker.UpdateStatus(
+                plan.ParcelId,
+                ParcelStatus.Failed,
+                ParcelFailureReason.DeviceFault,
+                $"执行吐件计划失败: {ex.Message}");
 
             // Report failure to upstream
             await ReportSortingResultAsync(

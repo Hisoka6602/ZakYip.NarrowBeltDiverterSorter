@@ -107,6 +107,16 @@ public record class SimulationStatistics
     /// 仿真耗时（秒）
     /// </summary>
     public double DurationSeconds { get; init; }
+
+    /// <summary>
+    /// 按生命周期状态分布（新增）
+    /// </summary>
+    public Dictionary<string, int>? StatusDistribution { get; init; }
+
+    /// <summary>
+    /// 按失败原因分布（新增）
+    /// </summary>
+    public Dictionary<string, int>? FailureReasonDistribution { get; init; }
 }
 
 /// <summary>
@@ -251,6 +261,16 @@ public record class ParcelDetail
     /// 失败原因
     /// </summary>
     public string? FailureReason { get; init; }
+
+    /// <summary>
+    /// 包裹生命周期状态（新增）
+    /// </summary>
+    public string? Status { get; init; }
+
+    /// <summary>
+    /// 包裹失败原因枚举（新增）
+    /// </summary>
+    public string? FailureReasonEnum { get; init; }
 }
 
 /// <summary>
