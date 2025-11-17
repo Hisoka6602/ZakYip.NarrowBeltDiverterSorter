@@ -272,7 +272,7 @@ public enum ParcelFailureReason
     DeviceFault = 7,
 
     /// <summary>
-    /// 安全停机导致计划中断
+    /// 安全停机导致计划中断（由 LineRunState → SafetyStopped 时触发）
     /// </summary>
     [Description("安全停机")]
     SafetyStop = 8,
@@ -287,5 +287,107 @@ public enum ParcelFailureReason
     /// 未分类或未来兼容保底原因
     /// </summary>
     [Description("未知原因")]
+    Unknown = 99
+}
+
+/// <summary>
+/// 线体运行状态（统一的线体运行状态机）
+/// </summary>
+public enum LineRunState
+{
+    /// <summary>
+    /// 未知状态（初始化前或状态不明）
+    /// </summary>
+    [Description("未知")]
+    Unknown = 0,
+
+    /// <summary>
+    /// 空闲，主线未运行，允许启动
+    /// </summary>
+    [Description("空闲")]
+    Idle = 1,
+
+    /// <summary>
+    /// 启动过程（驱动上电、自检、加速中）
+    /// </summary>
+    [Description("启动中")]
+    Starting = 2,
+
+    /// <summary>
+    /// 正常运行
+    /// </summary>
+    [Description("运行中")]
+    Running = 3,
+
+    /// <summary>
+    /// 业务层暂时暂停（非安全停机）
+    /// </summary>
+    [Description("已暂停")]
+    Paused = 4,
+
+    /// <summary>
+    /// 受控停车（正常停机流程）
+    /// </summary>
+    [Description("停止中")]
+    Stopping = 5,
+
+    /// <summary>
+    /// 因安全原因停机（急停、安全门等）
+    /// </summary>
+    [Description("安全停机")]
+    SafetyStopped = 6,
+
+    /// <summary>
+    /// 故障状态，需要人工检查和确认
+    /// </summary>
+    [Description("故障")]
+    Faulted = 7,
+
+    /// <summary>
+    /// 从故障/安全停机恢复过程中
+    /// </summary>
+    [Description("恢复中")]
+    Recovering = 8
+}
+
+/// <summary>
+/// 安全子系统状态
+/// </summary>
+public enum SafetyState
+{
+    /// <summary>
+    /// 安全条件满足，可以正常运行
+    /// </summary>
+    [Description("安全")]
+    Safe = 0,
+
+    /// <summary>
+    /// 安全输入不满足（安全门打开、急停按下等）
+    /// </summary>
+    [Description("安全输入异常")]
+    UnsafeInput = 1,
+
+    /// <summary>
+    /// 急停触发
+    /// </summary>
+    [Description("急停触发")]
+    EmergencyStop = 2,
+
+    /// <summary>
+    /// 驱动故障（如 VFD 报警）
+    /// </summary>
+    [Description("驱动故障")]
+    DriveFault = 3,
+
+    /// <summary>
+    /// 外部联锁断开
+    /// </summary>
+    [Description("联锁断开")]
+    InterlockOpen = 4,
+
+    /// <summary>
+    /// 未知安全状态
+    /// </summary>
+    [Description("未知")]
     Unknown = 99
 }
