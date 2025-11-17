@@ -11,5 +11,5 @@ public interface IConfigurationDefaultsProvider
     /// </summary>
     /// <typeparam name="T">配置类型</typeparam>
     /// <returns>默认配置实例</returns>
-    T GetDefaults<T>() where T : class, new();
+    T GetDefaults<T>() where T : class;
 }

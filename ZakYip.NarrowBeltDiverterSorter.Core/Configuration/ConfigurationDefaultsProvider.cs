@@ -10,7 +10,7 @@ namespace ZakYip.NarrowBeltDiverterSorter.Core.Configuration;
 public sealed class ConfigurationDefaultsProvider : IConfigurationDefaultsProvider
 {
     /// <inheritdoc/>
-    public T GetDefaults<T>() where T : class, new()
+    public T GetDefaults<T>() where T : class
     {
         var type = typeof(T);
         
@@ -62,7 +62,13 @@ public sealed class ConfigurationDefaultsProvider : IConfigurationDefaultsProvid
             return (ChuteIoConfiguration.CreateDefault() as T)!;
         }
         
-        // 默认：尝试调用无参构造函数
-        return new T();
+        // 长跑测试配置
+        if (type == typeof(LongRunLoadTestOptions))
+        {
+            return (LongRunLoadTestOptions.CreateDefault() as T)!;
+        }
+        
+        // 默认：抛出异常，因为没有注册的默认值提供器
+        throw new NotSupportedException($"配置类型 {type.FullName} 没有注册默认值提供器");
     }
 }
