@@ -3,7 +3,7 @@ using ZakYip.NarrowBeltDiverterSorter.Communication;
 using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
 
-namespace ZakYip.NarrowBeltDiverterSorter.Drivers.Chute;
+namespace ZakYip.NarrowBeltDiverterSorter.Execution.Chute;
 
 /// <summary>
 /// 格口发信器驱动实现

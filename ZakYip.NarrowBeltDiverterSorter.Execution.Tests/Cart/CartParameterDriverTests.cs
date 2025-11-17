@@ -1,8 +1,8 @@
 using Microsoft.Extensions.Logging;
 using ZakYip.NarrowBeltDiverterSorter.Communication;
-using ZakYip.NarrowBeltDiverterSorter.Drivers.Cart;
+using ZakYip.NarrowBeltDiverterSorter.Execution.Cart;
 
-namespace ZakYip.NarrowBeltDiverterSorter.Drivers.Tests.Cart;
+namespace ZakYip.NarrowBeltDiverterSorter.Execution.Tests.Cart;
 
 /// <summary>
 /// CartParameterDriver测试

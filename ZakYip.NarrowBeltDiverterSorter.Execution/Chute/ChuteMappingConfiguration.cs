@@ -1,4 +1,4 @@
-namespace ZakYip.NarrowBeltDiverterSorter.Drivers.Chute;
+namespace ZakYip.NarrowBeltDiverterSorter.Execution.Chute;
 
 /// <summary>
 /// 格口映射配置

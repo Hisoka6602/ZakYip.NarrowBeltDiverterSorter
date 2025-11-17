@@ -1,4 +1,4 @@
-namespace ZakYip.NarrowBeltDiverterSorter.Drivers.Cart;
+namespace ZakYip.NarrowBeltDiverterSorter.Execution.Cart;
 
 /// <summary>
 /// 小车参数寄存器地址配置

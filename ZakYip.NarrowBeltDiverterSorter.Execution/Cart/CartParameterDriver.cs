@@ -2,7 +2,7 @@ using Microsoft.Extensions.Logging;
 using ZakYip.NarrowBeltDiverterSorter.Communication;
 using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 
-namespace ZakYip.NarrowBeltDiverterSorter.Drivers.Cart;
+namespace ZakYip.NarrowBeltDiverterSorter.Execution.Cart;
 
 /// <summary>
 /// 小车参数驱动实现

@@ -3,6 +3,11 @@ namespace ZakYip.NarrowBeltDiverterSorter.Execution.MainLine.Rema;
 /// <summary>
 /// 雷马 LM1000H 底层通讯抽象接口
 /// 负责读写寄存器，不涉及业务逻辑
+/// 
+/// 实现说明：
+/// - 开发/测试环境：使用 StubRemaLm1000HTransport（桩实现）
+/// - 生产环境：需要实现 ModbusRemaLm1000HTransport，通过 Modbus RTU/TCP 协议与真实设备通信
+///   可以使用 IFieldBusClient 或第三方 Modbus 库（如 NModbus4）来实现
 /// </summary>
 public interface IRemaLm1000HTransport
 {
