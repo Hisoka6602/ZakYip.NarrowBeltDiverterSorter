@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Logging;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Safety;
 
-namespace ZakYip.NarrowBeltDiverterSorter.Simulation.Safety;
+namespace ZakYip.NarrowBeltDiverterSorter.Execution.Safety;
 
 /// <summary>
 /// 仿真安全输入监控器

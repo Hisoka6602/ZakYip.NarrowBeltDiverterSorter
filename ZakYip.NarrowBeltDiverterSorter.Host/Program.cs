@@ -16,6 +16,7 @@ using ZakYip.NarrowBeltDiverterSorter.Execution.MainLine.Rema;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Feeding;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Sorting;
 using ChuteSafetyService = ZakYip.NarrowBeltDiverterSorter.Execution.Sorting.ChuteSafetyService;
+using ZakYip.NarrowBeltDiverterSorter.Execution.Safety;
 using ZakYip.NarrowBeltDiverterSorter.Observability;
 using ZakYip.NarrowBeltDiverterSorter.Observability.LiveView;
 using ZakYip.NarrowBeltDiverterSorter.Ingress.Chute;
@@ -416,6 +417,25 @@ builder.Services.AddSingleton<IMainLineStabilityProvider, MainLineStabilityProvi
 
 // 注册格口安全控制服务
 builder.Services.AddSingleton<IChuteSafetyService, ChuteSafetyService>();
+
+// ============================================================================
+// 注册安全编排器和安全输入监控器
+// ============================================================================
+
+// 注册安全输入监控器
+// 使用 Execution 层的模拟版本（适用于仿真和测试）
+builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Domain.Safety.ISafetyInputMonitor, 
+    ZakYip.NarrowBeltDiverterSorter.Execution.Safety.SimulatedSafetyInputMonitor>();
+
+// TODO: 在生产模式下使用真实的安全输入监控器（待实现）
+// if (!startupConfig.SimulationMode)
+// {
+//     builder.Services.AddSingleton<ISafetyInputMonitor, ProductionSafetyInputMonitor>();
+// }
+
+// 注册安全编排器
+builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Domain.Safety.ILineSafetyOrchestrator, 
+    ZakYip.NarrowBeltDiverterSorter.Execution.Safety.LineSafetyOrchestrator>();
 
 // ============================================================================
 // 注册健康检查
