@@ -12,6 +12,7 @@ using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Feeding;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.MainLine;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Parcels;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Sorting;
+using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Topology;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Tracking;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Feeding;
 using ZakYip.NarrowBeltDiverterSorter.Execution.MainLine;
@@ -267,6 +268,7 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
     builder.Services.AddSingleton<IMainLineSetpointProvider>(e2eSetpoint);
 
     builder.Services.AddSingleton<ICartRingBuilder, CartRingBuilder>();
+    builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Domain.SystemState.ISystemRunStateService, ZakYip.NarrowBeltDiverterSorter.Core.Domain.SystemState.SystemRunStateService>();
     builder.Services.AddSingleton<IParcelLifecycleService, ParcelLifecycleService>();
     builder.Services.AddSingleton<ICartLifecycleService, CartLifecycleService>();
     builder.Services.AddSingleton<IParcelLoadPlanner, ParcelLoadPlanner>();
@@ -276,19 +278,21 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
     builder.Services.AddSingleton<IMainLineSpeedProvider, MainLineSpeedProvider>();
     builder.Services.AddSingleton<IMainLineStabilityProvider, MainLineStabilityProvider>();
     builder.Services.AddSingleton<ICartPositionTracker, CartPositionTracker>();
+    
+    // 注册轨道拓扑
+    builder.Services.AddSingleton<ITrackTopology>(sp =>
+    {
+        return TrackTopologyBuilder.BuildFromSimulationConfig(simulationConfig);
+    });
+    
     builder.Services.AddSingleton<IChuteConfigProvider>(sp =>
     {
+        var topology = sp.GetRequiredService<ITrackTopology>();
         var provider = new ChuteConfigProvider();
-        for (int i = 1; i <= simulationConfig.NumberOfChutes; i++)
+        var configs = TrackTopologyBuilder.BuildChuteConfigs(topology, simulationConfig.ForceEjectChuteId);
+        foreach (var config in configs)
         {
-            provider.AddOrUpdate(new ZakYip.NarrowBeltDiverterSorter.Core.Domain.ChuteConfig
-            {
-                ChuteId = new ZakYip.NarrowBeltDiverterSorter.Core.Domain.ChuteId(i),
-                IsEnabled = true,
-                IsForceEject = (i == simulationConfig.ForceEjectChuteId),
-                CartOffsetFromOrigin = i * 5, // 格口间距改为5个小车位（格口在位置 5, 10, 15, 20, 25, 30, 35, 40, 45, 50）
-                MaxOpenDuration = TimeSpan.FromMilliseconds(300)
-            });
+            provider.AddOrUpdate(config);
         }
         return provider;
     });
@@ -741,6 +745,7 @@ static async Task RunTraditionalSimulationAsync()
     builder.Services.AddSingleton<IMainLineSetpointProvider>(traditionalSetpoint);
 
     builder.Services.AddSingleton<ICartRingBuilder, CartRingBuilder>();
+    builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Domain.SystemState.ISystemRunStateService, ZakYip.NarrowBeltDiverterSorter.Core.Domain.SystemState.SystemRunStateService>();
     builder.Services.AddSingleton<IParcelLifecycleService, ParcelLifecycleService>();
     builder.Services.AddSingleton<ICartLifecycleService, CartLifecycleService>();
     builder.Services.AddSingleton<IParcelLoadPlanner, ParcelLoadPlanner>();
@@ -749,19 +754,21 @@ static async Task RunTraditionalSimulationAsync()
     builder.Services.AddSingleton<IMainLineSpeedProvider, MainLineSpeedProvider>();
     builder.Services.AddSingleton<IMainLineStabilityProvider, MainLineStabilityProvider>();
     builder.Services.AddSingleton<ICartPositionTracker, CartPositionTracker>();
+    
+    // 注册轨道拓扑
+    builder.Services.AddSingleton<ITrackTopology>(sp =>
+    {
+        return TrackTopologyBuilder.BuildFromSimulationConfig(simulationConfig);
+    });
+    
     builder.Services.AddSingleton<IChuteConfigProvider>(sp =>
     {
+        var topology = sp.GetRequiredService<ITrackTopology>();
         var provider = new ChuteConfigProvider();
-        for (int i = 1; i <= simulationConfig.NumberOfChutes; i++)
+        var configs = TrackTopologyBuilder.BuildChuteConfigs(topology, simulationConfig.ForceEjectChuteId);
+        foreach (var config in configs)
         {
-            provider.AddOrUpdate(new ZakYip.NarrowBeltDiverterSorter.Core.Domain.ChuteConfig
-            {
-                ChuteId = new ZakYip.NarrowBeltDiverterSorter.Core.Domain.ChuteId(i),
-                IsEnabled = true,
-                IsForceEject = (i == simulationConfig.ForceEjectChuteId),
-                CartOffsetFromOrigin = i * 5, // 格口间距改为5个小车位（格口在位置 5, 10, 15, 20, 25, 30, 35, 40, 45, 50）
-                MaxOpenDuration = TimeSpan.FromMilliseconds(300)
-            });
+            provider.AddOrUpdate(config);
         }
         return provider;
     });
@@ -870,20 +877,21 @@ static async Task RunSafetyScenarioAsync()
     // ============================================================================
     // 注册格口配置提供者
     // ============================================================================
+    
+    // 注册轨道拓扑
+    builder.Services.AddSingleton<ITrackTopology>(sp =>
+    {
+        return TrackTopologyBuilder.BuildFromSimulationConfig(simulationConfig);
+    });
 
     builder.Services.AddSingleton<IChuteConfigProvider>(sp =>
     {
+        var topology = sp.GetRequiredService<ITrackTopology>();
         var provider = new ChuteConfigProvider();
-        for (int i = 1; i <= numberOfChutes; i++)
+        var configs = TrackTopologyBuilder.BuildChuteConfigs(topology, simulationConfig.ForceEjectChuteId);
+        foreach (var config in configs)
         {
-            provider.AddOrUpdate(new ZakYip.NarrowBeltDiverterSorter.Core.Domain.ChuteConfig
-            {
-                ChuteId = new ZakYip.NarrowBeltDiverterSorter.Core.Domain.ChuteId(i),
-                IsEnabled = true,
-                IsForceEject = (i == simulationConfig.ForceEjectChuteId),
-                CartOffsetFromOrigin = i * 5,
-                MaxOpenDuration = TimeSpan.FromMilliseconds(300)
-            });
+            provider.AddOrUpdate(config);
         }
         return provider;
     });

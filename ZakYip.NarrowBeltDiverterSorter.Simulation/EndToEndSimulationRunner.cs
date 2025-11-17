@@ -37,6 +37,7 @@ public class EndToEndSimulationRunner
     private readonly FakeChuteTransmitterPort _chuteTransmitter;
     private readonly InfeedLayoutOptions _infeedLayout;
     private readonly IMainLineDrive? _mainLineDrive;
+    private readonly Core.Domain.Topology.ITrackTopology _trackTopology;
 
     private readonly List<SpeedSample> _speedSamples = new();
 
@@ -57,6 +58,7 @@ public class EndToEndSimulationRunner
         FakeInfeedSensorPort infeedSensor,
         FakeChuteTransmitterPort chuteTransmitter,
         InfeedLayoutOptions infeedLayout,
+        Core.Domain.Topology.ITrackTopology trackTopology,
         IMainLineDrive? mainLineDrive = null)
     {
         _config = config;
@@ -75,6 +77,7 @@ public class EndToEndSimulationRunner
         _infeedSensor = infeedSensor;
         _chuteTransmitter = chuteTransmitter;
         _infeedLayout = infeedLayout;
+        _trackTopology = trackTopology;
         _mainLineDrive = mainLineDrive;
     }
 
@@ -107,7 +110,7 @@ public class EndToEndSimulationRunner
         _logger.LogInformation(
             "[CartRing] 小车环已就绪，长度={CartCount}，节距={SpacingMm}mm，耗时={WarmupDuration:F2}秒",
             cartRingSnapshot.RingLength.Value,
-            _config.CartSpacingMm,
+            _trackTopology.CartSpacingMm,
             cartRingWarmupDuration);
 
         // 初始化小车到 CartLifecycleService
@@ -136,7 +139,7 @@ public class EndToEndSimulationRunner
             Length = cartRingSnapshot.RingLength.Value,
             ZeroCartId = (int)cartRingSnapshot.ZeroCartId.Value,
             ZeroIndex = cartRingSnapshot.ZeroIndex.Value,
-            CartSpacingMm = _config.CartSpacingMm,
+            CartSpacingMm = _trackTopology.CartSpacingMm,
             IsReady = true,
             WarmupDurationSeconds = cartRingWarmupDuration
         };
@@ -144,13 +147,14 @@ public class EndToEndSimulationRunner
         var mainDriveInfo = CalculateMainDriveInfo();
 
         // 收集分拣配置信息
+        var strongEjectChuteId = _trackTopology.GetStrongEjectChuteId();
         var sortingConfigInfo = new SortingConfigInfo
         {
             Scenario = _config.Scenario,
             SortingMode = _config.SortingMode.ToString(),
             FixedChuteId = _config.SortingMode == SortingMode.FixedChute ? _config.FixedChuteId : null,
-            AvailableChutes = _config.NumberOfChutes - 1, // 排除强排口
-            ForceEjectChuteId = _config.ForceEjectChuteId
+            AvailableChutes = _trackTopology.ChuteCount - 1, // 排除强排口
+            ForceEjectChuteId = strongEjectChuteId.HasValue ? (int)strongEjectChuteId.Value.Value : 0
         };
 
         // 收集包裹详情
