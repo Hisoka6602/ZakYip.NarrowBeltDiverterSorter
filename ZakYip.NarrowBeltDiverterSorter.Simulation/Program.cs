@@ -268,6 +268,7 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
     builder.Services.AddSingleton<IMainLineSetpointProvider>(e2eSetpoint);
 
     builder.Services.AddSingleton<ICartRingBuilder, CartRingBuilder>();
+    builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Domain.SystemState.ISystemRunStateService, ZakYip.NarrowBeltDiverterSorter.Core.Domain.SystemState.SystemRunStateService>();
     builder.Services.AddSingleton<IParcelLifecycleService, ParcelLifecycleService>();
     builder.Services.AddSingleton<ICartLifecycleService, CartLifecycleService>();
     builder.Services.AddSingleton<IParcelLoadPlanner, ParcelLoadPlanner>();
@@ -744,6 +745,7 @@ static async Task RunTraditionalSimulationAsync()
     builder.Services.AddSingleton<IMainLineSetpointProvider>(traditionalSetpoint);
 
     builder.Services.AddSingleton<ICartRingBuilder, CartRingBuilder>();
+    builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Domain.SystemState.ISystemRunStateService, ZakYip.NarrowBeltDiverterSorter.Core.Domain.SystemState.SystemRunStateService>();
     builder.Services.AddSingleton<IParcelLifecycleService, ParcelLifecycleService>();
     builder.Services.AddSingleton<ICartLifecycleService, CartLifecycleService>();
     builder.Services.AddSingleton<IParcelLoadPlanner, ParcelLoadPlanner>();
