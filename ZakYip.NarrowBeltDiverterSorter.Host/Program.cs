@@ -10,6 +10,7 @@ using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Sorting;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Carts;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Cart;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Chute;
+using ZakYip.NarrowBeltDiverterSorter.Execution.Chute.Drivers.ZhiQian32Relay;
 using ZakYip.NarrowBeltDiverterSorter.Execution.MainLine;
 using ZakYip.NarrowBeltDiverterSorter.Execution.MainLine.Rema;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Feeding;
@@ -259,6 +260,57 @@ if (chuteIoOptions != null && chuteIoOptions.Mode == "Simulation")
     foreach (var node in chuteIoOptions.Nodes)
     {
         Console.WriteLine($"  - {node.NodeKey}: {node.Channels.Count} 个通道绑定");
+    }
+}
+else if (chuteIoOptions != null && chuteIoOptions.Mode == "ZhiQian32Relay")
+{
+    // 创建智嵌继电器端点列表和映射
+    var zhiqianEndpoints = new List<ZhiQian32RelayEndpoint>();
+    var chuteMapping = new Dictionary<long, (IChuteIoEndpoint endpoint, int channelIndex)>();
+
+    foreach (var nodeConfig in chuteIoOptions.Nodes)
+    {
+        // 仅处理品牌为 ZhiQian32Relay 的节点
+        if (nodeConfig.Brand != "ZhiQian32Relay")
+        {
+            Console.WriteLine($"  警告: 节点 {nodeConfig.NodeKey} 的品牌 '{nodeConfig.Brand}' 与模式 'ZhiQian32Relay' 不匹配，跳过");
+            continue;
+        }
+
+        // 创建智嵌继电器端点
+        var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
+        var endpointLogger = loggerFactory.CreateLogger<ZhiQian32RelayEndpoint>();
+        var clientLogger = loggerFactory.CreateLogger<ZhiQian32RelayClient>();
+        
+        var endpoint = new ZhiQian32RelayEndpoint(
+            nodeConfig.NodeKey,
+            nodeConfig.IpAddress,
+            nodeConfig.Port,
+            nodeConfig.MaxChannelCount,
+            endpointLogger,
+            clientLogger);
+
+        zhiqianEndpoints.Add(endpoint);
+
+        // 构建映射关系
+        foreach (var channelBinding in nodeConfig.Channels)
+        {
+            chuteMapping[channelBinding.ChuteId] = (endpoint, channelBinding.ChannelIndex);
+        }
+    }
+
+    // 注册智嵌继电器格口 IO 服务
+    builder.Services.AddSingleton<IChuteIoService>(sp =>
+    {
+        var logger = sp.GetRequiredService<ILogger<ZhiQian32RelayChuteIoService>>();
+        return new ZhiQian32RelayChuteIoService(zhiqianEndpoints, chuteMapping, logger);
+    });
+
+    Console.WriteLine("格口 IO 实现: 智嵌32路网络继电器");
+    Console.WriteLine($"  节点数量: {zhiqianEndpoints.Count}");
+    foreach (var node in chuteIoOptions.Nodes.Where(n => n.Brand == "ZhiQian32Relay"))
+    {
+        Console.WriteLine($"  - {node.NodeKey}: {node.IpAddress}:{node.Port}, {node.Channels.Count} 个通道绑定");
     }
 }
 else if (chuteIoOptions == null)
