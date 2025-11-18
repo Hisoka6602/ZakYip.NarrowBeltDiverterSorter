@@ -1,66 +1,58 @@
-using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
+using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Runtime;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Host;
 
 /// <summary>
 /// 安全控制工作器
-/// 负责在启动时和停止时关闭全部格口发信器
+/// 作为 ASP.NET IHostedService 的薄壳，将安全控制逻辑委托给 ISafetyRuntime
 /// </summary>
 public class SafetyControlWorker : IHostedService
 {
-    private readonly IChuteSafetyService _chuteSafetyService;
+    private readonly ISafetyRuntime _runtime;
     private readonly ILogger<SafetyControlWorker> _logger;
-    private readonly IHostApplicationLifetime _hostApplicationLifetime;
+    private Task? _runtimeTask;
+    private CancellationTokenSource? _cts;
 
     public SafetyControlWorker(
-        IChuteSafetyService chuteSafetyService,
-        ILogger<SafetyControlWorker> logger,
-        IHostApplicationLifetime hostApplicationLifetime)
+        ISafetyRuntime runtime,
+        ILogger<SafetyControlWorker> logger)
     {
-        _chuteSafetyService = chuteSafetyService ?? throw new ArgumentNullException(nameof(chuteSafetyService));
+        _runtime = runtime ?? throw new ArgumentNullException(nameof(runtime));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _hostApplicationLifetime = hostApplicationLifetime ?? throw new ArgumentNullException(nameof(hostApplicationLifetime));
     }
 
-    public async Task StartAsync(CancellationToken cancellationToken)
+    public Task StartAsync(CancellationToken cancellationToken)
     {
-        _logger.LogInformation("安全控制: 启动前关闭全部格口发信器");
+        _logger.LogInformation("安全控制工作器已启动，将启动运行时");
         
-        try
-        {
-            await _chuteSafetyService.CloseAllChutesAsync(cancellationToken);
-            _logger.LogInformation("安全控制: 启动前已关闭全部格口发信器");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "安全控制: 启动前关闭全部格口发信器时发生异常");
-            // Don't throw - allow the application to continue starting
-        }
+        _cts = new CancellationTokenSource();
+        _runtimeTask = _runtime.RunAsync(_cts.Token);
+        
+        return Task.CompletedTask;
+    }
 
-        // Register shutdown callback
-        _hostApplicationLifetime.ApplicationStopping.Register(() =>
+    public async Task StopAsync(CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("安全控制工作器正在停止");
+        
+        if (_cts != null)
+        {
+            _cts.Cancel();
+        }
+        
+        if (_runtimeTask != null)
         {
             try
             {
-                _logger.LogInformation("安全控制: 停止前关闭全部格口发信器");
-                
-                // Use a timeout to ensure we don't block shutdown indefinitely
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-                _chuteSafetyService.CloseAllChutesAsync(cts.Token).GetAwaiter().GetResult();
-                
-                _logger.LogInformation("安全控制: 停止前已关闭全部格口发信器");
+                await _runtimeTask;
             }
-            catch (Exception ex)
+            catch (OperationCanceledException)
             {
-                _logger.LogError(ex, "安全控制: 停止前关闭全部格口发信器时发生异常");
-                // Continue shutdown even if this fails
+                // Expected
             }
-        });
-    }
-
-    public Task StopAsync(CancellationToken cancellationToken)
-    {
-        // Actual cleanup is done in ApplicationStopping callback
-        return Task.CompletedTask;
+        }
+        
+        _cts?.Dispose();
+        _logger.LogInformation("安全控制工作器已停止");
     }
 }

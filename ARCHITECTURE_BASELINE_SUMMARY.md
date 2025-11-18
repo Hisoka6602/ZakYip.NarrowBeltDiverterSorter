@@ -73,21 +73,20 @@
 
 ---
 
-## ⚠️ 已知架构债务
+## ✅ 已解决的架构债务
 
-### Simulation -> Host 依赖
-**问题**: Simulation 依赖 Host 违反分层原则
+### Simulation -> Host 依赖（已解决）
+**问题**: Simulation 之前依赖 Host 违反分层原则
 
 **原因**: Simulation 需要使用 Host 中的 Workers（MainLineControlWorker 等）
 
-**解决方案**:
-1. **推荐**: 将 Workers 移至 Execution（它们本质上是执行编排）
-2. **替代**: 创建独立的 Workers 共享库
+**解决方案（已实施）**:
+1. 在 Core 中创建 Runtime 抽象接口（`IMainLineRuntime`, `IParcelRoutingRuntime`, `ISafetyRuntime`）
+2. 在 Execution 中实现 Runtime 服务，包含可重用的控制循环逻辑
+3. Host Workers 重构为薄壳，仅委托给 Runtime
+4. Simulation 直接使用 Execution Runtime，完全移除对 Host 的依赖
 
-**标记位置**: `Simulation/ZakYip.NarrowBeltDiverterSorter.Simulation.csproj`
-```xml
-<!-- TODO: 架构债务 - Simulation 不应依赖 Host -->
-```
+**影响**: Simulation 与 Host 现在都是独立的组合根，共享 Execution Runtime 的实现
 
 ---
 
@@ -136,9 +135,9 @@ builder.Services.AddSingleton<INewHardwarePort, NewHardwareDriver>();
 
 ## 🚀 后续计划
 
-### Phase 1: 清理架构债务（1-2 周）
-- [ ] 将 Workers 从 Host 移至 Execution
-- [ ] 移除 Simulation -> Host 依赖
+### Phase 1: 清理架构债务（已完成 ✅）
+- [x] 将 Workers 从 Host 移至 Execution（通过创建 Execution Runtime 实现）
+- [x] 移除 Simulation -> Host 依赖
 
 ### Phase 2: 架构治理（2-3 周）
 - [ ] 创建架构约束测试（ArchTests）

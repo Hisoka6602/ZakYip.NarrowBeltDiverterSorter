@@ -20,7 +20,6 @@ using ZakYip.NarrowBeltDiverterSorter.Execution.Mainline;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Vendors.Simulated;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Sorting;
 
-using ZakYip.NarrowBeltDiverterSorter.Host;
 using ZakYip.NarrowBeltDiverterSorter.Core.Configuration;
 using ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
 using ZakYip.NarrowBeltDiverterSorter.Infrastructure.LiteDb;
@@ -352,8 +351,7 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
         var monitorLogger = sp.GetRequiredService<ILogger<InfeedSensorMonitor>>();
         var monitor = new InfeedSensorMonitor(infeedSensor, eventBus, monitorLogger);
         
-        // 连接 InfeedSensorMonitor 与 ParcelRoutingWorker 和 ParcelLoadCoordinator
-        var routingWorker = sp.GetRequiredService<ParcelRoutingWorker>();
+        // 连接 InfeedSensorMonitor 与 ParcelRoutingRuntime 和 ParcelLoadCoordinator
         var loadCoordinator = sp.GetRequiredService<ParcelLoadCoordinator>();
         var parcelLifecycleService = sp.GetRequiredService<IParcelLifecycleService>();
         var cartLifecycleService = sp.GetRequiredService<ICartLifecycleService>();
@@ -363,8 +361,12 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
         {
             try
             {
-                // 通知路由工作器处理包裹
-                await routingWorker.HandleParcelCreatedAsync(args);
+                // 通知路由运行时处理包裹
+                var routingRuntime = sp.GetRequiredService<ZakYip.NarrowBeltDiverterSorter.Core.Domain.Runtime.IParcelRoutingRuntime>();
+                if (routingRuntime is ZakYip.NarrowBeltDiverterSorter.Execution.Runtime.ParcelRoutingRuntime runtime)
+                {
+                    await runtime.HandleParcelCreatedAsync(args);
+                }
                 
                 // 通知落车协调器
                 loadCoordinator.HandleParcelCreatedFromInfeed(sender, args);
@@ -403,12 +405,28 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
     });
 
     // ============================================================================
+    // 注册执行运行时
+    // ============================================================================
+
+    // 注册主线控制运行时
+    builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Domain.Runtime.IMainLineRuntime, 
+        ZakYip.NarrowBeltDiverterSorter.Execution.Runtime.MainLineRuntime>();
+
+    // 注册包裹路由运行时
+    builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Domain.Runtime.IParcelRoutingRuntime, 
+        ZakYip.NarrowBeltDiverterSorter.Execution.Runtime.ParcelRoutingRuntime>();
+
+    // ============================================================================
     // 注册后台工作器（E2E 模式下启动完整管道）
     // ============================================================================
 
-    builder.Services.AddSingleton<ParcelRoutingWorker>();
+    // 启动主线控制运行时
+    builder.Services.AddHostedService(sp =>
+    {
+        var runtime = sp.GetRequiredService<ZakYip.NarrowBeltDiverterSorter.Core.Domain.Runtime.IMainLineRuntime>();
+        return new MainLineRuntimeHostedService(runtime, sp.GetRequiredService<ILogger<MainLineRuntimeHostedService>>());
+    });
     
-    builder.Services.AddHostedService<MainLineControlWorker>();
     builder.Services.AddHostedService<ParcelSortingSimulator>();
     builder.Services.AddHostedService<CartMovementSimulator>();
     builder.Services.AddHostedService<ParcelGeneratorWorker>();
@@ -824,12 +842,24 @@ static async Task RunTraditionalSimulationAsync()
     builder.Services.AddSingleton<InfeedSensorMonitor>();
 
     // ============================================================================
+    // 注册执行运行时
+    // ============================================================================
+
+    // 注册主线控制运行时
+    builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Domain.Runtime.IMainLineRuntime, 
+        ZakYip.NarrowBeltDiverterSorter.Execution.Runtime.MainLineRuntime>();
+
+    // ============================================================================
     // 注册后台工作器
     // ============================================================================
 
-    builder.Services.AddHostedService<MainLineControlWorker>();
-    builder.Services.AddHostedService<ParcelRoutingWorker>();
-    builder.Services.AddHostedService<SortingExecutionWorker>();
+    // 启动主线控制运行时
+    builder.Services.AddHostedService(sp =>
+    {
+        var runtime = sp.GetRequiredService<ZakYip.NarrowBeltDiverterSorter.Core.Domain.Runtime.IMainLineRuntime>();
+        return new MainLineRuntimeHostedService(runtime, sp.GetRequiredService<ILogger<MainLineRuntimeHostedService>>());
+    });
+    builder.Services.AddHostedService<ParcelSortingSimulator>();
     builder.Services.AddHostedService<SimulationOrchestrator>();
     builder.Services.AddHostedService<ParcelGeneratorWorker>();
     builder.Services.AddHostedService<CartMovementSimulator>();
@@ -1365,7 +1395,6 @@ static async Task RunLongRunLoadTestScenarioAsync(string? outputPath, bool reset
         var monitorLogger = sp.GetRequiredService<ILogger<InfeedSensorMonitor>>();
         var monitor = new InfeedSensorMonitor(infeedSensor, eventBus, monitorLogger);
         
-        var routingWorker = sp.GetRequiredService<ParcelRoutingWorker>();
         var loadCoordinator = sp.GetRequiredService<ParcelLoadCoordinator>();
         var parcelLifecycleService = sp.GetRequiredService<IParcelLifecycleService>();
         var cartLifecycleService = sp.GetRequiredService<ICartLifecycleService>();
@@ -1379,7 +1408,13 @@ static async Task RunLongRunLoadTestScenarioAsync(string? outputPath, bool reset
                 // 记录包裹创建事件
                 timelineRecorder.RecordEvent(args.ParcelId, "Created", "入口传感器触发");
                 
-                await routingWorker.HandleParcelCreatedAsync(args);
+                // 通知路由运行时处理包裹
+                var routingRuntime = sp.GetRequiredService<ZakYip.NarrowBeltDiverterSorter.Core.Domain.Runtime.IParcelRoutingRuntime>();
+                if (routingRuntime is ZakYip.NarrowBeltDiverterSorter.Execution.Runtime.ParcelRoutingRuntime runtime)
+                {
+                    await runtime.HandleParcelCreatedAsync(args);
+                }
+                
                 loadCoordinator.HandleParcelCreatedFromInfeed(sender, args);
             }
             catch (Exception ex)
@@ -1420,12 +1455,27 @@ static async Task RunLongRunLoadTestScenarioAsync(string? outputPath, bool reset
     builder.Services.AddSingleton<ParcelTimelineRecorder>();
 
     // ============================================================================
+    // 注册执行运行时
+    // ============================================================================
+
+    // 注册主线控制运行时
+    builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Domain.Runtime.IMainLineRuntime, 
+        ZakYip.NarrowBeltDiverterSorter.Execution.Runtime.MainLineRuntime>();
+
+    // 注册包裹路由运行时
+    builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Domain.Runtime.IParcelRoutingRuntime, 
+        ZakYip.NarrowBeltDiverterSorter.Execution.Runtime.ParcelRoutingRuntime>();
+
+    // ============================================================================
     // 注册后台工作器
     // ============================================================================
 
-    builder.Services.AddSingleton<ParcelRoutingWorker>();
-    
-    builder.Services.AddHostedService<MainLineControlWorker>();
+    // 启动主线控制运行时
+    builder.Services.AddHostedService(sp =>
+    {
+        var runtime = sp.GetRequiredService<ZakYip.NarrowBeltDiverterSorter.Core.Domain.Runtime.IMainLineRuntime>();
+        return new MainLineRuntimeHostedService(runtime, sp.GetRequiredService<ILogger<MainLineRuntimeHostedService>>());
+    });
     builder.Services.AddHostedService<ParcelSortingSimulator>();
     builder.Services.AddHostedService<CartMovementSimulator>();
     builder.Services.AddHostedService<ParcelGeneratorWorker>();

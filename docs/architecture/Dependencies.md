@@ -60,9 +60,8 @@
 
 #### 8. Simulation（仿真层）
 - ✅ **可以依赖**: Core, Execution, Ingress, Infrastructure, Communication, UpstreamContracts
-- ⚠️  **当前架构债务**: Simulation -> Host（需要使用 Workers）
 - ❌ **不应依赖**: Host
-- **原则**: Simulation 是独立的组合根，应该复用 Execution 的逻辑而不是 Host 的 Workers
+- **原则**: Simulation 是独立的组合根，复用 Execution Runtime 的逻辑而不是 Host 的 Workers
 
 #### 9. Host（主机层）
 - ✅ **可以依赖**: 所有其他业务项目
@@ -85,34 +84,32 @@
 | **Infrastructure** | ✅ | ❌ | ❌ | ❌ | - | ✅ | ❌ | ❌ | ❌ |
 | **Communication** | ✅ | ❌ | ❌ | ❌ | ❌ | - | ✅ | ❌ | ❌ |
 | **UpstreamContracts** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | - | ❌ | ❌ |
-| **Simulation** | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | - | ⚠️ |
+| **Simulation** | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | - | ❌ |
 | **Host** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | - |
 
 **图例**:
 - ✅ = 允许且已实现
 - ❌ = 不允许
-- ⚠️  = 架构债务，需要后续修复
 
 ---
 
-## 违反规则的当前状态
+## 已解决的架构债务
 
-### 1. Simulation -> Host（架构债务）
-**状态**: ⚠️  已标记为架构债务
+### 1. Simulation -> Host（已解决）
+**状态**: ✅ 已解决（2025-11-18）
 
-**问题**: Simulation 需要使用 Host 中的 Workers（`MainLineControlWorker`, `ParcelRoutingWorker`, `SortingExecutionWorker`）
+**原问题**: Simulation 之前依赖 Host 中的 Workers（`MainLineControlWorker`, `ParcelRoutingWorker`, `SafetyControlWorker`）
 
-**解决方案**:
-1. **推荐**: 将 Workers 移至 Execution 层（它们本质上是执行编排）
-2. **替代**: 创建共享的 Workers 库
-3. **临时**: 在 Simulation.csproj 中标记为 TODO，后续 PR 修复
+**解决方案**: 
+1. 在 Core 中创建 Runtime 抽象接口（`IMainLineRuntime`, `IParcelRoutingRuntime`, `ISafetyRuntime`）
+2. 在 Execution 中实现 Runtime 服务，包含业务循环逻辑
+3. Host Workers 重构为薄壳，仅委托给 Runtime
+4. Simulation 直接使用 Execution Runtime，移除对 Host 的依赖
 
-**标记位置**: `ZakYip.NarrowBeltDiverterSorter.Simulation/ZakYip.NarrowBeltDiverterSorter.Simulation.csproj`
-
-```xml
-<!-- TODO: 架构债务 - Simulation 不应依赖 Host，需要将 Workers 移至 Execution 或创建共享层 -->
-<ProjectReference Include="..\ZakYip.NarrowBeltDiverterSorter.Host\ZakYip.NarrowBeltDiverterSorter.Host.csproj" />
-```
+**架构改进**:
+- Host / Simulation（组合根）都依赖 → Execution Runtime
+- Execution Runtime 包含可重用的控制循环逻辑
+- 避免了跨组合根的依赖
 
 ---
 
@@ -187,7 +184,7 @@ public class SortingPlanner
 ## 后续工作
 
 ### 高优先级
-1. **移除 Simulation -> Host 依赖**: 将 Workers 移至 Execution
+1. ~~**移除 Simulation -> Host 依赖**: 将 Workers 移至 Execution~~ ✅ 已完成
 2. **创建架构约束测试**: 自动化验证依赖规则
 3. **CI/CD 集成**: 在管道中运行架构测试
 
@@ -211,4 +208,5 @@ public class SortingPlanner
 
 ## 版本历史
 
+- **v1.1** (2025-11-18): 解决 Simulation -> Host 架构债务，引入 Execution Runtime 层
 - **v1.0** (2025-11-18): 初始版本，建立依赖规则基线
