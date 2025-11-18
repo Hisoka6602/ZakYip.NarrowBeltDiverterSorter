@@ -95,6 +95,10 @@ builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Infrastructure.Con
 builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Host.Configuration.IHostConfigurationProvider, 
     ZakYip.NarrowBeltDiverterSorter.Host.Configuration.HostConfigurationProvider>();
 
+// 注册 Sorter 配置提供器（用于主线驱动选择和 Rema 连接参数）
+builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Configuration.ISorterConfigurationProvider,
+    ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration.SorterConfigurationProvider>();
+
 // 注册配置仓储（保留用于向后兼容和特定仓储需求）
 builder.Services.AddSingleton<IMainLineOptionsRepository, LiteDbMainLineOptionsRepository>();
 builder.Services.AddSingleton<IInfeedLayoutOptionsRepository, LiteDbInfeedLayoutOptionsRepository>();
@@ -264,69 +268,72 @@ builder.Services.AddSingleton<IFieldBusClient, FieldBusClient>();
 // 根据配置注册主线驱动实现
 // ============================================================================
 
-var mainLineDriveOptions = builder.Configuration
-    .GetSection(MainLineDriveOptions.SectionName)
-    .Get<MainLineDriveOptions>() ?? new MainLineDriveOptions();
+// 从 LiteDB 加载 Sorter 配置（如果不存在，则从 appsettings.json 初始化）
+var sorterConfigProvider = builder.Services.BuildServiceProvider()
+    .GetRequiredService<ZakYip.NarrowBeltDiverterSorter.Core.Configuration.ISorterConfigurationProvider>();
+var sorterOptions = sorterConfigProvider.LoadAsync().GetAwaiter().GetResult();
 
-switch (mainLineDriveOptions.Implementation)
+var mainLineMode = sorterOptions.MainLine.Mode;
+var remaOptions = sorterOptions.MainLine.Rema;
+
+if (mainLineMode == "Simulation")
 {
-    case MainLineDriveImplementation.Simulation:
-        // 注册仿真主线驱动和端口
-        var fakeMainLineDrive = new FakeMainLineDrivePort();
-        var fakeMainLineFeedback = new FakeMainLineFeedbackPort(fakeMainLineDrive);
-        
-        builder.Services.AddSingleton(fakeMainLineDrive);
-        builder.Services.AddSingleton(fakeMainLineFeedback);
-        builder.Services.AddSingleton<IMainLineDrivePort>(fakeMainLineDrive);
-        builder.Services.AddSingleton<IMainLineFeedbackPort>(fakeMainLineFeedback);
-        
-        // 注册 SimulatedMainLineDrive 为 IMainLineDrive
-        builder.Services.AddSingleton<IMainLineDrive, SimulatedMainLineDrive>();
-        
-        // 注册标准 MainLineControlService（使用 PID 控制）
-        builder.Services.AddSingleton<IMainLineControlService, MainLineControlService>();
-        
-        Console.WriteLine("主线驱动实现: 仿真主线");
-        break;
-
-    case MainLineDriveImplementation.RemaLm1000H:
-        // 注册 RemaLm1000HTransport（使用桩实现用于测试）
-        builder.Services.AddSingleton<IRemaLm1000HTransport, StubRemaLm1000HTransport>();
-        
-        // 注册 RemaLm1000HMainLineDrive
-        builder.Services.AddSingleton<RemaLm1000HMainLineDrive>();
-        
-        // 注册 IMainLineDrive（指向 RemaLm1000HMainLineDrive）
-        builder.Services.AddSingleton<IMainLineDrive>(sp => sp.GetRequiredService<RemaLm1000HMainLineDrive>());
-        
-        // 注册 RemaMainLineControlServiceAdapter 作为 IMainLineControlService
-        // 用于适配 MainLineControlWorker 的启动/停止流程
-        builder.Services.AddSingleton<IMainLineControlService, RemaMainLineControlServiceAdapter>();
-        
-        // 注册占位符端口用于其他可能的依赖
-        builder.Services.AddSingleton<IMainLineDrivePort, StubMainLineDrivePort>();
-        builder.Services.AddSingleton<IMainLineFeedbackPort, StubMainLineFeedbackPort>();
-        
-        Console.WriteLine("主线驱动实现: Rema LM1000H");
-        
-        // 输出雷马连接参数（便于现场排查）
-        if (mainLineDriveOptions.Rema != null)
-        {
-            Console.WriteLine($"  串口号: {mainLineDriveOptions.Rema.PortName}");
-            Console.WriteLine($"  波特率: {mainLineDriveOptions.Rema.BaudRate}");
-            Console.WriteLine($"  数据位: {mainLineDriveOptions.Rema.DataBits}");
-            Console.WriteLine($"  奇偶校验: {mainLineDriveOptions.Rema.Parity}");
-            Console.WriteLine($"  停止位: {mainLineDriveOptions.Rema.StopBits}");
-            Console.WriteLine($"  站号: {mainLineDriveOptions.Rema.SlaveAddress}");
-            Console.WriteLine($"  读取超时: {mainLineDriveOptions.Rema.ReadTimeout.TotalMilliseconds} ms");
-            Console.WriteLine($"  写入超时: {mainLineDriveOptions.Rema.WriteTimeout.TotalMilliseconds} ms");
-            Console.WriteLine($"  最大重试: {mainLineDriveOptions.Rema.MaxRetries}");
-        }
-        break;
-
-    default:
-        throw new InvalidOperationException(
-            $"不支持的主线驱动实现类型: {mainLineDriveOptions.Implementation}");
+    // 注册仿真主线驱动和端口
+    var fakeMainLineDrive = new FakeMainLineDrivePort();
+    var fakeMainLineFeedback = new FakeMainLineFeedbackPort(fakeMainLineDrive);
+    
+    builder.Services.AddSingleton(fakeMainLineDrive);
+    builder.Services.AddSingleton(fakeMainLineFeedback);
+    builder.Services.AddSingleton<IMainLineDrivePort>(fakeMainLineDrive);
+    builder.Services.AddSingleton<IMainLineFeedbackPort>(fakeMainLineFeedback);
+    
+    // 注册 SimulatedMainLineDrive 为 IMainLineDrive
+    builder.Services.AddSingleton<IMainLineDrive, SimulatedMainLineDrive>();
+    
+    // 注册标准 MainLineControlService（使用 PID 控制）
+    builder.Services.AddSingleton<IMainLineControlService, MainLineControlService>();
+    
+    Console.WriteLine("主线驱动实现: 仿真主线");
+}
+else if (mainLineMode == "RemaLm1000H")
+{
+    // 注册 RemaLm1000HTransport（使用桩实现用于测试）
+    builder.Services.AddSingleton<IRemaLm1000HTransport, StubRemaLm1000HTransport>();
+    
+    // 注册 RemaLm1000HMainLineDrive
+    builder.Services.AddSingleton<RemaLm1000HMainLineDrive>();
+    
+    // 注册 IMainLineDrive（指向 RemaLm1000HMainLineDrive）
+    builder.Services.AddSingleton<IMainLineDrive>(sp => sp.GetRequiredService<RemaLm1000HMainLineDrive>());
+    
+    // 注册 RemaMainLineControlServiceAdapter 作为 IMainLineControlService
+    // 用于适配 MainLineControlWorker 的启动/停止流程
+    builder.Services.AddSingleton<IMainLineControlService, RemaMainLineControlServiceAdapter>();
+    
+    // 注册占位符端口用于其他可能的依赖
+    builder.Services.AddSingleton<IMainLineDrivePort, StubMainLineDrivePort>();
+    builder.Services.AddSingleton<IMainLineFeedbackPort, StubMainLineFeedbackPort>();
+    
+    Console.WriteLine("主线驱动实现: Rema LM1000H");
+    
+    // 输出雷马连接参数（便于现场排查）
+    if (remaOptions != null)
+    {
+        Console.WriteLine($"  串口号: {remaOptions.PortName}");
+        Console.WriteLine($"  波特率: {remaOptions.BaudRate}");
+        Console.WriteLine($"  数据位: {remaOptions.DataBits}");
+        Console.WriteLine($"  奇偶校验: {remaOptions.Parity}");
+        Console.WriteLine($"  停止位: {remaOptions.StopBits}");
+        Console.WriteLine($"  站号: {remaOptions.SlaveAddress}");
+        Console.WriteLine($"  读取超时: {remaOptions.ReadTimeout.TotalMilliseconds} ms");
+        Console.WriteLine($"  写入超时: {remaOptions.WriteTimeout.TotalMilliseconds} ms");
+        Console.WriteLine($"  最大重试: {remaOptions.MaxRetries}");
+    }
+}
+else
+{
+    throw new InvalidOperationException(
+        $"不支持的主线驱动实现类型: {mainLineMode}");
 }
 
 // 注册小车参数驱动
@@ -676,21 +683,21 @@ app.MapHub<NarrowBeltLiveHub>("/hubs/narrowbelt-live");
 // 输出启动信息
 var logger = app.Services.GetRequiredService<ILogger<Program>>();
 logger.LogInformation("=== 系统启动模式: {Mode} ===", startupConfig.GetModeDescription());
-logger.LogInformation("主线驱动实现: {Implementation}", mainLineDriveOptions.GetImplementationDescription());
+logger.LogInformation("主线驱动实现: {Implementation}", mainLineMode);
 
 // 输出雷马连接参数（当使用 RemaLm1000H 模式时）
-if (mainLineDriveOptions.Implementation == MainLineDriveImplementation.RemaLm1000H && mainLineDriveOptions.Rema != null)
+if (mainLineMode == "RemaLm1000H" && remaOptions != null)
 {
     logger.LogInformation("雷马 LM1000H 连接参数:");
-    logger.LogInformation("  串口号: {PortName}", mainLineDriveOptions.Rema.PortName);
-    logger.LogInformation("  波特率: {BaudRate}", mainLineDriveOptions.Rema.BaudRate);
-    logger.LogInformation("  数据位: {DataBits}", mainLineDriveOptions.Rema.DataBits);
-    logger.LogInformation("  奇偶校验: {Parity}", mainLineDriveOptions.Rema.Parity);
-    logger.LogInformation("  停止位: {StopBits}", mainLineDriveOptions.Rema.StopBits);
-    logger.LogInformation("  站号: {SlaveAddress}", mainLineDriveOptions.Rema.SlaveAddress);
-    logger.LogInformation("  读取超时: {ReadTimeout} ms", mainLineDriveOptions.Rema.ReadTimeout.TotalMilliseconds);
-    logger.LogInformation("  写入超时: {WriteTimeout} ms", mainLineDriveOptions.Rema.WriteTimeout.TotalMilliseconds);
-    logger.LogInformation("  最大重试: {MaxRetries}", mainLineDriveOptions.Rema.MaxRetries);
+    logger.LogInformation("  串口号: {PortName}", remaOptions.PortName);
+    logger.LogInformation("  波特率: {BaudRate}", remaOptions.BaudRate);
+    logger.LogInformation("  数据位: {DataBits}", remaOptions.DataBits);
+    logger.LogInformation("  奇偶校验: {Parity}", remaOptions.Parity);
+    logger.LogInformation("  停止位: {StopBits}", remaOptions.StopBits);
+    logger.LogInformation("  站号: {SlaveAddress}", remaOptions.SlaveAddress);
+    logger.LogInformation("  读取超时: {ReadTimeout} ms", remaOptions.ReadTimeout.TotalMilliseconds);
+    logger.LogInformation("  写入超时: {WriteTimeout} ms", remaOptions.WriteTimeout.TotalMilliseconds);
+    logger.LogInformation("  最大重试: {MaxRetries}", remaOptions.MaxRetries);
 }
 
 logger.LogInformation("已启动服务:");
