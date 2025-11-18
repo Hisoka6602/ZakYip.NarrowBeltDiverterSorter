@@ -229,7 +229,34 @@ builder.Services.AddHostedService<LiveViewBridgeService>();
 // 注册配置存储 (Infrastructure)
 // ============================================================================
 
-builder.Services.AddSingleton<ISorterConfigurationStore, LiteDbSorterConfigurationStore>();
+// 解析 LiteDB 配置并初始化数据库路径
+var liteDbSection = builder.Configuration.GetSection("LiteDb");
+var liteDbOptions = liteDbSection.Get<ZakYip.NarrowBeltDiverterSorter.Infrastructure.LiteDb.LiteDbOptions>() 
+                 ?? new ZakYip.NarrowBeltDiverterSorter.Infrastructure.LiteDb.LiteDbOptions 
+                 { 
+                     FilePath = "AppData/NarrowBeltConfig.db" 
+                 };
+
+// 使用运行目录作为根目录解析为绝对路径
+var rootPath = AppContext.BaseDirectory;
+var fullPath = Path.GetFullPath(Path.Combine(rootPath, liteDbOptions.FilePath));
+
+// 确保目录存在
+var directory = Path.GetDirectoryName(fullPath);
+if (!string.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
+{
+    Directory.CreateDirectory(directory);
+    Console.WriteLine($"已创建配置数据库目录: {directory}");
+}
+
+Console.WriteLine($"已初始化配置数据库: {fullPath}");
+
+// 注册 LiteDbSorterConfigurationStore，使用解析后的绝对路径
+builder.Services.AddSingleton<ISorterConfigurationStore>(sp =>
+{
+    var logger = sp.GetRequiredService<ILogger<LiteDbSorterConfigurationStore>>();
+    return new LiteDbSorterConfigurationStore(logger, fullPath);
+});
 
 // 注册旧的 IConfigStore 用于兼容性（已废弃但某些代码仍在使用）
 #pragma warning disable CS0618 // Type or member is obsolete
