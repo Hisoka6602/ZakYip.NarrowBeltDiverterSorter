@@ -443,3 +443,138 @@ public sealed record SignalRPushConfigurationDto
     public int OnlineParcelsPushPeriodMs { get; set; } = 1000;
     public bool EnableOnlineParcelsPush { get; set; } = true;
 }
+
+/// <summary>
+/// Sorter 配置 DTO
+/// </summary>
+/// <remarks>
+/// Sorter 分拣机完整配置，包含主线驱动模式选择和串口连接参数
+/// </remarks>
+/// <example>
+/// {
+///   "mainLine": {
+///     "mode": "Simulation",
+///     "rema": {
+///       "portName": "COM3",
+///       "baudRate": 38400,
+///       "dataBits": 8,
+///       "parity": "None",
+///       "stopBits": "One",
+///       "slaveAddress": 1,
+///       "readTimeout": "00:00:01.200",
+///       "writeTimeout": "00:00:01.200",
+///       "connectTimeout": "00:00:03",
+///       "maxRetries": 3,
+///       "retryDelay": "00:00:00.200"
+///     }
+///   }
+/// }
+/// </example>
+public sealed record SorterConfigurationDto
+{
+    /// <summary>
+    /// 主线配置
+    /// </summary>
+    public SorterMainLineConfigurationDto MainLine { get; set; } = new();
+}
+
+/// <summary>
+/// Sorter 主线配置 DTO
+/// </summary>
+public sealed record SorterMainLineConfigurationDto
+{
+    /// <summary>
+    /// 主线驱动模式
+    /// </summary>
+    /// <remarks>
+    /// 可选值：Simulation（仿真）或 RemaLm1000H（真实硬件）
+    /// </remarks>
+    /// <example>Simulation</example>
+    public string Mode { get; set; } = "Simulation";
+
+    /// <summary>
+    /// Rema 串口连接配置
+    /// </summary>
+    /// <remarks>
+    /// 当 Mode 为 RemaLm1000H 时使用
+    /// </remarks>
+    public RemaConnectionConfigurationDto Rema { get; set; } = new();
+}
+
+/// <summary>
+/// Rema LM1000H 串口连接配置 DTO
+/// </summary>
+public sealed record RemaConnectionConfigurationDto
+{
+    /// <summary>
+    /// 串口号
+    /// </summary>
+    /// <example>COM3</example>
+    public string PortName { get; set; } = "COM3";
+
+    /// <summary>
+    /// 波特率
+    /// </summary>
+    /// <example>38400</example>
+    public int BaudRate { get; set; } = 38400;
+
+    /// <summary>
+    /// 数据位
+    /// </summary>
+    /// <example>8</example>
+    public int DataBits { get; set; } = 8;
+
+    /// <summary>
+    /// 奇偶校验
+    /// </summary>
+    /// <remarks>
+    /// 可选值：None, Odd, Even, Mark, Space
+    /// </remarks>
+    /// <example>None</example>
+    public string Parity { get; set; } = "None";
+
+    /// <summary>
+    /// 停止位
+    /// </summary>
+    /// <remarks>
+    /// 可选值：None, One, Two, OnePointFive
+    /// </remarks>
+    /// <example>One</example>
+    public string StopBits { get; set; } = "One";
+
+    /// <summary>
+    /// Modbus 从站地址
+    /// </summary>
+    /// <example>1</example>
+    public int SlaveAddress { get; set; } = 1;
+
+    /// <summary>
+    /// 读取超时（TimeSpan 格式）
+    /// </summary>
+    /// <example>00:00:01.200</example>
+    public string ReadTimeout { get; set; } = "00:00:01.200";
+
+    /// <summary>
+    /// 写入超时（TimeSpan 格式）
+    /// </summary>
+    /// <example>00:00:01.200</example>
+    public string WriteTimeout { get; set; } = "00:00:01.200";
+
+    /// <summary>
+    /// 连接超时（TimeSpan 格式）
+    /// </summary>
+    /// <example>00:00:03</example>
+    public string ConnectTimeout { get; set; } = "00:00:03";
+
+    /// <summary>
+    /// 最大重试次数
+    /// </summary>
+    /// <example>3</example>
+    public int MaxRetries { get; set; } = 3;
+
+    /// <summary>
+    /// 重试延迟（TimeSpan 格式）
+    /// </summary>
+    /// <example>00:00:00.200</example>
+    public string RetryDelay { get; set; } = "00:00:00.200";
+}

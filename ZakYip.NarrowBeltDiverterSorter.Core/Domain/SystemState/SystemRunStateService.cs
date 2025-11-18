@@ -11,7 +11,7 @@ public class SystemRunStateService : ISystemRunStateService
 
     public SystemRunStateService()
     {
-        _currentState = SystemRunState.Ready; // 默认状态为就绪
+        _currentState = SystemRunState.Stopped; // 默认状态为停止，需要通过面板启动按钮切换到运行状态
     }
 
     /// <inheritdoc/>
@@ -43,7 +43,7 @@ public class SystemRunStateService : ISystemRunStateService
                 return OperationResult.Failure("系统已处于运行状态");
             }
 
-            // 从就绪或停止状态可以启动
+            // 从停止状态可以启动
             _currentState = SystemRunState.Running;
             return OperationResult.Success();
         }
@@ -66,7 +66,7 @@ public class SystemRunStateService : ISystemRunStateService
                 return OperationResult.Failure("系统已处于停止状态");
             }
 
-            // 从就绪或运行状态可以停止
+            // 从运行状态可以停止
             _currentState = SystemRunState.Stopped;
             return OperationResult.Success();
         }
@@ -100,8 +100,8 @@ public class SystemRunStateService : ISystemRunStateService
                 return OperationResult.Failure($"系统当前状态为 {_currentState}，不需要解除急停");
             }
 
-            // 急停解除后进入就绪状态
-            _currentState = SystemRunState.Ready;
+            // 急停解除后进入停止状态（而非就绪状态），需要通过启动按钮才能运行
+            _currentState = SystemRunState.Stopped;
             return OperationResult.Success();
         }
     }
@@ -115,9 +115,9 @@ public class SystemRunStateService : ISystemRunStateService
             {
                 var errorMessage = _currentState switch
                 {
-                    SystemRunState.Ready => $"系统当前未处于运行状态，禁止创建包裹。当前状态: 就绪",
                     SystemRunState.Stopped => $"系统当前未处于运行状态，禁止创建包裹。当前状态: 停止",
                     SystemRunState.Fault => $"系统当前处于故障状态，禁止创建包裹",
+                    SystemRunState.Ready => $"系统当前未处于运行状态，禁止创建包裹。当前状态: 就绪（不应出现此状态）",
                     _ => $"系统当前未处于运行状态，禁止创建包裹。当前状态: {_currentState}"
                 };
 

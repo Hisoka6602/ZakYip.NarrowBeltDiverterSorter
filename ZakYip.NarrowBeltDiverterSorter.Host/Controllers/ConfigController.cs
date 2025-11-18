@@ -22,6 +22,7 @@ public class ConfigController : ControllerBase
     private readonly ILogger<ConfigController> _logger;
     private readonly ZakYip.NarrowBeltDiverterSorter.Host.Configuration.IHostConfigurationProvider? _hostConfigProvider;
     private readonly ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration.IAppConfigurationStore? _appConfigStore;
+    private readonly ISorterConfigurationProvider? _sorterConfigProvider;
 
     public ConfigController(
         IMainLineOptionsRepository mainLineRepo,
@@ -30,7 +31,8 @@ public class ConfigController : ControllerBase
         ILongRunLoadTestOptionsRepository longRunLoadTestRepo,
         ILogger<ConfigController> logger,
         ZakYip.NarrowBeltDiverterSorter.Host.Configuration.IHostConfigurationProvider? hostConfigProvider = null,
-        ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration.IAppConfigurationStore? appConfigStore = null)
+        ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration.IAppConfigurationStore? appConfigStore = null,
+        ISorterConfigurationProvider? sorterConfigProvider = null)
     {
         _mainLineRepo = mainLineRepo ?? throw new ArgumentNullException(nameof(mainLineRepo));
         _infeedLayoutRepo = infeedLayoutRepo ?? throw new ArgumentNullException(nameof(infeedLayoutRepo));
@@ -39,6 +41,7 @@ public class ConfigController : ControllerBase
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _hostConfigProvider = hostConfigProvider;
         _appConfigStore = appConfigStore;
+        _sorterConfigProvider = sorterConfigProvider;
     }
 
     /// <summary>
@@ -642,6 +645,125 @@ public class ConfigController : ControllerBase
         {
             _logger.LogError(ex, "更新 SignalR 推送配置失败");
             return StatusCode(500, new { error = "更新 SignalR 推送配置失败", message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// 获取 Sorter 配置
+    /// </summary>
+    /// <remarks>
+    /// 获取 Sorter 分拣机配置，包含主线驱动模式和 Rema 串口连接参数
+    /// </remarks>
+    /// <returns>Sorter 配置对象</returns>
+    [HttpGet("sorter")]
+    [ProducesResponseType(typeof(SorterConfigurationDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetSorterConfiguration(CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (_sorterConfigProvider == null)
+            {
+                return StatusCode(500, new { error = "Sorter 配置提供器未初始化" });
+            }
+
+            var config = await _sorterConfigProvider.LoadAsync(cancellationToken);
+            var dto = new SorterConfigurationDto
+            {
+                MainLine = new SorterMainLineConfigurationDto
+                {
+                    Mode = config.MainLine.Mode,
+                    Rema = new RemaConnectionConfigurationDto
+                    {
+                        PortName = config.MainLine.Rema.PortName,
+                        BaudRate = config.MainLine.Rema.BaudRate,
+                        DataBits = config.MainLine.Rema.DataBits,
+                        Parity = config.MainLine.Rema.Parity,
+                        StopBits = config.MainLine.Rema.StopBits,
+                        SlaveAddress = config.MainLine.Rema.SlaveAddress,
+                        ReadTimeout = config.MainLine.Rema.ReadTimeout.ToString(),
+                        WriteTimeout = config.MainLine.Rema.WriteTimeout.ToString(),
+                        ConnectTimeout = config.MainLine.Rema.ConnectTimeout.ToString(),
+                        MaxRetries = config.MainLine.Rema.MaxRetries,
+                        RetryDelay = config.MainLine.Rema.RetryDelay.ToString()
+                    }
+                }
+            };
+            return Ok(dto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "获取 Sorter 配置失败");
+            return StatusCode(500, new { error = "获取 Sorter 配置失败", message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// 更新 Sorter 配置
+    /// </summary>
+    /// <remarks>
+    /// 更新 Sorter 分拣机配置，包含主线驱动模式和 Rema 串口连接参数。
+    /// 更新后配置将保存到 LiteDB 并立即生效（热更新）。
+    /// 注意：切换主线驱动模式需要重启应用才能生效。
+    /// </remarks>
+    /// <param name="dto">Sorter 配置 DTO</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>操作结果</returns>
+    [HttpPut("sorter")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> UpdateSorterConfiguration(
+        [FromBody] SorterConfigurationDto dto,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (_sorterConfigProvider == null)
+            {
+                return StatusCode(500, new { error = "Sorter 配置提供器未初始化" });
+            }
+
+            // 验证 Mode
+            if (string.IsNullOrWhiteSpace(dto.MainLine.Mode))
+            {
+                return BadRequest(new { error = "Mode 不能为空" });
+            }
+
+            if (dto.MainLine.Mode != "Simulation" && dto.MainLine.Mode != "RemaLm1000H")
+            {
+                return BadRequest(new { error = "Mode 只能是 Simulation 或 RemaLm1000H" });
+            }
+
+            // 转换 DTO 到领域模型
+            var config = new SorterOptions
+            {
+                MainLine = new SorterMainLineOptions
+                {
+                    Mode = dto.MainLine.Mode,
+                    Rema = new RemaConnectionOptions
+                    {
+                        PortName = dto.MainLine.Rema.PortName,
+                        BaudRate = dto.MainLine.Rema.BaudRate,
+                        DataBits = dto.MainLine.Rema.DataBits,
+                        Parity = dto.MainLine.Rema.Parity,
+                        StopBits = dto.MainLine.Rema.StopBits,
+                        SlaveAddress = dto.MainLine.Rema.SlaveAddress,
+                        ReadTimeout = TimeSpan.Parse(dto.MainLine.Rema.ReadTimeout),
+                        WriteTimeout = TimeSpan.Parse(dto.MainLine.Rema.WriteTimeout),
+                        ConnectTimeout = TimeSpan.Parse(dto.MainLine.Rema.ConnectTimeout),
+                        MaxRetries = dto.MainLine.Rema.MaxRetries,
+                        RetryDelay = TimeSpan.Parse(dto.MainLine.Rema.RetryDelay)
+                    }
+                }
+            };
+
+            await _sorterConfigProvider.UpdateAsync(config, cancellationToken);
+            _logger.LogInformation("Sorter 配置已更新");
+            return Ok(new { message = "Sorter 配置已更新（切换主线驱动模式需要重启应用）" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "更新 Sorter 配置失败");
+            return StatusCode(500, new { error = "更新 Sorter 配置失败", message = ex.Message });
         }
     }
 }
