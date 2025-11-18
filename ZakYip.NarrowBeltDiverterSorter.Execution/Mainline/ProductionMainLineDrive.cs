@@ -2,7 +2,7 @@ using Microsoft.Extensions.Logging;
 using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.MainLine;
 
-namespace ZakYip.NarrowBeltDiverterSorter.Execution.MainLine;
+namespace ZakYip.NarrowBeltDiverterSorter.Execution.Mainline;
 
 /// <summary>
 /// 生产环境主驱动线控制实现

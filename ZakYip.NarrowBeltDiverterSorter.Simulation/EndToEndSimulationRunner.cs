@@ -8,7 +8,9 @@ using ZakYip.NarrowBeltDiverterSorter.Core.Domain.MainLine;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Parcels;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Sorting;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Tracking;
-using ZakYip.NarrowBeltDiverterSorter.Execution.MainLine;
+using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
+using ZakYip.NarrowBeltDiverterSorter.Execution.Mainline;
+using ZakYip.NarrowBeltDiverterSorter.Execution.Vendors.Simulated;
 using ZakYip.NarrowBeltDiverterSorter.Simulation.Fakes;
 using ZakYip.NarrowBeltDiverterSorter.UpstreamContracts.Models;
 
@@ -473,7 +475,7 @@ public class EndToEndSimulationRunner
     {
         // 检查反馈是否可用（仅适用于 Rema 模式）
         bool? isFeedbackAvailable = null;
-        if (_mainLineDrive is Execution.MainLine.Rema.RemaLm1000HMainLineDrive remaDrive)
+        if (_mainLineDrive is Execution.Vendors.Rema.RemaLm1000HMainLineDrive remaDrive)
         {
             isFeedbackAvailable = remaDrive.IsFeedbackAvailable;
             

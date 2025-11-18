@@ -1,4 +1,4 @@
-namespace ZakYip.NarrowBeltDiverterSorter.Execution.MainLine;
+namespace ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 
 /// <summary>
 /// 主驱动线控制接口。

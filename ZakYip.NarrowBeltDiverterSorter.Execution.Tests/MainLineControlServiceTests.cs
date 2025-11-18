@@ -4,7 +4,9 @@ using Moq;
 using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.MainLine;
-using ZakYip.NarrowBeltDiverterSorter.Execution.MainLine;
+using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
+using ZakYip.NarrowBeltDiverterSorter.Execution.Mainline;
+using ZakYip.NarrowBeltDiverterSorter.Execution.Vendors.Simulated;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Execution.Tests;
 
