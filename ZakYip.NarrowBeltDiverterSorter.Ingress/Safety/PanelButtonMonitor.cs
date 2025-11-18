@@ -23,6 +23,9 @@ public class PanelButtonMonitor
     private bool _lastStopButtonState = false;
     private bool _lastEmergencyStopState = false;
     private bool _lastEmergencyResetState = false;
+    
+    // 面板启动 IO 配置有效性标志
+    private bool _panelStartConfigured = false;
 
     public PanelButtonMonitor(
         IFieldBusClient fieldBusClient,
@@ -44,6 +47,19 @@ public class PanelButtonMonitor
     public async Task RunAsync(CancellationToken cancellationToken)
     {
         _logger.LogInformation("面板按钮监控器已启动，监控周期: {Period}ms", _config.MonitorPeriodMs);
+
+        // 检查面板启动输入配置有效性
+        // 如果启动按钮地址为 0 或负数，视为未配置
+        if (_config.StartButtonAddress <= 0)
+        {
+            _logger.LogWarning("面板启动输入未配置，系统将保持停止状态，主线不会进入运行模式");
+            _panelStartConfigured = false;
+        }
+        else
+        {
+            _logger.LogInformation("面板启动输入已配置，地址: {Address}", _config.StartButtonAddress);
+            _panelStartConfigured = true;
+        }
 
         var period = TimeSpan.FromMilliseconds(_config.MonitorPeriodMs);
 
@@ -136,6 +152,13 @@ public class PanelButtonMonitor
     /// </summary>
     private async Task HandleStartButtonPressedAsync()
     {
+        // 未配置启动 IO 时，不允许触发 SetRunning()
+        if (!_panelStartConfigured)
+        {
+            _logger.LogWarning("面板启动输入未配置，无法启动系统");
+            return;
+        }
+        
         var result = _systemRunStateService.TryHandleStart();
         if (result.IsSuccess)
         {

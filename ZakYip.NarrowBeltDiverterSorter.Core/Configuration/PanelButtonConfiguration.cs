@@ -33,15 +33,16 @@ public sealed record PanelButtonConfiguration
 
     /// <summary>
     /// 创建默认配置（用于测试）
+    /// 注意：StartButtonAddress = 0 表示未配置，系统将无法进入运行状态
     /// </summary>
     public static PanelButtonConfiguration CreateDefault()
     {
         return new PanelButtonConfiguration
         {
-            StartButtonAddress = 2000,
-            StopButtonAddress = 2001,
-            EmergencyStopButtonAddress = 2002,
-            EmergencyResetButtonAddress = 2003,
+            StartButtonAddress = 0,     // 0 表示未配置
+            StopButtonAddress = 0,      // 0 表示未配置
+            EmergencyStopButtonAddress = 0,  // 0 表示未配置
+            EmergencyResetButtonAddress = 0, // 0 表示未配置
             MonitorPeriodMs = 100
         };
     }
