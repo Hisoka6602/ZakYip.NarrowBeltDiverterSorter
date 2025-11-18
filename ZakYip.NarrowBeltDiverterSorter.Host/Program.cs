@@ -480,6 +480,22 @@ builder.Services.AddSingleton<IMainLineStabilityProvider, MainLineStabilityProvi
 builder.Services.AddSingleton<IChuteSafetyService, ChuteSafetyService>();
 
 // ============================================================================
+// 注册执行运行时（Execution Runtime）
+// ============================================================================
+
+// 注册主线控制运行时
+builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Domain.Runtime.IMainLineRuntime, 
+    ZakYip.NarrowBeltDiverterSorter.Execution.Runtime.MainLineRuntime>();
+
+// 注册包裹路由运行时
+builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Domain.Runtime.IParcelRoutingRuntime, 
+    ZakYip.NarrowBeltDiverterSorter.Execution.Runtime.ParcelRoutingRuntime>();
+
+// 注册安全控制运行时
+builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Domain.Runtime.ISafetyRuntime, 
+    ZakYip.NarrowBeltDiverterSorter.Execution.Runtime.SafetyRuntime>();
+
+// ============================================================================
 // 注册安全编排器和安全输入监控器
 // ============================================================================
 
