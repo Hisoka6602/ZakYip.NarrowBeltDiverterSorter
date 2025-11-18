@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using ZakYip.NarrowBeltDiverterSorter.Host.DTOs.Recording;
+using ZakYip.NarrowBeltDiverterSorter.Host.Contracts.Recording;
 using ZakYip.NarrowBeltDiverterSorter.Observability.Recording;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Host.Controllers;
