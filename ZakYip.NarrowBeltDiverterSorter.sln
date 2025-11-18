@@ -9,7 +9,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZakYip.NarrowBeltDiverterSo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZakYip.NarrowBeltDiverterSorter.Ingress", "ZakYip.NarrowBeltDiverterSorter.Ingress\ZakYip.NarrowBeltDiverterSorter.Ingress.csproj", "{EBED8A72-81A8-49AE-A1A7-05BD193A09CE}"
 EndProject
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZakYip.NarrowBeltDiverterSorter.Communication", "ZakYip.NarrowBeltDiverterSorter.Communication\ZakYip.NarrowBeltDiverterSorter.Communication.csproj", "{2FE7E4AF-D395-49E9-8C92-064AE676E71C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZakYip.NarrowBeltDiverterSorter.Observability", "ZakYip.NarrowBeltDiverterSorter.Observability\ZakYip.NarrowBeltDiverterSorter.Observability.csproj", "{36F2F583-C470-4B28-8AFE-23CEF8D42888}"
@@ -28,12 +27,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZakYip.NarrowBeltDiverterSo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZakYip.NarrowBeltDiverterSorter.UpstreamContracts", "ZakYip.NarrowBeltDiverterSorter.UpstreamContracts\ZakYip.NarrowBeltDiverterSorter.UpstreamContracts.csproj", "{CF6BC91F-778F-4988-B475-07D85DC6F5A7}"
 EndProject
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZakYip.NarrowBeltDiverterSorter.Simulation", "ZakYip.NarrowBeltDiverterSorter.Simulation\ZakYip.NarrowBeltDiverterSorter.Simulation.csproj", "{1FEB42B5-1AAA-42E5-9208-6DC0FA45FE93}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZakYip.NarrowBeltDiverterSorter.Infrastructure", "ZakYip.NarrowBeltDiverterSorter.Infrastructure\ZakYip.NarrowBeltDiverterSorter.Infrastructure.csproj", "{6FE61298-ECCA-43D8-9C3A-B21F83175AE9}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZakYip.NarrowBeltDiverterSorter.Infrastructure.Tests", "ZakYip.NarrowBeltDiverterSorter.Infrastructure.Tests\ZakYip.NarrowBeltDiverterSorter.Infrastructure.Tests.csproj", "{322855B0-67BA-4FE9-AEED-A509F1DC62CA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZakYip.NarrowBeltDiverterSorter.Host.Contracts", "ZakYip.NarrowBeltDiverterSorter.Host.Contracts\ZakYip.NarrowBeltDiverterSorter.Host.Contracts.csproj", "{F30F51B8-9E8F-4F30-B9A2-B6BA38D6388B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -225,6 +225,18 @@ Global
 		{322855B0-67BA-4FE9-AEED-A509F1DC62CA}.Release|x64.Build.0 = Release|Any CPU
 		{322855B0-67BA-4FE9-AEED-A509F1DC62CA}.Release|x86.ActiveCfg = Release|Any CPU
 		{322855B0-67BA-4FE9-AEED-A509F1DC62CA}.Release|x86.Build.0 = Release|Any CPU
+		{F30F51B8-9E8F-4F30-B9A2-B6BA38D6388B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F30F51B8-9E8F-4F30-B9A2-B6BA38D6388B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F30F51B8-9E8F-4F30-B9A2-B6BA38D6388B}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{F30F51B8-9E8F-4F30-B9A2-B6BA38D6388B}.Debug|x64.Build.0 = Debug|Any CPU
+		{F30F51B8-9E8F-4F30-B9A2-B6BA38D6388B}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{F30F51B8-9E8F-4F30-B9A2-B6BA38D6388B}.Debug|x86.Build.0 = Debug|Any CPU
+		{F30F51B8-9E8F-4F30-B9A2-B6BA38D6388B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F30F51B8-9E8F-4F30-B9A2-B6BA38D6388B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F30F51B8-9E8F-4F30-B9A2-B6BA38D6388B}.Release|x64.ActiveCfg = Release|Any CPU
+		{F30F51B8-9E8F-4F30-B9A2-B6BA38D6388B}.Release|x64.Build.0 = Release|Any CPU
+		{F30F51B8-9E8F-4F30-B9A2-B6BA38D6388B}.Release|x86.ActiveCfg = Release|Any CPU
+		{F30F51B8-9E8F-4F30-B9A2-B6BA38D6388B}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

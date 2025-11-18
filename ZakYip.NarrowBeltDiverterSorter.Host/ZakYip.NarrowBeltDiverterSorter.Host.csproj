@@ -24,6 +24,7 @@
     <ProjectReference Include="..\ZakYip.NarrowBeltDiverterSorter.Observability\ZakYip.NarrowBeltDiverterSorter.Observability.csproj" />
     <ProjectReference Include="..\ZakYip.NarrowBeltDiverterSorter.Ingress\ZakYip.NarrowBeltDiverterSorter.Ingress.csproj" />
     <ProjectReference Include="..\ZakYip.NarrowBeltDiverterSorter.Infrastructure\ZakYip.NarrowBeltDiverterSorter.Infrastructure.csproj" />
+    <ProjectReference Include="..\ZakYip.NarrowBeltDiverterSorter.Host.Contracts\ZakYip.NarrowBeltDiverterSorter.Host.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

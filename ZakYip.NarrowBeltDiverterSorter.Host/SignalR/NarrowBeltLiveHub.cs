@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
+using ZakYip.NarrowBeltDiverterSorter.Host.Contracts.SignalR;
 using ZakYip.NarrowBeltDiverterSorter.Observability.LiveView;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Host.SignalR;

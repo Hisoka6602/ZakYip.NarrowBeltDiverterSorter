@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using ZakYip.NarrowBeltDiverterSorter.Core.Configuration;
+using ZakYip.NarrowBeltDiverterSorter.Host.Contracts.API;
 using ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
 // Note: INarrowBeltSimulationScenarioRunner and related types cannot be used due to circular dependency
 // between Host and Simulation projects. This will be resolved in a future PR.
@@ -215,53 +216,3 @@ public class SimulationsController : ControllerBase
     }
     */
 }
-
-/// <summary>
-/// 长跑仿真启动响应。
-/// </summary>
-public class LongRunSimulationStartResponse
-{
-    /// <summary>
-    /// 仿真运行 ID。
-    /// </summary>
-    public required string RunId { get; init; }
-
-    /// <summary>
-    /// 仿真状态。
-    /// </summary>
-    public required string Status { get; init; }
-
-    /// <summary>
-    /// 响应消息。
-    /// </summary>
-    public required string Message { get; init; }
-
-    /// <summary>
-    /// 仿真配置摘要。
-    /// </summary>
-    public required object Configuration { get; init; }
-}
-
-// Note: NarrowBeltSimulationRunResponse is commented out due to circular dependency
-/*
-/// <summary>
-/// 窄带仿真运行响应。
-/// </summary>
-public class NarrowBeltSimulationRunResponse
-{
-    /// <summary>
-    /// 仿真运行 ID。
-    /// </summary>
-    public required string RunId { get; init; }
-
-    /// <summary>
-    /// 仿真状态。
-    /// </summary>
-    public required string Status { get; init; }
-
-    /// <summary>
-    /// 仿真统计信息。
-    /// </summary>
-    public required SimulationStatistics Statistics { get; init; }
-}
-*/
