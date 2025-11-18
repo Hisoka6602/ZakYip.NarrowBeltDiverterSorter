@@ -258,6 +258,13 @@ builder.Services.AddSingleton<ISorterConfigurationStore>(sp =>
     return new LiteDbSorterConfigurationStore(logger, fullPath);
 });
 
+// 注册 IChuteTransmitterConfigurationPort（使用同一个 LiteDbSorterConfigurationStore 实例）
+builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Abstractions.IChuteTransmitterConfigurationPort>(sp =>
+{
+    return sp.GetRequiredService<ISorterConfigurationStore>() as LiteDbSorterConfigurationStore
+        ?? throw new InvalidOperationException("LiteDbSorterConfigurationStore 未正确注册");
+});
+
 // 注册旧的 IConfigStore 用于兼容性（已废弃但某些代码仍在使用）
 #pragma warning disable CS0618 // Type or member is obsolete
 builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration.IConfigStore, ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration.LiteDbConfigStore>();
@@ -746,4 +753,51 @@ if (startupConfig.ShouldStartParcelRoutingWorker())
 logger.LogInformation("Web API 已启用，Swagger UI: /swagger");
 logger.LogInformation("SignalR Hub 已启用，Hub 端点: /hubs/narrowbelt-live");
 
+// ============================================================================
+// 启动时加载格口 IO 配置并注册到 IChuteTransmitterPort
+// ============================================================================
+await InitializeChuteIoConfigurationsAsync(app.Services, logger);
+
 app.Run();
+
+// ============================================================================
+// 辅助方法：加载格口 IO 配置并注册
+// ============================================================================
+static async Task InitializeChuteIoConfigurationsAsync(IServiceProvider services, ILogger logger)
+{
+    try
+    {
+        // 获取配置端口和发信器端口
+        var chuteConfigPort = services.GetService<ZakYip.NarrowBeltDiverterSorter.Core.Abstractions.IChuteTransmitterConfigurationPort>();
+        var chuteTransmitterPort = services.GetService<IChuteTransmitterPort>();
+
+        if (chuteConfigPort == null || chuteTransmitterPort == null)
+        {
+            logger.LogWarning("格口 IO 配置端口或发信器端口未注册，跳过格口配置加载");
+            return;
+        }
+
+        // 从 LiteDB 加载格口 IO 配置
+        var bindings = await chuteConfigPort.GetAllBindingsAsync();
+
+        if (bindings.Count == 0)
+        {
+            logger.LogWarning("格口 IO 配置为空，将无法进行真实分拣，仅能进行主线与小车仿真。");
+        }
+        else
+        {
+            logger.LogInformation("加载到 {Count} 条格口 IO 配置，将注册到 IChuteTransmitterPort。", bindings.Count);
+
+            // 如果 ChuteTransmitterDriver 有 RegisterBindings 方法，调用它
+            if (chuteTransmitterPort is ZakYip.NarrowBeltDiverterSorter.Execution.Chute.ChuteTransmitterDriver driver)
+            {
+                driver.RegisterBindings(bindings);
+                logger.LogInformation("已成功注册 {Count} 条格口 IO 配置到 ChuteTransmitterDriver。", bindings.Count);
+            }
+        }
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "加载格口 IO 配置时发生异常");
+    }
+}

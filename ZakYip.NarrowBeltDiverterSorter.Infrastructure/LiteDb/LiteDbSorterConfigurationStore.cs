@@ -182,7 +182,12 @@ public sealed class LiteDbSorterConfigurationStore : ISorterConfigurationStore, 
             try
             {
                 var collection = _database.GetCollection<ChuteTransmitterBinding>(ChuteBindingsCollectionName);
-                collection.Upsert(binding);
+                
+                // 删除已存在的记录（按 ChuteId）
+                collection.DeleteMany(Query.EQ("ChuteId", binding.ChuteId));
+                
+                // 插入新记录
+                collection.Insert(binding);
                 _logger.LogDebug("已保存格口 {ChuteId} 的发信器绑定配置", binding.ChuteId);
             }
             catch (Exception ex)
