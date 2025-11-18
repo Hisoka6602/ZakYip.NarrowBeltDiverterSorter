@@ -285,17 +285,36 @@ builder.Services.AddSingleton<ISortingRuleEngineClient>(sp =>
     var factory = sp.GetRequiredService<SortingRuleEngineClientFactory>();
     var client = factory.CreateClient(options);
     
+    // 更新 LiveView 中的上游状态
+    var liveView = sp.GetRequiredService<INarrowBeltLiveView>() as NarrowBeltLiveView;
+    if (liveView != null)
+    {
+        liveView.UpdateUpstreamStatus(options.Mode.ToString(), client.ConnectionState.ToString());
+    }
+    
     // 如果不是 Disabled 模式，尝试连接
     if (options.Mode != UpstreamMode.Disabled)
     {
         try
         {
             client.ConnectAsync().AsTask().GetAwaiter().GetResult();
+            
+            // 更新连接状态
+            if (liveView != null)
+            {
+                liveView.UpdateUpstreamStatus(options.Mode.ToString(), client.ConnectionState.ToString());
+            }
         }
         catch (Exception ex)
         {
             var logger = sp.GetRequiredService<ILogger<Program>>();
             logger.LogError(ex, "连接到规则引擎失败，将继续使用默认格口");
+            
+            // 更新错误状态
+            if (liveView != null)
+            {
+                liveView.UpdateUpstreamStatus(options.Mode.ToString(), "Error", ex.Message);
+            }
         }
     }
     

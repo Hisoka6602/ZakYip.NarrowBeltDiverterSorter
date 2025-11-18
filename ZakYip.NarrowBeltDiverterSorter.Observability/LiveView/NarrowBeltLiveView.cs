@@ -68,6 +68,14 @@ public class NarrowBeltLiveView : INarrowBeltLiveView, IDisposable
         LastUpdatedAt = DateTimeOffset.UtcNow
     };
 
+    private UpstreamStatusSnapshot _upstreamStatusSnapshot = new()
+    {
+        Mode = "Disabled",
+        ConnectionState = "Disconnected",
+        Message = null,
+        LastUpdatedAt = DateTimeOffset.UtcNow
+    };
+
     public NarrowBeltLiveView(IEventBus eventBus, ILogger<NarrowBeltLiveView> logger)
     {
         _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
@@ -363,6 +371,33 @@ public class NarrowBeltLiveView : INarrowBeltLiveView, IDisposable
         {
             return _safetyStateSnapshot;
         }
+    }
+
+    public UpstreamStatusSnapshot GetUpstreamStatus()
+    {
+        lock (_lock)
+        {
+            return _upstreamStatusSnapshot;
+        }
+    }
+
+    /// <summary>
+    /// 更新上游状态（供外部调用）
+    /// </summary>
+    public void UpdateUpstreamStatus(string mode, string connectionState, string? message = null)
+    {
+        lock (_lock)
+        {
+            _upstreamStatusSnapshot = new UpstreamStatusSnapshot
+            {
+                Mode = mode,
+                ConnectionState = connectionState,
+                Message = message,
+                LastUpdatedAt = DateTimeOffset.UtcNow
+            };
+        }
+        
+        _logger.LogDebug("上游状态已更新: Mode={Mode}, ConnectionState={ConnectionState}", mode, connectionState);
     }
 
     public void Dispose()

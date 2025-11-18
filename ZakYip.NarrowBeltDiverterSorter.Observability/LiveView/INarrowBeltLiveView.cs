@@ -60,4 +60,9 @@ public interface INarrowBeltLiveView
     /// 获取安全状态快照
     /// </summary>
     SafetyStateSnapshot GetSafetyState();
+
+    /// <summary>
+    /// 获取上游规则引擎状态快照
+    /// </summary>
+    UpstreamStatusSnapshot GetUpstreamStatus();
 }

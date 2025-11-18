@@ -187,3 +187,29 @@ public record class SafetyStateSnapshot
     /// </summary>
     public DateTimeOffset LastUpdatedAt { get; init; }
 }
+
+/// <summary>
+/// 上游规则引擎状态快照
+/// </summary>
+public record class UpstreamStatusSnapshot
+{
+    /// <summary>
+    /// 上游模式 (Disabled / Mqtt / Tcp)
+    /// </summary>
+    public string Mode { get; init; } = "Disabled";
+
+    /// <summary>
+    /// 连接状态 (Disconnected / Connecting / Connected / Error)
+    /// </summary>
+    public string ConnectionState { get; init; } = "Disconnected";
+
+    /// <summary>
+    /// 状态消息
+    /// </summary>
+    public string? Message { get; init; }
+
+    /// <summary>
+    /// 最后更新时间
+    /// </summary>
+    public DateTimeOffset LastUpdatedAt { get; init; }
+}
