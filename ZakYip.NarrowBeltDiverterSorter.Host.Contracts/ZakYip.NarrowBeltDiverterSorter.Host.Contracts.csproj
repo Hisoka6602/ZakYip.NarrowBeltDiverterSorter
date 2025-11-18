@@ -5,7 +5,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <NoWarn>$(NoWarn);1591</NoWarn>
+    <!-- Treat missing XML documentation as errors to ensure 100% coverage -->
+    <WarningsAsErrors>CS1591</WarningsAsErrors>
   </PropertyGroup>
 
 </Project>
