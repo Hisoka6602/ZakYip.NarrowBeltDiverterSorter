@@ -1,6 +1,8 @@
 using LiteDB;
 using Microsoft.Extensions.Logging;
+using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Core.Configuration;
+using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Chutes;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Infrastructure.LiteDb;
 
@@ -8,10 +10,11 @@ namespace ZakYip.NarrowBeltDiverterSorter.Infrastructure.LiteDb;
 /// 基于 LiteDB 的分拣机配置存储实现
 /// 此实现仅用于存储系统配置对象，不用于日志、事件或统计数据
 /// </summary>
-public sealed class LiteDbSorterConfigurationStore : ISorterConfigurationStore, IDisposable
+public sealed class LiteDbSorterConfigurationStore : ISorterConfigurationStore, IChuteTransmitterConfigurationPort, IDisposable
 {
     private const string DatabaseFileName = "narrowbelt.config.db";
     private const string CollectionName = "config_entries";
+    private const string ChuteBindingsCollectionName = "chute_transmitter_bindings";
     private readonly ILogger<LiteDbSorterConfigurationStore> _logger;
     private readonly LiteDatabase _database;
     private bool _disposed;
@@ -137,6 +140,76 @@ public sealed class LiteDbSorterConfigurationStore : ISorterConfigurationStore, 
             catch (Exception ex)
             {
                 var message = $"检查配置存在性失败，键: {key}, 错误: {ex.Message}";
+                _logger.LogError(ex, message);
+                throw new ConfigurationAccessException(message, ex);
+            }
+        }, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<ChuteTransmitterBinding>> GetAllBindingsAsync(CancellationToken cancellationToken = default)
+    {
+        return await Task.Run(() =>
+        {
+            try
+            {
+                var collection = _database.GetCollection<ChuteTransmitterBinding>(ChuteBindingsCollectionName);
+                var items = collection.FindAll().ToList();
+                _logger.LogDebug("已加载 {Count} 条格口发信器绑定配置", items.Count);
+                return (IReadOnlyList<ChuteTransmitterBinding>)items;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "加载格口发信器绑定配置失败");
+                // 返回空列表而不是抛出异常
+                return (IReadOnlyList<ChuteTransmitterBinding>)new List<ChuteTransmitterBinding>();
+            }
+        }, cancellationToken);
+    }
+
+    /// <summary>
+    /// 更新或插入格口发信器绑定配置（供 Host 层写入）。
+    /// </summary>
+    public async Task UpsertBindingAsync(ChuteTransmitterBinding binding, CancellationToken cancellationToken = default)
+    {
+        if (binding == null)
+        {
+            throw new ArgumentNullException(nameof(binding));
+        }
+
+        await Task.Run(() =>
+        {
+            try
+            {
+                var collection = _database.GetCollection<ChuteTransmitterBinding>(ChuteBindingsCollectionName);
+                collection.Upsert(binding);
+                _logger.LogDebug("已保存格口 {ChuteId} 的发信器绑定配置", binding.ChuteId);
+            }
+            catch (Exception ex)
+            {
+                var message = $"保存格口 {binding.ChuteId} 的发信器绑定配置失败: {ex.Message}";
+                _logger.LogError(ex, message);
+                throw new ConfigurationAccessException(message, ex);
+            }
+        }, cancellationToken);
+    }
+
+    /// <summary>
+    /// 删除指定格口的发信器绑定配置（供 Host 层删除）。
+    /// </summary>
+    public async Task DeleteBindingAsync(long chuteId, CancellationToken cancellationToken = default)
+    {
+        await Task.Run(() =>
+        {
+            try
+            {
+                var collection = _database.GetCollection<ChuteTransmitterBinding>(ChuteBindingsCollectionName);
+                var deleted = collection.DeleteMany(Query.EQ("ChuteId", chuteId));
+                _logger.LogDebug("已删除格口 {ChuteId} 的发信器绑定配置，删除数量: {Count}", chuteId, deleted);
+            }
+            catch (Exception ex)
+            {
+                var message = $"删除格口 {chuteId} 的发信器绑定配置失败: {ex.Message}";
                 _logger.LogError(ex, message);
                 throw new ConfigurationAccessException(message, ex);
             }

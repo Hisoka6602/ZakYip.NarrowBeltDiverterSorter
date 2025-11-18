@@ -1,4 +1,5 @@
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
+using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Chutes;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 
@@ -25,4 +26,9 @@ public interface IChuteTransmitterPort
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>异步任务</returns>
     Task ForceCloseAsync(ChuteId chuteId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 获取当前已注册的全部格口发信器绑定配置。
+    /// </summary>
+    IReadOnlyList<ChuteTransmitterBinding> GetRegisteredBindings();
 }
