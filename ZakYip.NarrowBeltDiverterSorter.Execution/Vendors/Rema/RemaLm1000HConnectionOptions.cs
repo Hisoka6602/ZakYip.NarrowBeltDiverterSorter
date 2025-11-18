@@ -1,4 +1,4 @@
-namespace ZakYip.NarrowBeltDiverterSorter.Execution.MainLine.Rema;
+namespace ZakYip.NarrowBeltDiverterSorter.Execution.Vendors.Rema;
 
 /// <summary>
 /// 串口奇偶校验位

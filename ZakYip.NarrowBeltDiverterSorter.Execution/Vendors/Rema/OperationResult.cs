@@ -1,4 +1,4 @@
-namespace ZakYip.NarrowBeltDiverterSorter.Execution.MainLine.Rema;
+namespace ZakYip.NarrowBeltDiverterSorter.Execution.Vendors.Rema;
 
 /// <summary>
 /// 表示一个操作的执行结果

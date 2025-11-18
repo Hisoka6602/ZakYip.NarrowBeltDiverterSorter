@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.MainLine;
-using ZakYip.NarrowBeltDiverterSorter.Execution.MainLine.Rema;
+using ZakYip.NarrowBeltDiverterSorter.Execution.Vendors.Rema;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Host;
 

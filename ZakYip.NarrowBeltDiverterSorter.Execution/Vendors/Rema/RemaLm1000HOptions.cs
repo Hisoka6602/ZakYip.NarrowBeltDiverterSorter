@@ -1,4 +1,4 @@
-namespace ZakYip.NarrowBeltDiverterSorter.Execution.MainLine.Rema;
+namespace ZakYip.NarrowBeltDiverterSorter.Execution.Vendors.Rema;
 
 /// <summary>
 /// 雷马 LM1000H 变频驱动器配置参数

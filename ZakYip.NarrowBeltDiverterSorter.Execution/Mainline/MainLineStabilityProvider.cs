@@ -1,6 +1,6 @@
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.MainLine;
 
-namespace ZakYip.NarrowBeltDiverterSorter.Execution.MainLine;
+namespace ZakYip.NarrowBeltDiverterSorter.Execution.Mainline;
 
 /// <summary>
 /// 主线稳定性提供者默认实现

@@ -3,7 +3,7 @@ using Microsoft.Extensions.Options;
 using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.MainLine;
 
-namespace ZakYip.NarrowBeltDiverterSorter.Execution.MainLine;
+namespace ZakYip.NarrowBeltDiverterSorter.Execution.Mainline;
 
 /// <summary>
 /// 主线速度提供者实现
