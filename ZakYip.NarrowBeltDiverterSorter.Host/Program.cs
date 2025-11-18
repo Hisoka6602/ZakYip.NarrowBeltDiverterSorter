@@ -11,6 +11,7 @@ using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Carts;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Cart;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Chute;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Chute.Drivers.ZhiQian32Relay;
+using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Execution.MainLine;
 using ZakYip.NarrowBeltDiverterSorter.Execution.MainLine.Rema;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Feeding;

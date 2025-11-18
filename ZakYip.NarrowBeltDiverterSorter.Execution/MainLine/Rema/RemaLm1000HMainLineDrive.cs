@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Execution.MainLine.Rema;
 

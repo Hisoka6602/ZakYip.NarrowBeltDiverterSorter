@@ -8,6 +8,7 @@ using ZakYip.NarrowBeltDiverterSorter.Core.Domain.MainLine;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Parcels;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Sorting;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Tracking;
+using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Execution.MainLine;
 using ZakYip.NarrowBeltDiverterSorter.Simulation.Fakes;
 using ZakYip.NarrowBeltDiverterSorter.UpstreamContracts.Models;

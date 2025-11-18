@@ -5,6 +5,7 @@ using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Carts;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Parcels;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Sorting;
+using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Execution.MainLine;
 using ZakYip.NarrowBeltDiverterSorter.UpstreamContracts.Models;
 
