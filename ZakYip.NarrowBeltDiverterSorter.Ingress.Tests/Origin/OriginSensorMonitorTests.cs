@@ -2,6 +2,8 @@ using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Tracking;
 using ZakYip.NarrowBeltDiverterSorter.Ingress.Origin;
+using ZakYip.NarrowBeltDiverterSorter.Observability;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Ingress.Tests.Origin;
 
@@ -10,6 +12,17 @@ namespace ZakYip.NarrowBeltDiverterSorter.Ingress.Tests.Origin;
 /// </summary>
 public class OriginSensorMonitorTests
 {
+    /// <summary>
+    /// Mock事件总线（仅用于测试）
+    /// </summary>
+    private class MockEventBus : IEventBus
+    {
+        public void Subscribe<TEventArgs>(Func<TEventArgs, CancellationToken, Task> handler) where TEventArgs : class { }
+        public void Unsubscribe<TEventArgs>(Func<TEventArgs, CancellationToken, Task> handler) where TEventArgs : class { }
+        public Task PublishAsync<TEventArgs>(TEventArgs eventArgs, CancellationToken cancellationToken = default) where TEventArgs : class => Task.CompletedTask;
+        public int GetBacklogCount() => 0;
+    }
+
     /// <summary>
     /// Mock原点传感器端口
     /// </summary>
@@ -36,10 +49,12 @@ public class OriginSensorMonitorTests
             mockPort,
             builder,
             tracker,
+            new MockEventBus(),
+            NullLogger<OriginSensorMonitor>.Instance,
             TimeSpan.FromMilliseconds(5));
 
         // Start monitoring
-        monitor.Start();
+        await monitor.StartAsync();
 
         // Act - Simulate a complete ring with 5 carts
         // Cart 0 (zero cart) - blocks both sensors
@@ -107,10 +122,12 @@ public class OriginSensorMonitorTests
             mockPort,
             builder,
             tracker,
+            new MockEventBus(),
+            NullLogger<OriginSensorMonitor>.Instance,
             TimeSpan.FromMilliseconds(5));
 
         // Start monitoring
-        monitor.Start();
+        await monitor.StartAsync();
 
         // Act - Simulate a simple edge detection
         mockPort.SetSensor1State(true); // Rising edge on sensor 1
@@ -136,10 +153,12 @@ public class OriginSensorMonitorTests
             mockPort,
             builder,
             tracker,
+            new MockEventBus(),
+            NullLogger<OriginSensorMonitor>.Instance,
             TimeSpan.FromMilliseconds(5));
 
         // Act
-        monitor.Start();
+        await monitor.StartAsync();
         await Task.Delay(50);
         await monitor.StopAsync();
 
@@ -153,7 +172,7 @@ public class OriginSensorMonitorTests
         // Arrange & Act & Assert
         var builder = new CartRingBuilder();
         Assert.Throws<ArgumentNullException>(() => 
-            new OriginSensorMonitor(null!, builder, new CartPositionTracker(builder)));
+            new OriginSensorMonitor(null!, builder, new CartPositionTracker(builder), new MockEventBus(), NullLogger<OriginSensorMonitor>.Instance));
     }
 
     [Fact]
@@ -163,7 +182,7 @@ public class OriginSensorMonitorTests
         var mockPort = new MockOriginSensorPort();
         var builder = new CartRingBuilder();
         Assert.Throws<ArgumentNullException>(() => 
-            new OriginSensorMonitor(mockPort, null!, new CartPositionTracker(builder)));
+            new OriginSensorMonitor(mockPort, null!, new CartPositionTracker(builder), new MockEventBus(), NullLogger<OriginSensorMonitor>.Instance));
     }
 
     [Fact]
@@ -177,11 +196,13 @@ public class OriginSensorMonitorTests
             mockPort,
             builder,
             tracker,
+            new MockEventBus(),
+            NullLogger<OriginSensorMonitor>.Instance,
             TimeSpan.FromMilliseconds(5));
 
         // Act
-        monitor.Start();
-        monitor.Start(); // Should be ignored
+        await monitor.StartAsync();
+        await monitor.StartAsync(); // Should be ignored
         await Task.Delay(50);
         await monitor.StopAsync();
 

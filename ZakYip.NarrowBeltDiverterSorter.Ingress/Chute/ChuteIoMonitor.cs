@@ -1,17 +1,21 @@
 using Microsoft.Extensions.Logging;
 using ZakYip.NarrowBeltDiverterSorter.Communication;
+using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
+using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Ingress;
+using ZakYip.NarrowBeltDiverterSorter.Observability;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Ingress.Chute;
 
 /// <summary>
 /// 格口IO监视器
 /// 只读轮询格口相关IO状态，用于观测发信器是否按预期开闭
-/// 记录日志供诊断使用
+/// 记录日志供诊断使用，通过IEventBus发布事件
 /// </summary>
-public class ChuteIoMonitor
+public class ChuteIoMonitor : IIoMonitor
 {
     private readonly IFieldBusClient _fieldBusClient;
     private readonly ChuteIoMonitorConfiguration _configuration;
+    private readonly IEventBus _eventBus;
     private readonly ILogger<ChuteIoMonitor> _logger;
     private readonly Dictionary<long, bool> _previousStates = new();
     private CancellationTokenSource? _cancellationTokenSource;
@@ -22,14 +26,17 @@ public class ChuteIoMonitor
     /// </summary>
     /// <param name="fieldBusClient">现场总线客户端</param>
     /// <param name="configuration">监控配置</param>
+    /// <param name="eventBus">事件总线</param>
     /// <param name="logger">日志记录器</param>
     public ChuteIoMonitor(
         IFieldBusClient fieldBusClient,
         ChuteIoMonitorConfiguration configuration,
+        IEventBus eventBus,
         ILogger<ChuteIoMonitor> logger)
     {
         _fieldBusClient = fieldBusClient ?? throw new ArgumentNullException(nameof(fieldBusClient));
         _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+        _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         // 初始化所有格口的状态为false
@@ -39,20 +46,22 @@ public class ChuteIoMonitor
         }
     }
 
-    /// <summary>
-    /// 启动监控
-    /// </summary>
-    public void Start()
+    /// <inheritdoc/>
+    public bool IsRunning => _monitoringTask != null && !_monitoringTask.IsCompleted;
+
+    /// <inheritdoc/>
+    public Task StartAsync(CancellationToken cancellationToken = default)
     {
         if (_monitoringTask != null)
         {
             _logger.LogWarning("格口IO监视器已经在运行中");
-            return;
+            return Task.CompletedTask;
         }
 
         _logger.LogInformation("启动格口IO监视器，监控 {Count} 个格口", _configuration.MonitoredChuteIds.Count);
         _cancellationTokenSource = new CancellationTokenSource();
-        _monitoringTask = Task.Run(async () => await MonitoringLoopAsync(_cancellationTokenSource.Token));
+        _monitoringTask = Task.Run(async () => await MonitoringLoopAsync(_cancellationTokenSource.Token), cancellationToken);
+        return Task.CompletedTask;
     }
 
     /// <summary>
@@ -133,6 +142,16 @@ public class ChuteIoMonitor
                             currentState ? "开启" : "关闭");
 
                         _previousStates[chuteId] = currentState;
+
+                        // 发布传感器触发事件
+                        var sensorEvent = new SensorTriggeredEventArgs
+                        {
+                            SensorId = $"Chute{chuteId}",
+                            TriggerTime = timestamp,
+                            IsTriggered = currentState,
+                            IsRisingEdge = currentState && !previousState
+                        };
+                        _ = _eventBus.PublishAsync(sensorEvent);
                     }
                 }
 

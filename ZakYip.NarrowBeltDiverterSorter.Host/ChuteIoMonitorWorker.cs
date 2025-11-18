@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Options;
 using ZakYip.NarrowBeltDiverterSorter.Communication;
 using ZakYip.NarrowBeltDiverterSorter.Ingress.Chute;
+using ZakYip.NarrowBeltDiverterSorter.Observability;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Host;
 
@@ -17,17 +18,18 @@ public class ChuteIoMonitorWorker : BackgroundService
         ILogger<ChuteIoMonitorWorker> logger,
         IFieldBusClient fieldBusClient,
         IOptions<ChuteIoMonitorConfiguration> configuration,
+        IEventBus eventBus,
         ILogger<ChuteIoMonitor> monitorLogger)
     {
         _logger = logger;
-        _monitor = new ChuteIoMonitor(fieldBusClient, configuration.Value, monitorLogger);
+        _monitor = new ChuteIoMonitor(fieldBusClient, configuration.Value, eventBus, monitorLogger);
     }
 
     protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _logger.LogInformation("格口IO监视器已启动");
 
-        _monitor.Start();
+        _ = _monitor.StartAsync(stoppingToken);
 
         // Wait for cancellation
         return Task.Run(async () =>

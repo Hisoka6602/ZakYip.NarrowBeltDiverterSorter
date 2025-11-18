@@ -1,4 +1,6 @@
 using Microsoft.Extensions.Logging;
+using ZakYip.NarrowBeltDiverterSorter.Observability;
+using Microsoft.Extensions.Logging.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Communication;
 using ZakYip.NarrowBeltDiverterSorter.Ingress.Chute;
 
@@ -91,10 +93,10 @@ public class ChuteIoMonitorTests
         };
 
         var logger = new MockLogger();
-        var monitor = new ChuteIoMonitor(mockClient, config, logger);
+        var monitor = new ChuteIoMonitor(mockClient, config, new MockEventBus(), logger);
 
         // Act
-        monitor.Start();
+        await monitor.StartAsync();
         await Task.Delay(50); // Let it run for a bit
         await monitor.StopAsync();
 
@@ -121,10 +123,10 @@ public class ChuteIoMonitorTests
         };
 
         var logger = new MockLogger();
-        var monitor = new ChuteIoMonitor(mockClient, config, logger);
+        var monitor = new ChuteIoMonitor(mockClient, config, new MockEventBus(), logger);
 
         // Act
-        monitor.Start();
+        await monitor.StartAsync();
         await Task.Delay(30); // Let it poll once
 
         // Change state
@@ -155,10 +157,10 @@ public class ChuteIoMonitorTests
         };
 
         var logger = new MockLogger();
-        var monitor = new ChuteIoMonitor(mockClient, config, logger);
+        var monitor = new ChuteIoMonitor(mockClient, config, new MockEventBus(), logger);
 
         // Act
-        monitor.Start();
+        await monitor.StartAsync();
         await Task.Delay(30);
         await monitor.StopAsync();
 
@@ -184,10 +186,10 @@ public class ChuteIoMonitorTests
         };
 
         var logger = new MockLogger();
-        var monitor = new ChuteIoMonitor(mockClient, config, logger);
+        var monitor = new ChuteIoMonitor(mockClient, config, new MockEventBus(), logger);
 
         // Act
-        monitor.Start();
+        await monitor.StartAsync();
         await Task.Delay(30);
         await monitor.StopAsync();
 
@@ -210,15 +212,26 @@ public class ChuteIoMonitorTests
         };
 
         var logger = new MockLogger();
-        var monitor = new ChuteIoMonitor(mockClient, config, logger);
+        var monitor = new ChuteIoMonitor(mockClient, config, new MockEventBus(), logger);
 
         // Act
-        monitor.Start();
-        monitor.Start(); // Try to start again
+        await monitor.StartAsync();
+        await monitor.StartAsync(); // Try to start again
         await Task.Delay(30);
         await monitor.StopAsync();
 
         // Assert
         Assert.Contains(logger.LogMessages, m => m.Contains("格口IO监视器已经在运行中"));
     }
+}
+
+/// <summary>
+/// Mock事件总线（仅用于测试）
+/// </summary>
+internal class MockEventBus : IEventBus
+{
+    public void Subscribe<TEventArgs>(Func<TEventArgs, CancellationToken, Task> handler) where TEventArgs : class { }
+    public void Unsubscribe<TEventArgs>(Func<TEventArgs, CancellationToken, Task> handler) where TEventArgs : class { }
+    public Task PublishAsync<TEventArgs>(TEventArgs eventArgs, CancellationToken cancellationToken = default) where TEventArgs : class => Task.CompletedTask;
+    public int GetBacklogCount() => 0;
 }

@@ -27,7 +27,7 @@ public class OriginSensorMonitorHostedService : BackgroundService
 
         try
         {
-            _monitor.Start();
+            await _monitor.StartAsync();
             
             // 保持运行直到取消
             await Task.Delay(Timeout.Infinite, stoppingToken);

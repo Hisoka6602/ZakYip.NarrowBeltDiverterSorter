@@ -91,7 +91,7 @@ public class SimulationOrchestrator : BackgroundService
 
             // 4. 启动原点传感器监听
             Console.WriteLine("[仿真启动] 步骤 4/7: 启动原点传感器监听...");
-            _originMonitor.Start();
+            await _originMonitor.StartAsync();
             await Task.Delay(500, stoppingToken);
 
             // 5. 启动主线并等待速度稳定
