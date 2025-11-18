@@ -418,29 +418,202 @@ public sealed record SafetyConfigurationDto
 /// <summary>
 /// 录制配置DTO
 /// </summary>
+/// <remarks>
+/// 配置系统事件录制功能，包括录制时长、存储路径和自动清理策略
+/// </remarks>
+/// <example>
+/// {
+///   "enabledByDefault": false,
+///   "maxSessionDurationSeconds": 3600,
+///   "maxEventsPerSession": 100000,
+///   "recordingsDirectory": "Recordings",
+///   "autoCleanupOldRecordings": false,
+///   "recordingRetentionDays": 30
+/// }
+/// </example>
 public sealed record RecordingConfigurationDto
 {
+    /// <summary>
+    /// 默认启用录制
+    /// </summary>
+    /// <remarks>
+    /// 启用后系统启动时自动开始录制事件
+    /// </remarks>
+    /// <example>false</example>
+    [DefaultValue(false)]
     public bool EnabledByDefault { get; set; } = false;
+    
+    /// <summary>
+    /// 单次录制会话最大时长（秒）
+    /// </summary>
+    /// <remarks>
+    /// 超过此时长将自动停止当前录制会话
+    /// </remarks>
+    /// <example>3600</example>
+    [Range(60, 86400)]
+    [DefaultValue(3600)]
     public int MaxSessionDurationSeconds { get; set; } = 3600;
+    
+    /// <summary>
+    /// 单次录制会话最大事件数
+    /// </summary>
+    /// <remarks>
+    /// 超过此数量将自动停止当前录制会话
+    /// </remarks>
+    /// <example>100000</example>
+    [Range(1000, 10000000)]
+    [DefaultValue(100000)]
     public int MaxEventsPerSession { get; set; } = 100000;
+    
+    /// <summary>
+    /// 录制文件存储目录
+    /// </summary>
+    /// <remarks>
+    /// 相对或绝对路径，录制文件将保存在此目录下
+    /// </remarks>
+    /// <example>Recordings</example>
+    [DefaultValue("Recordings")]
     public string RecordingsDirectory { get; set; } = "Recordings";
+    
+    /// <summary>
+    /// 自动清理旧录制文件
+    /// </summary>
+    /// <remarks>
+    /// 启用后将自动删除超过保留期限的录制文件
+    /// </remarks>
+    /// <example>false</example>
+    [DefaultValue(false)]
     public bool AutoCleanupOldRecordings { get; set; } = false;
+    
+    /// <summary>
+    /// 录制文件保留天数
+    /// </summary>
+    /// <remarks>
+    /// 仅当 AutoCleanupOldRecordings 为 true 时生效
+    /// </remarks>
+    /// <example>30</example>
+    [Range(1, 365)]
+    [DefaultValue(30)]
     public int RecordingRetentionDays { get; set; } = 30;
 }
 
 /// <summary>
 /// SignalR 推送配置DTO
 /// </summary>
+/// <remarks>
+/// 配置 SignalR 实时推送的频率控制，包括主线速度、包裹状态、小车信息等推送间隔
+/// </remarks>
+/// <example>
+/// {
+///   "lineSpeedPushIntervalMs": 200,
+///   "chuteCartPushIntervalMs": 100,
+///   "originCartPushIntervalMs": 100,
+///   "parcelCreatedPushIntervalMs": 50,
+///   "parcelDivertedPushIntervalMs": 50,
+///   "deviceStatusPushIntervalMs": 500,
+///   "cartLayoutPushIntervalMs": 500,
+///   "onlineParcelsPushPeriodMs": 1000,
+///   "enableOnlineParcelsPush": true
+/// }
+/// </example>
 public sealed record SignalRPushConfigurationDto
 {
+    /// <summary>
+    /// 主线速度推送间隔（毫秒）
+    /// </summary>
+    /// <remarks>
+    /// 控制主线速度信息的推送频率
+    /// </remarks>
+    /// <example>200</example>
+    [Range(50, 10000)]
+    [DefaultValue(200)]
     public int LineSpeedPushIntervalMs { get; set; } = 200;
+    
+    /// <summary>
+    /// 格口小车推送间隔（毫秒）
+    /// </summary>
+    /// <remarks>
+    /// 控制格口位置小车信息的推送频率
+    /// </remarks>
+    /// <example>100</example>
+    [Range(50, 10000)]
+    [DefaultValue(100)]
     public int ChuteCartPushIntervalMs { get; set; } = 100;
+    
+    /// <summary>
+    /// 原点小车推送间隔（毫秒）
+    /// </summary>
+    /// <remarks>
+    /// 控制原点位置小车信息的推送频率
+    /// </remarks>
+    /// <example>100</example>
+    [Range(50, 10000)]
+    [DefaultValue(100)]
     public int OriginCartPushIntervalMs { get; set; } = 100;
+    
+    /// <summary>
+    /// 包裹创建事件推送间隔（毫秒）
+    /// </summary>
+    /// <remarks>
+    /// 控制包裹创建事件的推送频率
+    /// </remarks>
+    /// <example>50</example>
+    [Range(10, 10000)]
+    [DefaultValue(50)]
     public int ParcelCreatedPushIntervalMs { get; set; } = 50;
+    
+    /// <summary>
+    /// 包裹分拣事件推送间隔（毫秒）
+    /// </summary>
+    /// <remarks>
+    /// 控制包裹分拣事件的推送频率
+    /// </remarks>
+    /// <example>50</example>
+    [Range(10, 10000)]
+    [DefaultValue(50)]
     public int ParcelDivertedPushIntervalMs { get; set; } = 50;
+    
+    /// <summary>
+    /// 设备状态推送间隔（毫秒）
+    /// </summary>
+    /// <remarks>
+    /// 控制设备状态信息的推送频率
+    /// </remarks>
+    /// <example>500</example>
+    [Range(100, 30000)]
+    [DefaultValue(500)]
     public int DeviceStatusPushIntervalMs { get; set; } = 500;
+    
+    /// <summary>
+    /// 小车布局推送间隔（毫秒）
+    /// </summary>
+    /// <remarks>
+    /// 控制小车布局信息的推送频率
+    /// </remarks>
+    /// <example>500</example>
+    [Range(100, 30000)]
+    [DefaultValue(500)]
     public int CartLayoutPushIntervalMs { get; set; } = 500;
+    
+    /// <summary>
+    /// 在线包裹推送周期（毫秒）
+    /// </summary>
+    /// <remarks>
+    /// 控制在线包裹列表的推送频率
+    /// </remarks>
+    /// <example>1000</example>
+    [Range(100, 30000)]
+    [DefaultValue(1000)]
     public int OnlineParcelsPushPeriodMs { get; set; } = 1000;
+    
+    /// <summary>
+    /// 启用在线包裹推送
+    /// </summary>
+    /// <remarks>
+    /// 控制是否推送在线包裹列表
+    /// </remarks>
+    /// <example>true</example>
+    [DefaultValue(true)]
     public bool EnableOnlineParcelsPush { get; set; } = true;
 }
 
