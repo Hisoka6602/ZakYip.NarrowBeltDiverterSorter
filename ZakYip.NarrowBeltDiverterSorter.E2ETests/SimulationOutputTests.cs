@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using ZakYip.NarrowBeltDiverterSorter.Communication;
 using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Core.Application;
+using ZakYip.NarrowBeltDiverterSorter.Core.Configuration;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Carts;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Feeding;

@@ -1,3 +1,4 @@
+using ZakYip.NarrowBeltDiverterSorter.Core.Configuration;
 using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Core.Application;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Feeding;

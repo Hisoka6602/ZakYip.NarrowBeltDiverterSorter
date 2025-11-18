@@ -112,6 +112,14 @@ builder.Services.Configure<ChuteMappingConfiguration>(
 builder.Services.Configure<FieldBusClientConfiguration>(
     builder.Configuration.GetSection("FieldBus"));
 
+// 注册 FieldBusClientConfiguration 为单例（FieldBusClient 需要直接注入）
+builder.Services.AddSingleton(sp =>
+{
+    var config = new FieldBusClientConfiguration();
+    builder.Configuration.GetSection("FieldBus").Bind(config);
+    return config;
+});
+
 // 配置主线驱动实现选项（从 appsettings.json 读取，用于选择驱动类型和串口连接参数）
 builder.Services.Configure<MainLineDriveOptions>(
     builder.Configuration.GetSection(MainLineDriveOptions.SectionName));
@@ -395,7 +403,7 @@ else
 // TODO: 实现具体的传感器端口
 // builder.Services.AddSingleton<IOriginSensorPort, OriginSensorPortImplementation>();
 // builder.Services.AddSingleton<IInfeedSensorPort, InfeedSensorPortImplementation>();
-// builder.Services.AddSingleton<IInfeedConveyorPort, InfeedConveyorPortImplementation>();
+builder.Services.AddSingleton<IInfeedConveyorPort, StubInfeedConveyorPort>();
 
 // ============================================================================
 // 注册领域服务
@@ -409,6 +417,10 @@ builder.Services.AddSingleton<ICartRingBuilder, CartRingBuilder>();
 
 // 注册小车位置跟踪器
 builder.Services.AddSingleton<ICartPositionTracker, CartPositionTracker>();
+
+// 注册系统运行状态服务
+builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Domain.SystemState.ISystemRunStateService, 
+    ZakYip.NarrowBeltDiverterSorter.Core.Domain.SystemState.SystemRunStateService>();
 
 // 注册包裹生命周期服务（单例，内存存储）
 builder.Services.AddSingleton<IParcelLifecycleService, ParcelLifecycleService>();
@@ -424,6 +436,9 @@ builder.Services.AddSingleton<IParcelLoadPlanner, ParcelLoadPlanner>();
 
 // 注册分拣计划器
 builder.Services.AddSingleton<ISortingPlanner, SortingPlanner>();
+
+// 注册主线设定点提供者（生产环境）
+builder.Services.AddSingleton<IMainLineSetpointProvider, ProductionMainLineSetpointProvider>();
 
 // 注册主线速度提供者和稳定性提供者
 // 注意：IMainLineControlService 已在主线驱动配置中根据实现类型注册
