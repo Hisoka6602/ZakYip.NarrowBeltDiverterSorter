@@ -49,6 +49,8 @@ public class OriginSensorMonitorTests
             mockPort,
             builder,
             tracker,
+            new MockEventBus(),
+            NullLogger<OriginSensorMonitor>.Instance,
             TimeSpan.FromMilliseconds(5));
 
         // Start monitoring
@@ -120,6 +122,8 @@ public class OriginSensorMonitorTests
             mockPort,
             builder,
             tracker,
+            new MockEventBus(),
+            NullLogger<OriginSensorMonitor>.Instance,
             TimeSpan.FromMilliseconds(5));
 
         // Start monitoring
@@ -168,7 +172,7 @@ public class OriginSensorMonitorTests
         // Arrange & Act & Assert
         var builder = new CartRingBuilder();
         Assert.Throws<ArgumentNullException>(() => 
-            new OriginSensorMonitor(null!, builder, new CartPositionTracker(builder)));
+            new OriginSensorMonitor(null!, builder, new CartPositionTracker(builder), new MockEventBus(), NullLogger<OriginSensorMonitor>.Instance));
     }
 
     [Fact]
@@ -178,7 +182,7 @@ public class OriginSensorMonitorTests
         var mockPort = new MockOriginSensorPort();
         var builder = new CartRingBuilder();
         Assert.Throws<ArgumentNullException>(() => 
-            new OriginSensorMonitor(mockPort, null!, new CartPositionTracker(builder)));
+            new OriginSensorMonitor(mockPort, null!, new CartPositionTracker(builder), new MockEventBus(), NullLogger<OriginSensorMonitor>.Instance));
     }
 
     [Fact]
@@ -192,6 +196,8 @@ public class OriginSensorMonitorTests
             mockPort,
             builder,
             tracker,
+            new MockEventBus(),
+            NullLogger<OriginSensorMonitor>.Instance,
             TimeSpan.FromMilliseconds(5));
 
         // Act

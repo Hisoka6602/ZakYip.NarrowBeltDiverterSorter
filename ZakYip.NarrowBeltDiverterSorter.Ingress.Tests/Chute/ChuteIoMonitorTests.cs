@@ -93,7 +93,7 @@ public class ChuteIoMonitorTests
         };
 
         var logger = new MockLogger();
-        var monitor = new ChuteIoMonitor(mockClient, config, logger);
+        var monitor = new ChuteIoMonitor(mockClient, config, new MockEventBus(), logger);
 
         // Act
         await monitor.StartAsync();
@@ -123,7 +123,7 @@ public class ChuteIoMonitorTests
         };
 
         var logger = new MockLogger();
-        var monitor = new ChuteIoMonitor(mockClient, config, logger);
+        var monitor = new ChuteIoMonitor(mockClient, config, new MockEventBus(), logger);
 
         // Act
         await monitor.StartAsync();
@@ -157,7 +157,7 @@ public class ChuteIoMonitorTests
         };
 
         var logger = new MockLogger();
-        var monitor = new ChuteIoMonitor(mockClient, config, logger);
+        var monitor = new ChuteIoMonitor(mockClient, config, new MockEventBus(), logger);
 
         // Act
         await monitor.StartAsync();
@@ -186,7 +186,7 @@ public class ChuteIoMonitorTests
         };
 
         var logger = new MockLogger();
-        var monitor = new ChuteIoMonitor(mockClient, config, logger);
+        var monitor = new ChuteIoMonitor(mockClient, config, new MockEventBus(), logger);
 
         // Act
         await monitor.StartAsync();
@@ -212,7 +212,7 @@ public class ChuteIoMonitorTests
         };
 
         var logger = new MockLogger();
-        var monitor = new ChuteIoMonitor(mockClient, config, logger);
+        var monitor = new ChuteIoMonitor(mockClient, config, new MockEventBus(), logger);
 
         // Act
         await monitor.StartAsync();

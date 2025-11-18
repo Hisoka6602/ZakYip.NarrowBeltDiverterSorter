@@ -28,6 +28,7 @@ using ZakYip.NarrowBeltDiverterSorter.Ingress.Infeed;
 using ZakYip.NarrowBeltDiverterSorter.Ingress.Origin;
 using ZakYip.NarrowBeltDiverterSorter.Simulation;
 using ZakYip.NarrowBeltDiverterSorter.Simulation.Fakes;
+using ZakYip.NarrowBeltDiverterSorter.Observability;
 using ZakYip.NarrowBeltDiverterSorter.Core.SelfCheck;
 using ZakYip.NarrowBeltDiverterSorter.Simulation.Scenarios;
 
@@ -339,13 +340,17 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
         var cartRingBuilder = sp.GetRequiredService<ICartRingBuilder>();
         var cartPositionTracker = sp.GetRequiredService<ICartPositionTracker>();
         
-        return new OriginSensorMonitor(originSensor, cartRingBuilder, cartPositionTracker);
+        var eventBus = sp.GetRequiredService<IEventBus>();
+        var logger = sp.GetRequiredService<ILogger<OriginSensorMonitor>>();
+        return new OriginSensorMonitor(originSensor, cartRingBuilder, cartPositionTracker, eventBus, logger);
     });
     
     builder.Services.AddSingleton(sp =>
     {
         var infeedSensor = sp.GetRequiredService<IInfeedSensorPort>();
-        var monitor = new InfeedSensorMonitor(infeedSensor);
+        var eventBus = sp.GetRequiredService<IEventBus>();
+        var monitorLogger = sp.GetRequiredService<ILogger<InfeedSensorMonitor>>();
+        var monitor = new InfeedSensorMonitor(infeedSensor, eventBus, monitorLogger);
         
         // 连接 InfeedSensorMonitor 与 ParcelRoutingWorker 和 ParcelLoadCoordinator
         var routingWorker = sp.GetRequiredService<ParcelRoutingWorker>();
@@ -811,7 +816,9 @@ static async Task RunTraditionalSimulationAsync()
         var cartRingBuilder = sp.GetRequiredService<ICartRingBuilder>();
         var cartPositionTracker = sp.GetRequiredService<ICartPositionTracker>();
         
-        return new OriginSensorMonitor(originSensor, cartRingBuilder, cartPositionTracker);
+        var eventBus = sp.GetRequiredService<IEventBus>();
+        var logger = sp.GetRequiredService<ILogger<OriginSensorMonitor>>();
+        return new OriginSensorMonitor(originSensor, cartRingBuilder, cartPositionTracker, eventBus, logger);
     });
     
     builder.Services.AddSingleton<InfeedSensorMonitor>();
@@ -1346,13 +1353,17 @@ static async Task RunLongRunLoadTestScenarioAsync(string? outputPath, bool reset
         var cartRingBuilder = sp.GetRequiredService<ICartRingBuilder>();
         var cartPositionTracker = sp.GetRequiredService<ICartPositionTracker>();
         
-        return new OriginSensorMonitor(originSensor, cartRingBuilder, cartPositionTracker);
+        var eventBus = sp.GetRequiredService<IEventBus>();
+        var logger = sp.GetRequiredService<ILogger<OriginSensorMonitor>>();
+        return new OriginSensorMonitor(originSensor, cartRingBuilder, cartPositionTracker, eventBus, logger);
     });
     
     builder.Services.AddSingleton(sp =>
     {
         var infeedSensor = sp.GetRequiredService<IInfeedSensorPort>();
-        var monitor = new InfeedSensorMonitor(infeedSensor);
+        var eventBus = sp.GetRequiredService<IEventBus>();
+        var monitorLogger = sp.GetRequiredService<ILogger<InfeedSensorMonitor>>();
+        var monitor = new InfeedSensorMonitor(infeedSensor, eventBus, monitorLogger);
         
         var routingWorker = sp.GetRequiredService<ParcelRoutingWorker>();
         var loadCoordinator = sp.GetRequiredService<ParcelLoadCoordinator>();
