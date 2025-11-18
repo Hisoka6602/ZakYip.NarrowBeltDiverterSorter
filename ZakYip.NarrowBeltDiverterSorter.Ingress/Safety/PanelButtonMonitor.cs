@@ -208,7 +208,7 @@ public class PanelButtonMonitor
         var result = _systemRunStateService.TryHandleEmergencyReset();
         if (result.IsSuccess)
         {
-            _logger.LogInformation("急停已解除，系统恢复就绪状态，当前状态: {State}", _systemRunStateService.Current);
+            _logger.LogInformation("急停已解除，系统进入停止状态，当前状态: {State}（需要按启动按钮恢复运行）", _systemRunStateService.Current);
         }
         else
         {

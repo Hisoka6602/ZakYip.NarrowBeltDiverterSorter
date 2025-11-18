@@ -2,8 +2,10 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Core.Configuration;
+using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.MainLine;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Runtime;
+using ZakYip.NarrowBeltDiverterSorter.Core.Domain.SystemState;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Vendors.Rema;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Execution.Runtime;
@@ -18,6 +20,7 @@ public class MainLineRuntime : IMainLineRuntime
     private readonly IMainLineControlService _controlService;
     private readonly IMainLineDrive _mainLineDrive;
     private readonly IMainLineSetpointProvider _setpointProvider;
+    private readonly ISystemRunStateService _systemRunStateService;
     private readonly MainLineControlOptions _options;
     private readonly bool _enableBringupLogging;
 
@@ -26,6 +29,7 @@ public class MainLineRuntime : IMainLineRuntime
         IMainLineControlService controlService,
         IMainLineDrive mainLineDrive,
         IMainLineSetpointProvider setpointProvider,
+        ISystemRunStateService systemRunStateService,
         IOptions<MainLineControlOptions> options,
         StartupModeConfiguration startupConfig)
     {
@@ -33,6 +37,7 @@ public class MainLineRuntime : IMainLineRuntime
         _controlService = controlService;
         _mainLineDrive = mainLineDrive;
         _setpointProvider = setpointProvider;
+        _systemRunStateService = systemRunStateService;
         _options = options.Value;
         _enableBringupLogging = startupConfig.EnableBringupLogging && 
                                 startupConfig.Mode >= StartupMode.BringupMainline;
@@ -74,24 +79,47 @@ public class MainLineRuntime : IMainLineRuntime
         {
             try
             {
-                // 读取设定点并更新目标速度
-                var setpoint = _setpointProvider.IsEnabled ? _setpointProvider.TargetMmps : 0m;
-                await _mainLineDrive.SetTargetSpeedAsync(setpoint, stoppingToken);
-
-                // 执行控制循环
-                var success = await _controlService.ExecuteControlLoopAsync(stoppingToken);
+                // 检查系统运行状态
+                var currentState = _systemRunStateService.Current;
                 
-                if (!success && _controlService.IsRunning)
+                // 只有在 Running 状态时才设定非零速度
+                if (currentState == SystemRunState.Running)
                 {
-                    _logger.LogWarning("控制循环执行失败");
+                    // 读取设定点并更新目标速度
+                    var setpoint = _setpointProvider.IsEnabled ? _setpointProvider.TargetMmps : 0m;
+                    await _mainLineDrive.SetTargetSpeedAsync(setpoint, stoppingToken);
+
+                    // 执行控制循环
+                    var success = await _controlService.ExecuteControlLoopAsync(stoppingToken);
+                    
+                    if (!success && _controlService.IsRunning)
+                    {
+                        _logger.LogWarning("控制循环执行失败");
+                    }
+                }
+                else
+                {
+                    // 非运行状态：确保主线停止（目标速度为0）
+                    await _mainLineDrive.SetTargetSpeedAsync(0m, stoppingToken);
+                    
+                    // 记录状态等待日志（每5秒一次，避免刷屏）
+                    logCounter++;
+                    if (logCounter >= logInterval)
+                    {
+                        logCounter = 0;
+                        _logger.LogInformation("系统未处于运行状态（当前: {State}），主线目标速度保持为 0 mm/s", currentState);
+                    }
                 }
 
-                // 定期输出状态日志（每5秒）
-                logCounter++;
-                if (logCounter >= logInterval)
+                // 定期输出状态日志
+                if (currentState == SystemRunState.Running)
                 {
-                    logCounter = 0;
-                    LogCurrentStatus();
+                    logCounter++;
+                    if (logCounter >= logInterval)
+                    {
+                        logCounter = 0;
+                        LogCurrentStatus();
+                    }
                 }
 
                 // 等待下一个控制周期
