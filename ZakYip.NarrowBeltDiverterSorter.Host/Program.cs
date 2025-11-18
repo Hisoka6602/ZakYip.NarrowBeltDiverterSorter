@@ -51,7 +51,32 @@ builder.Services.AddSingleton(startupConfig);
 // ============================================================================
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    // 配置 API 元信息
+    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Title = "窄带分流器分拣系统 API",
+        Version = "v1",
+        Description = "窄带分流器分拣系统 RESTful API 文档，提供主线控制、包裹管理、格口配置、仿真控制等功能"
+    });
+
+    // 引入 XML 文档注释
+    var hostXmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var hostXmlPath = System.IO.Path.Combine(AppContext.BaseDirectory, hostXmlFile);
+    if (System.IO.File.Exists(hostXmlPath))
+    {
+        options.IncludeXmlComments(hostXmlPath);
+    }
+
+    // 引入 Host.Contracts XML 文档注释
+    var contractsXmlFile = "ZakYip.NarrowBeltDiverterSorter.Host.Contracts.xml";
+    var contractsXmlPath = System.IO.Path.Combine(AppContext.BaseDirectory, contractsXmlFile);
+    if (System.IO.File.Exists(contractsXmlPath))
+    {
+        options.IncludeXmlComments(contractsXmlPath);
+    }
+});
 
 // ============================================================================
 // 配置 SignalR
@@ -515,6 +540,31 @@ builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Domain.Safety
     ZakYip.NarrowBeltDiverterSorter.Execution.Safety.LineSafetyOrchestrator>();
 
 // ============================================================================
+// 注册面板按钮监控和 IO 联动
+// ============================================================================
+
+// 注册面板按钮配置
+builder.Services.AddSingleton(sp => ZakYip.NarrowBeltDiverterSorter.Core.Configuration.PanelButtonConfiguration.CreateDefault());
+
+// 注册面板 IO 联动选项
+builder.Services.AddSingleton(sp => 
+{
+    var options = new ZakYip.NarrowBeltDiverterSorter.Execution.Panel.PanelIoLinkageOptions
+    {
+        StartFollowOutputChannels = new List<int>(), // 可根据需要配置
+        StopFollowOutputChannels = new List<int>()   // 可根据需要配置
+    };
+    return Microsoft.Extensions.Options.Options.Create(options);
+});
+
+// 注册面板 IO 协调器
+builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Abstractions.IPanelIoCoordinator, 
+    ZakYip.NarrowBeltDiverterSorter.Execution.Panel.PanelIoCoordinator>();
+
+// 注册面板按钮监控器
+builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Ingress.Safety.PanelButtonMonitor>();
+
+// ============================================================================
 // 注册健康检查
 // ============================================================================
 
@@ -598,6 +648,9 @@ if (startupConfig.ShouldStartParcelRoutingWorker())
 
 // 注册占位符工作器（可以移除）
 builder.Services.AddHostedService<Worker>();
+
+// 面板按钮监控工作器（所有模式都需要）
+builder.Services.AddHostedService<PanelButtonMonitorWorker>();
 
 // 注册安全控制工作器（确保最早启动，最晚停止）
 builder.Services.AddHostedService<SafetyControlWorker>();

@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using ZakYip.NarrowBeltDiverterSorter.Communication;
+using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Execution.Panel;

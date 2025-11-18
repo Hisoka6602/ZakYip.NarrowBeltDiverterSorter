@@ -1,24 +1,12 @@
-using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
+// This interface has been moved to ZakYip.NarrowBeltDiverterSorter.Core.Abstractions
+// Keeping this file for backward compatibility - it now references the Core interface
 
 namespace ZakYip.NarrowBeltDiverterSorter.Execution.Panel;
 
 /// <summary>
-/// 面板 IO 协调器接口
-/// 负责处理系统状态变化时的 IO 联动操作
+/// 面板 IO 协调器接口（已迁移到 Core.Abstractions）
 /// </summary>
-public interface IPanelIoCoordinator
+[Obsolete("请使用 ZakYip.NarrowBeltDiverterSorter.Core.Abstractions.IPanelIoCoordinator")]
+public interface IPanelIoCoordinator : ZakYip.NarrowBeltDiverterSorter.Core.Abstractions.IPanelIoCoordinator
 {
-    /// <summary>
-    /// 执行启动操作的 IO 联动
-    /// 写入所有"跟随启动"的输出通道
-    /// </summary>
-    /// <returns>操作结果</returns>
-    Task<OperationResult> ExecuteStartLinkageAsync();
-
-    /// <summary>
-    /// 执行停止操作的 IO 联动
-    /// 写入所有"跟随停止"的输出通道
-    /// </summary>
-    /// <returns>操作结果</returns>
-    Task<OperationResult> ExecuteStopLinkageAsync();
 }
