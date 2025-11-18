@@ -91,6 +91,13 @@ builder.Services.AddSingleton<IOptions<InfeedLayoutOptions>>(sp =>
     return Options.Create(options);
 });
 
+// 注册 InfeedLayoutOptions 为单例（ParcelLoadPlanner 需要直接注入）
+builder.Services.AddSingleton(sp =>
+{
+    var provider = sp.GetRequiredService<ZakYip.NarrowBeltDiverterSorter.Host.Configuration.IHostConfigurationProvider>();
+    return provider.GetInfeedLayoutOptionsAsync().GetAwaiter().GetResult();
+});
+
 // ========================================================================
 // 以下配置已迁移到 LiteDB 统一配置中心，通过 IHostConfigurationProvider 访问
 // 这些 Configure<T> 调用已被注释，以避免与 LiteDB 配置冲突
@@ -104,9 +111,25 @@ builder.Services.Configure<ChuteIoMonitorConfiguration>(
 builder.Services.Configure<CartParameterRegisterConfiguration>(
     builder.Configuration.GetSection("CartParameterRegisters"));
 
+// 注册 CartParameterRegisterConfiguration 为单例（CartParameterDriver 需要直接注入）
+builder.Services.AddSingleton(sp =>
+{
+    var config = new CartParameterRegisterConfiguration();
+    builder.Configuration.GetSection("CartParameterRegisters").Bind(config);
+    return config;
+});
+
 // 配置格口映射 (TODO: 待迁移到 LiteDB)
 builder.Services.Configure<ChuteMappingConfiguration>(
     builder.Configuration.GetSection("ChuteMapping"));
+
+// 注册 ChuteMappingConfiguration 为单例（ChuteTransmitterDriver 和 ChuteSafetyService 需要直接注入）
+builder.Services.AddSingleton(sp =>
+{
+    var config = new ChuteMappingConfiguration();
+    builder.Configuration.GetSection("ChuteMapping").Bind(config);
+    return config;
+});
 
 // 配置现场总线客户端 (TODO: 待迁移到 LiteDB)
 builder.Services.Configure<FieldBusClientConfiguration>(
@@ -433,6 +456,12 @@ builder.Services.AddSingleton<ICartLifecycleService, CartLifecycleService>();
 
 // 注册包裹装载计划器
 builder.Services.AddSingleton<IParcelLoadPlanner, ParcelLoadPlanner>();
+
+// 注册分拣规划器选项（使用默认值）
+builder.Services.AddSingleton(sp => new SortingPlannerOptions
+{
+    CartSpacingMm = 500m // 默认小车间距 500mm
+});
 
 // 注册分拣计划器
 builder.Services.AddSingleton<ISortingPlanner, SortingPlanner>();
