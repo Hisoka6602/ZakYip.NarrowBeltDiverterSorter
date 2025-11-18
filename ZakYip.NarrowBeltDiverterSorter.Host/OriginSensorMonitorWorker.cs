@@ -2,6 +2,7 @@ using ZakYip.NarrowBeltDiverterSorter.Core.Configuration;
 using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Tracking;
 using ZakYip.NarrowBeltDiverterSorter.Ingress.Origin;
+using ZakYip.NarrowBeltDiverterSorter.Observability;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Host;
 
@@ -22,10 +23,12 @@ public class OriginSensorMonitorWorker : BackgroundService
         IOriginSensorPort originSensorPort,
         ICartRingBuilder cartRingBuilder,
         ICartPositionTracker cartPositionTracker,
+        IEventBus eventBus,
+        ILogger<OriginSensorMonitor> monitorLogger,
         StartupModeConfiguration startupConfig)
     {
         _logger = logger;
-        _monitor = new OriginSensorMonitor(originSensorPort, cartRingBuilder, cartPositionTracker);
+        _monitor = new OriginSensorMonitor(originSensorPort, cartRingBuilder, cartPositionTracker, eventBus, monitorLogger);
         _cartRingBuilder = cartRingBuilder;
         _cartPositionTracker = cartPositionTracker;
         _enableBringupLogging = startupConfig.EnableBringupLogging && 
@@ -36,7 +39,7 @@ public class OriginSensorMonitorWorker : BackgroundService
     {
         _logger.LogInformation("原点传感器监视器已启动");
 
-        _monitor.Start();
+        _ = _monitor.StartAsync(stoppingToken);
 
         // Wait for cancellation
         return Task.Run(async () =>

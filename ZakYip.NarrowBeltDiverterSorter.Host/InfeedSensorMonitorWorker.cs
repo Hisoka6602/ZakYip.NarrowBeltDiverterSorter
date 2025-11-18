@@ -1,5 +1,6 @@
 using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Ingress.Infeed;
+using ZakYip.NarrowBeltDiverterSorter.Observability;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Host;
 
@@ -14,10 +15,12 @@ public class InfeedSensorMonitorWorker : BackgroundService
 
     public InfeedSensorMonitorWorker(
         ILogger<InfeedSensorMonitorWorker> logger,
-        IInfeedSensorPort infeedSensorPort)
+        IInfeedSensorPort infeedSensorPort,
+        IEventBus eventBus,
+        ILogger<InfeedSensorMonitor> monitorLogger)
     {
         _logger = logger;
-        _monitor = new InfeedSensorMonitor(infeedSensorPort);
+        _monitor = new InfeedSensorMonitor(infeedSensorPort, eventBus, monitorLogger);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

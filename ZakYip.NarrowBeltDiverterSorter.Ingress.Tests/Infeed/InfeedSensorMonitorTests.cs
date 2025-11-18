@@ -2,6 +2,8 @@ using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Feeding;
 using ZakYip.NarrowBeltDiverterSorter.Ingress.Infeed;
+using ZakYip.NarrowBeltDiverterSorter.Observability;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Ingress.Tests.Infeed;
 
@@ -15,7 +17,8 @@ public class InfeedSensorMonitorTests
     {
         // Arrange
         var mockSensorPort = new MockInfeedSensorPort();
-        var monitor = new InfeedSensorMonitor(mockSensorPort);
+        var mockEventBus = new MockEventBus();
+        var monitor = new InfeedSensorMonitor(mockSensorPort, mockEventBus, NullLogger<InfeedSensorMonitor>.Instance);
 
         ParcelCreatedFromInfeedEventArgs? capturedEvent = null;
         monitor.ParcelCreatedFromInfeed += (sender, e) => capturedEvent = e;
@@ -42,7 +45,8 @@ public class InfeedSensorMonitorTests
     {
         // Arrange
         var mockSensorPort = new MockInfeedSensorPort();
-        var monitor = new InfeedSensorMonitor(mockSensorPort);
+        var mockEventBus = new MockEventBus();
+        var monitor = new InfeedSensorMonitor(mockSensorPort, mockEventBus, NullLogger<InfeedSensorMonitor>.Instance);
 
         ParcelCreatedFromInfeedEventArgs? capturedEvent = null;
         monitor.ParcelCreatedFromInfeed += (sender, e) => capturedEvent = e;
@@ -65,7 +69,8 @@ public class InfeedSensorMonitorTests
     {
         // Arrange
         var mockSensorPort = new MockInfeedSensorPort();
-        var monitor = new InfeedSensorMonitor(mockSensorPort);
+        var mockEventBus = new MockEventBus();
+        var monitor = new InfeedSensorMonitor(mockSensorPort, mockEventBus, NullLogger<InfeedSensorMonitor>.Instance);
 
         var capturedEvents = new List<ParcelCreatedFromInfeedEventArgs>();
         monitor.ParcelCreatedFromInfeed += (sender, e) => capturedEvents.Add(e);
@@ -97,7 +102,8 @@ public class InfeedSensorMonitorTests
     {
         // Arrange
         var mockSensorPort = new MockInfeedSensorPort();
-        var monitor = new InfeedSensorMonitor(mockSensorPort);
+        var mockEventBus = new MockEventBus();
+        var monitor = new InfeedSensorMonitor(mockSensorPort, mockEventBus, NullLogger<InfeedSensorMonitor>.Instance);
 
         var capturedEvents = new List<ParcelCreatedFromInfeedEventArgs>();
         monitor.ParcelCreatedFromInfeed += (sender, e) => capturedEvents.Add(e);
@@ -122,6 +128,17 @@ public class InfeedSensorMonitorTests
 
         await monitor.StopAsync();
     }
+}
+
+/// <summary>
+/// 模拟事件总线（仅用于测试）
+/// </summary>
+internal class MockEventBus : IEventBus
+{
+    public void Subscribe<TEventArgs>(Func<TEventArgs, CancellationToken, Task> handler) where TEventArgs : class { }
+    public void Unsubscribe<TEventArgs>(Func<TEventArgs, CancellationToken, Task> handler) where TEventArgs : class { }
+    public Task PublishAsync<TEventArgs>(TEventArgs eventArgs, CancellationToken cancellationToken = default) where TEventArgs : class => Task.CompletedTask;
+    public int GetBacklogCount() => 0;
 }
 
 /// <summary>
