@@ -20,6 +20,7 @@ public class ParcelLifecycleTracker : IParcelLifecycleTracker
     private readonly int _maxHistorySize;
 
     /// <inheritdoc/>
+    [Obsolete("请使用 IEventBus 订阅 Observability.Events.ParcelLifecycleChangedEventArgs，此事件将在未来版本中移除")]
     public event EventHandler<ParcelLifecycleChangedEventArgs>? LifecycleChanged;
 
     public ParcelLifecycleTracker(
@@ -93,14 +94,18 @@ public class ParcelLifecycleTracker : IParcelLifecycleTracker
         }
 
         // 发布生命周期变化事件
-        LifecycleChanged?.Invoke(this, new ParcelLifecycleChangedEventArgs
+        var eventArgs = new ParcelLifecycleChangedEventArgs
         {
             ParcelId = parcelId,
             Status = status,
             FailureReason = failureReason,
             OccurredAt = occurredAt,
             Remarks = remarks
-        });
+        };
+
+#pragma warning disable CS0618 // Type or member is obsolete
+        LifecycleChanged?.Invoke(this, eventArgs);
+#pragma warning restore CS0618
     }
 
     /// <inheritdoc/>

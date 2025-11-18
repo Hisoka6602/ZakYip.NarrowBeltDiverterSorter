@@ -18,8 +18,9 @@ public class ParcelRoutingWorker : BackgroundService
     private readonly IParcelLifecycleTracker _lifecycleTracker;
 
     /// <summary>
-    /// 包裹路由完成事件
+    /// 包裹路由完成事件（已废弃，请订阅 IEventBus）
     /// </summary>
+    [Obsolete("请使用 IEventBus 订阅 Observability.Events.ParcelRoutedEventArgs，此事件将在未来版本中移除")]
     public event EventHandler<ParcelRoutedEventArgs>? ParcelRouted;
 
     public ParcelRoutingWorker(

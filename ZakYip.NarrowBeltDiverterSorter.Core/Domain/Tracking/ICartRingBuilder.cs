@@ -27,8 +27,9 @@ public interface ICartRingBuilder
     CartRingSnapshot? CurrentSnapshot { get; }
 
     /// <summary>
-    /// 小车通过事件（在检测到小车通过时触发）
+    /// 小车通过事件（在检测到小车通过时触发）（已废弃，请订阅 IEventBus）
     /// </summary>
+    [Obsolete("请使用 IEventBus 订阅 Observability.Events.CartPassedEventArgs，此事件将在未来版本中移除")]
     event EventHandler<CartPassedEventArgs>? OnCartPassed;
 
     /// <summary>

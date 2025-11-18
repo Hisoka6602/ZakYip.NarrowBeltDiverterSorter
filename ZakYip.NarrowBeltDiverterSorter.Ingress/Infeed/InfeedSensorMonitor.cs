@@ -20,9 +20,9 @@ public class InfeedSensorMonitor : IIoMonitor
     private bool _isRunning;
 
     /// <summary>
-    /// 包裹从入口创建事件（保留用于向后兼容，建议订阅者改用IEventBus）
-    /// TODO: 后续PR中考虑废弃此事件，统一使用IEventBus
+    /// 包裹从入口创建事件（已废弃，请订阅 IEventBus）
     /// </summary>
+    [Obsolete("请使用 IEventBus 订阅 Observability.Events.ParcelCreatedFromInfeedEventArgs，此事件将在未来版本中移除")]
     public event EventHandler<ParcelCreatedFromInfeedEventArgs>? ParcelCreatedFromInfeed;
 
     /// <summary>
@@ -75,21 +75,29 @@ public class InfeedSensorMonitor : IIoMonitor
         // 生成条码（这里使用简单的格式，实际应用中可能需要从其他源获取）
         var barcode = $"PARCEL{parcelId.Value:D10}";
 
-        var eventArgs = new ParcelCreatedFromInfeedEventArgs
+        var coreEventArgs = new ParcelCreatedFromInfeedEventArgs
         {
             ParcelId = parcelId,
             Barcode = barcode,
             InfeedTriggerTime = e.DetectionTime
         };
 
-        // 发布到事件总线
-        _ = _eventBus.PublishAsync(eventArgs);
+        // 发布到事件总线（主要事件）
+        var busEventArgs = new Observability.Events.ParcelCreatedFromInfeedEventArgs
+        {
+            ParcelId = parcelId.Value,
+            Barcode = barcode,
+            InfeedTriggerTime = e.DetectionTime
+        };
+        _ = _eventBus.PublishAsync(busEventArgs);
 
-        // 同时触发传统事件（向后兼容）
-        ParcelCreatedFromInfeed?.Invoke(this, eventArgs);
+        // 同时触发传统事件（向后兼容，已废弃）
+#pragma warning disable CS0618 // Type or member is obsolete
+        ParcelCreatedFromInfeed?.Invoke(this, coreEventArgs);
+#pragma warning restore CS0618
 
         // 发布传感器触发事件
-        var sensorEvent = new SensorTriggeredEventArgs
+        var sensorEvent = new Observability.Events.SensorTriggeredEventArgs
         {
             SensorId = "Infeed",
             TriggerTime = e.DetectionTime,

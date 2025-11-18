@@ -16,8 +16,9 @@ public class ParcelLoadCoordinator
     private Action<string>? _logAction;
 
     /// <summary>
-    /// 包裹装载到小车事件
+    /// 包裹装载到小车事件（已废弃，请订阅 IEventBus）
     /// </summary>
+    [Obsolete("请使用 IEventBus 订阅 Observability.Events.ParcelLoadedOnCartEventArgs，此事件将在未来版本中移除")]
     public event EventHandler<ParcelLoadedOnCartEventArgs>? ParcelLoadedOnCart;
 
     /// <summary>
@@ -107,12 +108,16 @@ public class ParcelLoadCoordinator
             ParcelFailureReason.None,
             $"包裹已上车，预测小车: {predictedCartId.Value.Value}");
 
-        // 发布装载事件
-        ParcelLoadedOnCart?.Invoke(this, new ParcelLoadedOnCartEventArgs
+        // 发布装载事件（已废弃）
+        var eventArgs = new ParcelLoadedOnCartEventArgs
         {
             ParcelId = e.ParcelId,
             CartId = predictedCartId.Value,
             LoadedTime = loadedTime
-        });
+        };
+
+#pragma warning disable CS0618 // Type or member is obsolete
+        ParcelLoadedOnCart?.Invoke(this, eventArgs);
+#pragma warning restore CS0618
     }
 }
