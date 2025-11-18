@@ -60,76 +60,78 @@ builder.Services.AddSignalR();
 // 配置选项
 // ============================================================================
 
-// 注册配置仓储
+// 注册统一配置中心基础设施
+builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Configuration.IConfigurationDefaultsProvider, 
+    ZakYip.NarrowBeltDiverterSorter.Core.Configuration.ConfigurationDefaultsProvider>();
+builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration.IAppConfigurationStore, 
+    ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration.LiteDbAppConfigurationStore>();
+builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Host.Configuration.IHostConfigurationProvider, 
+    ZakYip.NarrowBeltDiverterSorter.Host.Configuration.HostConfigurationProvider>();
+
+// 注册配置仓储（保留用于向后兼容和特定仓储需求）
 builder.Services.AddSingleton<IMainLineOptionsRepository, LiteDbMainLineOptionsRepository>();
 builder.Services.AddSingleton<IInfeedLayoutOptionsRepository, LiteDbInfeedLayoutOptionsRepository>();
 builder.Services.AddSingleton<IChuteConfigRepository, LiteDbChuteConfigRepository>();
 builder.Services.AddSingleton<IUpstreamConnectionOptionsRepository, LiteDbUpstreamConnectionOptionsRepository>();
 builder.Services.AddSingleton<ILongRunLoadTestOptionsRepository, LiteDbLongRunLoadTestOptionsRepository>();
 
-// 配置上游分拣系统API选项（保留用于非核心配置）
-builder.Services.Configure<UpstreamSortingApiOptions>(
-    builder.Configuration.GetSection(UpstreamSortingApiOptions.SectionName));
-
-// 从数据库加载主线控制选项
+// 从统一配置提供器加载主线控制选项
 builder.Services.AddSingleton<IOptions<MainLineControlOptions>>(sp =>
 {
-    var repo = sp.GetRequiredService<IMainLineOptionsRepository>();
-    var options = repo.LoadAsync().GetAwaiter().GetResult();
+    var provider = sp.GetRequiredService<ZakYip.NarrowBeltDiverterSorter.Host.Configuration.IHostConfigurationProvider>();
+    var options = provider.GetMainLineControlOptionsAsync().GetAwaiter().GetResult();
     return Options.Create(options);
 });
 
-// 从数据库加载入口布局选项  
+// 从统一配置提供器加载入口布局选项  
 builder.Services.AddSingleton<IOptions<InfeedLayoutOptions>>(sp =>
 {
-    var repo = sp.GetRequiredService<IInfeedLayoutOptionsRepository>();
-    var options = repo.LoadAsync().GetAwaiter().GetResult();
+    var provider = sp.GetRequiredService<ZakYip.NarrowBeltDiverterSorter.Host.Configuration.IHostConfigurationProvider>();
+    var options = provider.GetInfeedLayoutOptionsAsync().GetAwaiter().GetResult();
     return Options.Create(options);
 });
 
-// 配置格口IO监视器选项
+// ========================================================================
+// 以下配置已迁移到 LiteDB 统一配置中心，通过 IHostConfigurationProvider 访问
+// 这些 Configure<T> 调用已被注释，以避免与 LiteDB 配置冲突
+// ========================================================================
+
+// 配置格口IO监视器选项 (TODO: 待迁移到 LiteDB)
 builder.Services.Configure<ChuteIoMonitorConfiguration>(
     builder.Configuration.GetSection("ChuteIoMonitor"));
 
-// 配置小车参数寄存器
+// 配置小车参数寄存器 (TODO: 待迁移到 LiteDB)
 builder.Services.Configure<CartParameterRegisterConfiguration>(
     builder.Configuration.GetSection("CartParameterRegisters"));
 
-// 配置格口映射
+// 配置格口映射 (TODO: 待迁移到 LiteDB)
 builder.Services.Configure<ChuteMappingConfiguration>(
     builder.Configuration.GetSection("ChuteMapping"));
 
-// 配置现场总线客户端
+// 配置现场总线客户端 (TODO: 待迁移到 LiteDB)
 builder.Services.Configure<FieldBusClientConfiguration>(
     builder.Configuration.GetSection("FieldBus"));
 
-// 配置主线驱动实现选项
+// 配置主线驱动实现选项（从 appsettings.json 读取，用于选择驱动类型和串口连接参数）
 builder.Services.Configure<MainLineDriveOptions>(
     builder.Configuration.GetSection(MainLineDriveOptions.SectionName));
 
-// 配置 RemaLm1000H 选项
-builder.Services.Configure<RemaLm1000HOptions>(
-    builder.Configuration.GetSection("RemaLm1000H"));
-
-// 配置格口 IO 选项
-builder.Services.Configure<ChuteIoOptions>(
-    builder.Configuration.GetSection(ChuteIoOptions.SectionName));
-
-// 配置窄带仿真选项
-builder.Services.Configure<NarrowBeltSimulationOptions>(
-    builder.Configuration.GetSection("NarrowBeltSimulation"));
-
-// 配置格口布局
+// 配置格口布局 (TODO: 待迁移到 LiteDB)
 builder.Services.Configure<ChuteLayoutProfile>(
     builder.Configuration.GetSection("ChuteLayout"));
 
-// 配置目标格口分配策略
+// 配置目标格口分配策略 (TODO: 待迁移到 LiteDB)
 builder.Services.Configure<TargetChuteAssignmentProfile>(
     builder.Configuration.GetSection("TargetChuteAssignment"));
 
-// 配置实时推送选项
-builder.Services.Configure<LiveViewPushOptions>(
-    builder.Configuration.GetSection(LiveViewPushOptions.SectionName));
+// 注意：以下配置已迁移到 LiteDB，通过 IHostConfigurationProvider 访问
+// - RemaLm1000HOptions -> 通过 GetRemaLm1000HConfigurationAsync()
+// - ChuteIoOptions -> 通过 GetChuteIoConfigurationAsync()
+// - NarrowBeltSimulationOptions -> 通过 GetSimulationOptionsAsync()
+// - LiveViewPushOptions -> 通过 GetSignalRPushConfigurationAsync()
+// - SafetyConfiguration -> 通过 GetSafetyConfigurationAsync()
+// - RecordingConfiguration -> 通过 GetRecordingConfigurationAsync()
+
 
 // ============================================================================
 // 注册事件总线 (Observability)

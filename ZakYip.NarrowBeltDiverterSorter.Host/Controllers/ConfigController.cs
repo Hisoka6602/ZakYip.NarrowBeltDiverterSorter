@@ -20,19 +20,25 @@ public class ConfigController : ControllerBase
     private readonly IUpstreamConnectionOptionsRepository _upstreamConnectionRepo;
     private readonly ILongRunLoadTestOptionsRepository _longRunLoadTestRepo;
     private readonly ILogger<ConfigController> _logger;
+    private readonly ZakYip.NarrowBeltDiverterSorter.Host.Configuration.IHostConfigurationProvider? _hostConfigProvider;
+    private readonly ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration.IAppConfigurationStore? _appConfigStore;
 
     public ConfigController(
         IMainLineOptionsRepository mainLineRepo,
         IInfeedLayoutOptionsRepository infeedLayoutRepo,
         IUpstreamConnectionOptionsRepository upstreamConnectionRepo,
         ILongRunLoadTestOptionsRepository longRunLoadTestRepo,
-        ILogger<ConfigController> logger)
+        ILogger<ConfigController> logger,
+        ZakYip.NarrowBeltDiverterSorter.Host.Configuration.IHostConfigurationProvider? hostConfigProvider = null,
+        ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration.IAppConfigurationStore? appConfigStore = null)
     {
         _mainLineRepo = mainLineRepo ?? throw new ArgumentNullException(nameof(mainLineRepo));
         _infeedLayoutRepo = infeedLayoutRepo ?? throw new ArgumentNullException(nameof(infeedLayoutRepo));
         _upstreamConnectionRepo = upstreamConnectionRepo ?? throw new ArgumentNullException(nameof(upstreamConnectionRepo));
         _longRunLoadTestRepo = longRunLoadTestRepo ?? throw new ArgumentNullException(nameof(longRunLoadTestRepo));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _hostConfigProvider = hostConfigProvider;
+        _appConfigStore = appConfigStore;
     }
 
     /// <summary>
@@ -344,6 +350,298 @@ public class ConfigController : ControllerBase
         {
             _logger.LogError(ex, "更新长跑测试选项失败");
             return StatusCode(500, new { error = "更新长跑测试选项失败", message = ex.Message });
+        }
+    }
+
+    // ============================================================================
+    // 新增统一配置中心端点 - 使用 IHostConfigurationProvider 和 IAppConfigurationStore
+    // ============================================================================
+
+    /// <summary>
+    /// 获取仿真配置
+    /// </summary>
+    [HttpGet("simulation")]
+    [ProducesResponseType(typeof(SimulationConfigurationDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetSimulationConfiguration(CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (_hostConfigProvider == null)
+            {
+                return StatusCode(500, new { error = "配置提供器未初始化" });
+            }
+
+            var config = await _hostConfigProvider.GetSimulationOptionsAsync(cancellationToken);
+            var dto = new SimulationConfigurationDto
+            {
+                TimeBetweenParcelsMs = config.TimeBetweenParcelsMs,
+                TotalParcels = config.TotalParcels,
+                MinParcelLengthMm = config.MinParcelLengthMm,
+                MaxParcelLengthMm = config.MaxParcelLengthMm,
+                RandomSeed = config.RandomSeed,
+                ParcelTtlSeconds = config.ParcelTtlSeconds
+            };
+            return Ok(dto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "获取仿真配置失败");
+            return StatusCode(500, new { error = "获取仿真配置失败", message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// 更新仿真配置
+    /// </summary>
+    [HttpPut("simulation")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> UpdateSimulationConfiguration(
+        [FromBody] SimulationConfigurationDto dto,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (_appConfigStore == null)
+            {
+                return StatusCode(500, new { error = "配置存储未初始化" });
+            }
+
+            var config = new NarrowBeltSimulationOptions
+            {
+                TimeBetweenParcelsMs = dto.TimeBetweenParcelsMs,
+                TotalParcels = dto.TotalParcels,
+                MinParcelLengthMm = dto.MinParcelLengthMm,
+                MaxParcelLengthMm = dto.MaxParcelLengthMm,
+                RandomSeed = dto.RandomSeed,
+                ParcelTtlSeconds = dto.ParcelTtlSeconds
+            };
+
+            await _appConfigStore.SaveAsync("Simulation", config, cancellationToken);
+            _logger.LogInformation("仿真配置已更新");
+            return Ok(new { message = "仿真配置已更新" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "更新仿真配置失败");
+            return StatusCode(500, new { error = "更新仿真配置失败", message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// 获取安全配置
+    /// </summary>
+    [HttpGet("safety")]
+    [ProducesResponseType(typeof(SafetyConfigurationDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetSafetyConfiguration(CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (_hostConfigProvider == null)
+            {
+                return StatusCode(500, new { error = "配置提供器未初始化" });
+            }
+
+            var config = await _hostConfigProvider.GetSafetyConfigurationAsync(cancellationToken);
+            var dto = new SafetyConfigurationDto
+            {
+                EmergencyStopTimeoutSeconds = config.EmergencyStopTimeoutSeconds,
+                AllowAutoRecovery = config.AllowAutoRecovery,
+                AutoRecoveryIntervalSeconds = config.AutoRecoveryIntervalSeconds,
+                MaxAutoRecoveryAttempts = config.MaxAutoRecoveryAttempts,
+                SafetyInputCheckPeriodMs = config.SafetyInputCheckPeriodMs,
+                EnableChuteSafetyInterlock = config.EnableChuteSafetyInterlock,
+                ChuteSafetyInterlockTimeoutMs = config.ChuteSafetyInterlockTimeoutMs
+            };
+            return Ok(dto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "获取安全配置失败");
+            return StatusCode(500, new { error = "获取安全配置失败", message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// 更新安全配置
+    /// </summary>
+    [HttpPut("safety")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> UpdateSafetyConfiguration(
+        [FromBody] SafetyConfigurationDto dto,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (_appConfigStore == null)
+            {
+                return StatusCode(500, new { error = "配置存储未初始化" });
+            }
+
+            var config = new SafetyConfiguration
+            {
+                EmergencyStopTimeoutSeconds = dto.EmergencyStopTimeoutSeconds,
+                AllowAutoRecovery = dto.AllowAutoRecovery,
+                AutoRecoveryIntervalSeconds = dto.AutoRecoveryIntervalSeconds,
+                MaxAutoRecoveryAttempts = dto.MaxAutoRecoveryAttempts,
+                SafetyInputCheckPeriodMs = dto.SafetyInputCheckPeriodMs,
+                EnableChuteSafetyInterlock = dto.EnableChuteSafetyInterlock,
+                ChuteSafetyInterlockTimeoutMs = dto.ChuteSafetyInterlockTimeoutMs
+            };
+
+            await _appConfigStore.SaveAsync("Safety", config, cancellationToken);
+            _logger.LogInformation("安全配置已更新");
+            return Ok(new { message = "安全配置已更新" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "更新安全配置失败");
+            return StatusCode(500, new { error = "更新安全配置失败", message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// 获取录制配置
+    /// </summary>
+    [HttpGet("recording")]
+    [ProducesResponseType(typeof(RecordingConfigurationDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetRecordingConfiguration(CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (_hostConfigProvider == null)
+            {
+                return StatusCode(500, new { error = "配置提供器未初始化" });
+            }
+
+            var config = await _hostConfigProvider.GetRecordingConfigurationAsync(cancellationToken);
+            var dto = new RecordingConfigurationDto
+            {
+                EnabledByDefault = config.EnabledByDefault,
+                MaxSessionDurationSeconds = config.MaxSessionDurationSeconds,
+                MaxEventsPerSession = config.MaxEventsPerSession,
+                RecordingsDirectory = config.RecordingsDirectory,
+                AutoCleanupOldRecordings = config.AutoCleanupOldRecordings,
+                RecordingRetentionDays = config.RecordingRetentionDays
+            };
+            return Ok(dto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "获取录制配置失败");
+            return StatusCode(500, new { error = "获取录制配置失败", message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// 更新录制配置
+    /// </summary>
+    [HttpPut("recording")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> UpdateRecordingConfiguration(
+        [FromBody] RecordingConfigurationDto dto,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (_appConfigStore == null)
+            {
+                return StatusCode(500, new { error = "配置存储未初始化" });
+            }
+
+            var config = new RecordingConfiguration
+            {
+                EnabledByDefault = dto.EnabledByDefault,
+                MaxSessionDurationSeconds = dto.MaxSessionDurationSeconds,
+                MaxEventsPerSession = dto.MaxEventsPerSession,
+                RecordingsDirectory = dto.RecordingsDirectory,
+                AutoCleanupOldRecordings = dto.AutoCleanupOldRecordings,
+                RecordingRetentionDays = dto.RecordingRetentionDays
+            };
+
+            await _appConfigStore.SaveAsync("Recording", config, cancellationToken);
+            _logger.LogInformation("录制配置已更新");
+            return Ok(new { message = "录制配置已更新" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "更新录制配置失败");
+            return StatusCode(500, new { error = "更新录制配置失败", message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// 获取 SignalR 推送配置
+    /// </summary>
+    [HttpGet("signalr-push")]
+    [ProducesResponseType(typeof(SignalRPushConfigurationDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetSignalRPushConfiguration(CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (_hostConfigProvider == null)
+            {
+                return StatusCode(500, new { error = "配置提供器未初始化" });
+            }
+
+            var config = await _hostConfigProvider.GetSignalRPushConfigurationAsync(cancellationToken);
+            var dto = new SignalRPushConfigurationDto
+            {
+                LineSpeedPushIntervalMs = config.LineSpeedPushIntervalMs,
+                ChuteCartPushIntervalMs = config.ChuteCartPushIntervalMs,
+                OriginCartPushIntervalMs = config.OriginCartPushIntervalMs,
+                ParcelCreatedPushIntervalMs = config.ParcelCreatedPushIntervalMs,
+                ParcelDivertedPushIntervalMs = config.ParcelDivertedPushIntervalMs,
+                DeviceStatusPushIntervalMs = config.DeviceStatusPushIntervalMs,
+                CartLayoutPushIntervalMs = config.CartLayoutPushIntervalMs,
+                OnlineParcelsPushPeriodMs = config.OnlineParcelsPushPeriodMs,
+                EnableOnlineParcelsPush = config.EnableOnlineParcelsPush
+            };
+            return Ok(dto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "获取 SignalR 推送配置失败");
+            return StatusCode(500, new { error = "获取 SignalR 推送配置失败", message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// 更新 SignalR 推送配置
+    /// </summary>
+    [HttpPut("signalr-push")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> UpdateSignalRPushConfiguration(
+        [FromBody] SignalRPushConfigurationDto dto,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (_appConfigStore == null)
+            {
+                return StatusCode(500, new { error = "配置存储未初始化" });
+            }
+
+            var config = new SignalRPushConfiguration
+            {
+                LineSpeedPushIntervalMs = dto.LineSpeedPushIntervalMs,
+                ChuteCartPushIntervalMs = dto.ChuteCartPushIntervalMs,
+                OriginCartPushIntervalMs = dto.OriginCartPushIntervalMs,
+                ParcelCreatedPushIntervalMs = dto.ParcelCreatedPushIntervalMs,
+                ParcelDivertedPushIntervalMs = dto.ParcelDivertedPushIntervalMs,
+                DeviceStatusPushIntervalMs = dto.DeviceStatusPushIntervalMs,
+                CartLayoutPushIntervalMs = dto.CartLayoutPushIntervalMs,
+                OnlineParcelsPushPeriodMs = dto.OnlineParcelsPushPeriodMs,
+                EnableOnlineParcelsPush = dto.EnableOnlineParcelsPush
+            };
+
+            await _appConfigStore.SaveAsync("SignalRPush", config, cancellationToken);
+            _logger.LogInformation("SignalR 推送配置已更新");
+            return Ok(new { message = "SignalR 推送配置已更新" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "更新 SignalR 推送配置失败");
+            return StatusCode(500, new { error = "更新 SignalR 推送配置失败", message = ex.Message });
         }
     }
 }
