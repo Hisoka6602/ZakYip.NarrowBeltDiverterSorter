@@ -21,6 +21,7 @@ public sealed class HostConfigurationProvider : IHostConfigurationProvider
     private const string MainLineControlKey = "MainLineControl";
     private const string InfeedLayoutKey = "InfeedLayout";
     private const string UpstreamConnectionKey = "UpstreamConnection";
+    private const string UpstreamKey = "Upstream";
     private const string SimulationKey = "Simulation";
     private const string SafetyKey = "Safety";
     private const string RecordingKey = "Recording";
@@ -49,6 +50,7 @@ public sealed class HostConfigurationProvider : IHostConfigurationProvider
         return await GetConfigurationAsync<InfeedLayoutOptions>(InfeedLayoutKey, ct);
     }
 
+    [Obsolete("请使用 GetUpstreamOptionsAsync 代替")]
     public async Task<UpstreamConnectionOptions> GetUpstreamConnectionOptionsAsync(CancellationToken ct = default)
     {
         // 特殊处理：UpstreamConnectionOptions 在 Communication 项目中，
@@ -65,6 +67,24 @@ public sealed class HostConfigurationProvider : IHostConfigurationProvider
         else
         {
             _logger.LogInformation("未找到 LiteDB 配置 '{Key}'，使用默认值", UpstreamConnectionKey);
+            return defaultConfig;
+        }
+    }
+
+    public async Task<UpstreamOptions> GetUpstreamOptionsAsync(CancellationToken ct = default)
+    {
+        // UpstreamOptions 在 Communication 项目中
+        var defaultConfig = UpstreamOptions.CreateDefault();
+        var storedConfig = await _store.LoadAsync<UpstreamOptions>(UpstreamKey, ct);
+        
+        if (storedConfig != null)
+        {
+            _logger.LogDebug("使用 LiteDB 中的配置: {Key}", UpstreamKey);
+            return storedConfig;
+        }
+        else
+        {
+            _logger.LogInformation("未找到 LiteDB 配置 '{Key}'，使用默认值", UpstreamKey);
             return defaultConfig;
         }
     }

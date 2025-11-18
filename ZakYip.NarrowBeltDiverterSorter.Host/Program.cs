@@ -271,10 +271,50 @@ builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Infrastructure.Con
 #pragma warning restore CS0618 // Type or member is obsolete
 
 // ============================================================================
-// 注册上游客户端
+// 注册上游规则引擎客户端（非 HTTP）
 // ============================================================================
 
-// 注册HttpClient for UpstreamSortingApiClient
+// 注册工厂
+builder.Services.AddSingleton<SortingRuleEngineClientFactory>();
+
+// 根据配置创建并注册客户端和端口
+builder.Services.AddSingleton<ISortingRuleEngineClient>(sp =>
+{
+    var provider = sp.GetRequiredService<ZakYip.NarrowBeltDiverterSorter.Host.Configuration.IHostConfigurationProvider>();
+    var options = provider.GetUpstreamOptionsAsync().GetAwaiter().GetResult();
+    var factory = sp.GetRequiredService<SortingRuleEngineClientFactory>();
+    var client = factory.CreateClient(options);
+    
+    // 如果不是 Disabled 模式，尝试连接
+    if (options.Mode != UpstreamMode.Disabled)
+    {
+        try
+        {
+            client.ConnectAsync().AsTask().GetAwaiter().GetResult();
+        }
+        catch (Exception ex)
+        {
+            var logger = sp.GetRequiredService<ILogger<Program>>();
+            logger.LogError(ex, "连接到规则引擎失败，将继续使用默认格口");
+        }
+    }
+    
+    return client;
+});
+
+// 注册端口适配器
+builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Domain.Sorting.ISortingRuleEnginePort>(sp =>
+{
+    var client = sp.GetRequiredService<ISortingRuleEngineClient>();
+    var logger = sp.GetRequiredService<ILogger<SortingRuleEnginePortAdapter>>();
+    var provider = sp.GetRequiredService<ZakYip.NarrowBeltDiverterSorter.Host.Configuration.IHostConfigurationProvider>();
+    var options = provider.GetUpstreamOptionsAsync().GetAwaiter().GetResult();
+    
+    return new SortingRuleEnginePortAdapter(client, logger, options.DefaultChuteNumber);
+});
+
+// 保留旧的 HTTP 客户端注册用于向后兼容（标记为已废弃）
+#pragma warning disable CS0618
 builder.Services.AddHttpClient<IUpstreamSortingApiClient, UpstreamSortingApiClient>((serviceProvider, client) =>
 {
     var repo = serviceProvider.GetRequiredService<IUpstreamConnectionOptionsRepository>();
@@ -290,6 +330,7 @@ builder.Services.AddHttpClient<IUpstreamSortingApiClient, UpstreamSortingApiClie
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", options.AuthToken);
     }
 });
+#pragma warning restore CS0618
 
 // ============================================================================
 // 注册现场总线和驱动
