@@ -22,6 +22,7 @@ public class MainLineControlService : IMainLineControlService
     private bool _isRunning;
     private decimal _integralError;
     private decimal _previousError;
+    private decimal _lastTargetSpeedMmps = decimal.MinValue;
     private readonly object _lock = new();
 
     public MainLineControlService(
@@ -54,7 +55,14 @@ public class MainLineControlService : IMainLineControlService
     {
         lock (_lock)
         {
+            // 如果目标速度未变化，直接返回，避免重复写命令
+            if (targetSpeedMmps == _lastTargetSpeedMmps)
+            {
+                return;
+            }
+
             _targetSpeedMmps = targetSpeedMmps;
+            _lastTargetSpeedMmps = targetSpeedMmps;
             _logger.LogInformation("目标速度已更新为 {TargetSpeed} mm/s", targetSpeedMmps);
         }
     }

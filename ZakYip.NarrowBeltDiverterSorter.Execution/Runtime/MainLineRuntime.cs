@@ -23,6 +23,7 @@ public class MainLineRuntime : IMainLineRuntime
     private readonly ISystemRunStateService _systemRunStateService;
     private readonly MainLineControlOptions _options;
     private readonly bool _enableBringupLogging;
+    private SystemRunState _lastRunState = SystemRunState.Stopped;
 
     public MainLineRuntime(
         ILogger<MainLineRuntime> logger,
@@ -68,9 +69,9 @@ public class MainLineRuntime : IMainLineRuntime
             ? (int)(TimeSpan.FromSeconds(1).TotalMilliseconds / loopPeriod.TotalMilliseconds)
             : (int)(TimeSpan.FromSeconds(5).TotalMilliseconds / loopPeriod.TotalMilliseconds);
 
-        var lastState = _systemRunStateService.Current;
+        _lastRunState = _systemRunStateService.Current;
         var hasStartedMainLine = false;
-        _logger.LogInformation("当前系统运行状态: {State}，主线目标速度为 0 mm/s", lastState);
+        _logger.LogInformation("当前系统运行状态: {State}，主线目标速度为 0 mm/s", _lastRunState);
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -79,11 +80,11 @@ public class MainLineRuntime : IMainLineRuntime
                 // 检查系统运行状态
                 var currentState = _systemRunStateService.Current;
                 
-                // 状态切换时输出日志
-                if (currentState != lastState)
+                // 状态切换时输出日志并处理状态变化
+                if (currentState != _lastRunState)
                 {
-                    _logger.LogInformation("系统运行状态已变更: {OldState} → {NewState}", lastState, currentState);
-                    lastState = currentState;
+                    _logger.LogInformation("系统运行状态变更: {OldState} -> {NewState}", _lastRunState, currentState);
+                    _lastRunState = currentState;
                     
                     if (currentState == SystemRunState.Running)
                     {
@@ -91,11 +92,15 @@ public class MainLineRuntime : IMainLineRuntime
                     }
                     else if (currentState == SystemRunState.Stopped)
                     {
-                        _logger.LogInformation("系统已停止，主线目标速度将保持为 0 mm/s");
+                        // 状态刚刚切到 Stopped，只在此处写一次 0
+                        await _mainLineDrive.SetTargetSpeedAsync(0m, stoppingToken);
+                        _logger.LogInformation("当前系统运行状态: {State}，主线目标速度已重置为 0 mm/s", currentState);
                     }
                     else if (currentState == SystemRunState.Fault)
                     {
-                        _logger.LogWarning("系统进入故障状态（紧急停止），主线目标速度将保持为 0 mm/s");
+                        // 状态刚刚切到 Fault（急停），只在此处写一次 0
+                        await _mainLineDrive.SetTargetSpeedAsync(0m, stoppingToken);
+                        _logger.LogWarning("系统进入故障状态（紧急停止），主线目标速度已重置为 0 mm/s");
                     }
                 }
                 
@@ -142,16 +147,8 @@ public class MainLineRuntime : IMainLineRuntime
                         hasStartedMainLine = false;
                     }
                     
-                    // 非运行状态：确保主线停止（目标速度为0）
-                    await _mainLineDrive.SetTargetSpeedAsync(0m, stoppingToken);
-                    
-                    // 记录状态等待日志（每5秒一次，避免刷屏）
-                    logCounter++;
-                    if (logCounter >= logInterval)
-                    {
-                        logCounter = 0;
-                        _logger.LogInformation("系统未处于运行状态（当前: {State}），主线目标速度保持为 0 mm/s", currentState);
-                    }
+                    // 非运行状态，保持待机，不再循环写速度命令
+                    // 速度已在状态切换时写入 0，此处不再重复写入
                 }
 
                 // 定期输出状态日志

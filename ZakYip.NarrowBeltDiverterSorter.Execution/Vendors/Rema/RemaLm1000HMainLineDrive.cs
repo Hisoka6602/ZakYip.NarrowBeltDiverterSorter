@@ -72,15 +72,24 @@ public sealed class RemaLm1000HMainLineDrive : IMainLineDrive, IDisposable
         // 限制目标速度在允许范围内
         var clampedSpeed = Math.Clamp(targetSpeedMmps, _options.MinMmps, _options.MaxMmps);
         
+        // 检查目标速度是否已变化
+        bool speedChanged;
         lock (_lock)
         {
+            speedChanged = clampedSpeed != _targetSpeedMmps;
             _targetSpeedMmps = clampedSpeed;
+        }
+        
+        // 如果目标速度未变化，直接返回，避免重复写命令
+        if (!speedChanged)
+        {
+            return;
         }
         
         // 转换为 Hz
         var targetHz = ConvertMmpsToHz(clampedSpeed);
         
-        _logger.LogInformation("设置主线目标速度：{TargetMmps} mm/s (对应 {TargetHz:F2} Hz)", 
+        _logger.LogInformation("[主驱] 设置目标线速: {TargetMmps:F2} mm/s (对应 {TargetHz:F2} Hz)", 
             clampedSpeed, targetHz);
         
         // 写入 P0.07 限速频率寄存器

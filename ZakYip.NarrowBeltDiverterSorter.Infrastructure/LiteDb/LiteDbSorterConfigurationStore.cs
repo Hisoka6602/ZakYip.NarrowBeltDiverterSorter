@@ -17,28 +17,19 @@ public sealed class LiteDbSorterConfigurationStore : ISorterConfigurationStore, 
     private bool _disposed;
 
     /// <summary>
-    /// 初始化 LiteDB 配置存储
-    /// </summary>
-    /// <param name="logger">日志记录器</param>
-    public LiteDbSorterConfigurationStore(ILogger<LiteDbSorterConfigurationStore> logger)
-        : this(logger, DatabaseFileName)
-    {
-    }
-
-    /// <summary>
     /// 初始化 LiteDB 配置存储（测试友好）
     /// </summary>
     /// <param name="logger">日志记录器</param>
-    /// <param name="databaseFileName">数据库文件名</param>
-    public LiteDbSorterConfigurationStore(ILogger<LiteDbSorterConfigurationStore> logger, string databaseFileName)
+    /// <param name="databaseFilePath">数据库文件名或路径</param>
+    public LiteDbSorterConfigurationStore(ILogger<LiteDbSorterConfigurationStore> logger, string databaseFilePath = DatabaseFileName)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         try
         {
-            var connectionString = $"Filename={databaseFileName};Connection=shared";
+            var connectionString = $"Filename={databaseFilePath};Connection=shared";
             _database = new LiteDatabase(connectionString);
-            _logger.LogInformation("已初始化配置数据库: {DatabaseFile}", databaseFileName);
+            _logger.LogInformation("已初始化配置数据库: {DatabaseFile}", databaseFilePath);
         }
         catch (Exception ex)
         {
