@@ -1,4 +1,4 @@
-namespace ZakYip.NarrowBeltDiverterSorter.Observability;
+namespace ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 
 /// <summary>
 /// 事件总线接口

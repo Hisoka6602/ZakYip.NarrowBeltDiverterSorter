@@ -1,5 +1,6 @@
 using System.Threading.Channels;
 using Microsoft.Extensions.Logging;
+using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Observability;
 

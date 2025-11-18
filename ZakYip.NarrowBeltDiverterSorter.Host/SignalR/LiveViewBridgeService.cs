@@ -1,3 +1,4 @@
+using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;

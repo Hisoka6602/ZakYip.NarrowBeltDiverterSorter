@@ -1,3 +1,4 @@
+using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using Microsoft.Extensions.Options;
 using ZakYip.NarrowBeltDiverterSorter.Communication;
 using ZakYip.NarrowBeltDiverterSorter.Ingress.Chute;
