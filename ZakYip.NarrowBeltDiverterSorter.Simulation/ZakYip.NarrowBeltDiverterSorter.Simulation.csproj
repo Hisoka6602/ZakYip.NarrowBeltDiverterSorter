@@ -7,8 +7,6 @@
     <ProjectReference Include="..\ZakYip.NarrowBeltDiverterSorter.Communication\ZakYip.NarrowBeltDiverterSorter.Communication.csproj" />
     <ProjectReference Include="..\ZakYip.NarrowBeltDiverterSorter.UpstreamContracts\ZakYip.NarrowBeltDiverterSorter.UpstreamContracts.csproj" />
     <ProjectReference Include="..\ZakYip.NarrowBeltDiverterSorter.Infrastructure\ZakYip.NarrowBeltDiverterSorter.Infrastructure.csproj" />
-    <!-- TODO: 架构债务 - Simulation 不应依赖 Host，需要将 Workers 移至 Execution 或创建共享层 -->
-    <ProjectReference Include="..\ZakYip.NarrowBeltDiverterSorter.Host\ZakYip.NarrowBeltDiverterSorter.Host.csproj" />
   </ItemGroup>
 
   <ItemGroup>

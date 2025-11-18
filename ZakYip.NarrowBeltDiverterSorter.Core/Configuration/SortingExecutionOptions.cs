@@ -1,7 +1,7 @@
-namespace ZakYip.NarrowBeltDiverterSorter.Host;
+namespace ZakYip.NarrowBeltDiverterSorter.Core.Configuration;
 
 /// <summary>
-/// 分拣执行器配置选项
+/// 分拣执行器配置选项（仿真专用）
 /// </summary>
 public class SortingExecutionOptions
 {
