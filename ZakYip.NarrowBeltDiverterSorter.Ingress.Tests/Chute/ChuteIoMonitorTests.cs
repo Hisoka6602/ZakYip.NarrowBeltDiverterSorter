@@ -1,3 +1,4 @@
+using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using Microsoft.Extensions.Logging;
 using ZakYip.NarrowBeltDiverterSorter.Observability;
 using Microsoft.Extensions.Logging.Abstractions;
