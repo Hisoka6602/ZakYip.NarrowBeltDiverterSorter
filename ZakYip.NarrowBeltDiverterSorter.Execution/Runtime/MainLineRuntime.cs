@@ -46,6 +46,7 @@ public class MainLineRuntime : IMainLineRuntime
     public async Task RunAsync(CancellationToken stoppingToken)
     {
         _logger.LogInformation("主线控制运行时已启动");
+        _logger.LogInformation("主线将受系统运行状态控制，仅在面板启动按钮置为运行时才允许设定非零速度");
 
         // 初始化主线驱动
         _logger.LogInformation("开始初始化主线驱动");
@@ -68,6 +69,8 @@ public class MainLineRuntime : IMainLineRuntime
             return;
         }
 
+        _logger.LogInformation("主线控制服务已启动（待机模式），等待系统运行状态变更为 Running");
+
         var loopPeriod = _options.LoopPeriod;
         var logCounter = 0;
         // Bring-up 模式：每秒输出，正常模式：每5秒输出
@@ -75,12 +78,35 @@ public class MainLineRuntime : IMainLineRuntime
             ? (int)(TimeSpan.FromSeconds(1).TotalMilliseconds / loopPeriod.TotalMilliseconds)
             : (int)(TimeSpan.FromSeconds(5).TotalMilliseconds / loopPeriod.TotalMilliseconds);
 
+        var lastState = _systemRunStateService.Current;
+        _logger.LogInformation("当前系统运行状态: {State}，主线目标速度为 0 mm/s", lastState);
+
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
                 // 检查系统运行状态
                 var currentState = _systemRunStateService.Current;
+                
+                // 状态切换时输出日志
+                if (currentState != lastState)
+                {
+                    _logger.LogInformation("系统运行状态已变更: {OldState} → {NewState}", lastState, currentState);
+                    lastState = currentState;
+                    
+                    if (currentState == SystemRunState.Running)
+                    {
+                        _logger.LogInformation("系统已进入运行状态，主线将开始设定目标速度");
+                    }
+                    else if (currentState == SystemRunState.Stopped)
+                    {
+                        _logger.LogInformation("系统已停止，主线目标速度将保持为 0 mm/s");
+                    }
+                    else if (currentState == SystemRunState.Fault)
+                    {
+                        _logger.LogWarning("系统进入故障状态（紧急停止），主线目标速度将保持为 0 mm/s");
+                    }
+                }
                 
                 // 只有在 Running 状态时才设定非零速度
                 if (currentState == SystemRunState.Running)
