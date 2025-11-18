@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using ZakYip.NarrowBeltDiverterSorter.Communication;
 using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
+using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Chutes;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Execution.Chute;
 
@@ -14,6 +15,7 @@ public class ChuteTransmitterDriver : IChuteTransmitterPort
     private readonly IFieldBusClient _fieldBusClient;
     private readonly ChuteMappingConfiguration _mappingConfiguration;
     private readonly ILogger<ChuteTransmitterDriver> _logger;
+    private readonly List<ChuteTransmitterBinding> _bindings = new();
 
     /// <summary>
     /// 创建格口发信器驱动实例
@@ -30,6 +32,19 @@ public class ChuteTransmitterDriver : IChuteTransmitterPort
         _mappingConfiguration = mappingConfiguration ?? throw new ArgumentNullException(nameof(mappingConfiguration));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
+
+    /// <summary>
+    /// 注册格口发信器绑定配置。
+    /// </summary>
+    public void RegisterBindings(IEnumerable<ChuteTransmitterBinding> bindings)
+    {
+        _bindings.Clear();
+        _bindings.AddRange(bindings);
+        _logger.LogInformation("已注册 {Count} 条格口发信器绑定配置", _bindings.Count);
+    }
+
+    /// <inheritdoc/>
+    public IReadOnlyList<ChuteTransmitterBinding> GetRegisteredBindings() => _bindings;
 
     /// <inheritdoc/>
     public async Task OpenWindowAsync(ChuteId chuteId, TimeSpan openDuration, CancellationToken cancellationToken = default)

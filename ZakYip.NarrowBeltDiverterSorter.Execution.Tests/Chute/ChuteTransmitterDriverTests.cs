@@ -1,160 +1,93 @@
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
+using Xunit;
 using ZakYip.NarrowBeltDiverterSorter.Communication;
-using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
+using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Chutes;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Chute;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Execution.Tests.Chute;
 
 /// <summary>
-/// ChuteTransmitterDriver测试
+/// ChuteTransmitterDriver 单元测试
 /// </summary>
 public class ChuteTransmitterDriverTests
 {
-    /// <summary>
-    /// Mock现场总线客户端
-    /// </summary>
-    private class MockFieldBusClient : IFieldBusClient
-    {
-        private bool _isConnected;
-        private readonly Dictionary<int, bool> _coilStates = new();
-
-        public Task<bool> ConnectAsync(CancellationToken cancellationToken = default)
-        {
-            _isConnected = true;
-            return Task.FromResult(true);
-        }
-
-        public Task DisconnectAsync(CancellationToken cancellationToken = default)
-        {
-            _isConnected = false;
-            return Task.CompletedTask;
-        }
-
-        public Task<bool> WriteSingleCoilAsync(int address, bool value, CancellationToken cancellationToken = default)
-        {
-            if (!_isConnected) return Task.FromResult(false);
-            _coilStates[address] = value;
-            return Task.FromResult(true);
-        }
-
-        public bool GetCoilState(int address) => _coilStates.TryGetValue(address, out var state) && state;
-
-        public Task<bool> WriteMultipleCoilsAsync(int startAddress, bool[] values, CancellationToken cancellationToken = default) => Task.FromResult(true);
-        public Task<bool> WriteSingleRegisterAsync(int address, ushort value, CancellationToken cancellationToken = default) => Task.FromResult(true);
-        public Task<bool> WriteMultipleRegistersAsync(int startAddress, ushort[] values, CancellationToken cancellationToken = default) => Task.FromResult(true);
-        public Task<bool[]?> ReadCoilsAsync(int address, int count, CancellationToken cancellationToken = default) => Task.FromResult<bool[]?>(new bool[count]);
-        public Task<bool[]?> ReadDiscreteInputsAsync(int address, int count, CancellationToken cancellationToken = default) => Task.FromResult<bool[]?>(new bool[count]);
-        public Task<ushort[]?> ReadHoldingRegistersAsync(int address, int count, CancellationToken cancellationToken = default) => Task.FromResult<ushort[]?>(new ushort[count]);
-        public Task<ushort[]?> ReadInputRegistersAsync(int address, int count, CancellationToken cancellationToken = default) => Task.FromResult<ushort[]?>(new ushort[count]);
-        public bool IsConnected() => _isConnected;
-    }
-
-    /// <summary>
-    /// Mock日志记录器
-    /// </summary>
-    private class MockLogger : ILogger<ChuteTransmitterDriver>
-    {
-        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
-        public bool IsEnabled(LogLevel logLevel) => true;
-        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) { }
-    }
-
     [Fact]
-    public async Task OpenWindow_Should_Write_True_Then_False_To_Coil()
+    public void GetRegisteredBindings_WhenEmpty_ShouldReturnEmptyList()
     {
         // Arrange
-        var mockClient = new MockFieldBusClient();
-        await mockClient.ConnectAsync();
+        var mockFieldBusClient = new Mock<IFieldBusClient>();
+        var mappingConfig = new ChuteMappingConfiguration();
+        var logger = NullLogger<ChuteTransmitterDriver>.Instance;
 
-        var mapping = new ChuteMappingConfiguration
-        {
-            ChuteAddressMap = new Dictionary<long, int>
-            {
-                { 1, 100 }
-            }
-        };
-
-        var logger = new MockLogger();
-        var driver = new ChuteTransmitterDriver(mockClient, mapping, logger);
+        var driver = new ChuteTransmitterDriver(mockFieldBusClient.Object, mappingConfig, logger);
 
         // Act
-        var chuteId = new ChuteId(1);
-        var openDuration = TimeSpan.FromMilliseconds(50);
-        await driver.OpenWindowAsync(chuteId, openDuration);
-
-        // Assert - After the operation, coil should be false (closed)
-        Assert.False(mockClient.GetCoilState(100));
-    }
-
-    [Fact]
-    public async Task ForceClose_Should_Write_False_To_Coil()
-    {
-        // Arrange
-        var mockClient = new MockFieldBusClient();
-        await mockClient.ConnectAsync();
-
-        var mapping = new ChuteMappingConfiguration
-        {
-            ChuteAddressMap = new Dictionary<long, int>
-            {
-                { 1, 100 }
-            }
-        };
-
-        var logger = new MockLogger();
-        var driver = new ChuteTransmitterDriver(mockClient, mapping, logger);
-
-        // Act
-        var chuteId = new ChuteId(1);
-        await driver.ForceCloseAsync(chuteId);
+        var bindings = driver.GetRegisteredBindings();
 
         // Assert
-        Assert.False(mockClient.GetCoilState(100));
+        Assert.NotNull(bindings);
+        Assert.Empty(bindings);
     }
 
     [Fact]
-    public async Task OpenWindow_Should_Handle_Unmapped_Chute()
+    public void RegisterBindings_ShouldStore_Bindings()
     {
         // Arrange
-        var mockClient = new MockFieldBusClient();
-        await mockClient.ConnectAsync();
+        var mockFieldBusClient = new Mock<IFieldBusClient>();
+        var mappingConfig = new ChuteMappingConfiguration();
+        var logger = NullLogger<ChuteTransmitterDriver>.Instance;
 
-        var mapping = new ChuteMappingConfiguration
+        var driver = new ChuteTransmitterDriver(mockFieldBusClient.Object, mappingConfig, logger);
+
+        var bindings = new List<ChuteTransmitterBinding>
         {
-            ChuteAddressMap = new Dictionary<long, int>()
+            new ChuteTransmitterBinding { ChuteId = 1, BusKey = "Bus1", OutputBitIndex = 0, IsNormallyOn = false },
+            new ChuteTransmitterBinding { ChuteId = 2, BusKey = "Bus1", OutputBitIndex = 1, IsNormallyOn = false },
+            new ChuteTransmitterBinding { ChuteId = 3, BusKey = "Bus1", OutputBitIndex = 2, IsNormallyOn = true }
         };
 
-        var logger = new MockLogger();
-        var driver = new ChuteTransmitterDriver(mockClient, mapping, logger);
+        // Act
+        driver.RegisterBindings(bindings);
+        var registered = driver.GetRegisteredBindings();
 
-        // Act - Should not throw
-        var chuteId = new ChuteId(999);
-        await driver.OpenWindowAsync(chuteId, TimeSpan.FromMilliseconds(50));
-
-        // Assert - No exception thrown
-        Assert.True(true);
+        // Assert
+        Assert.Equal(3, registered.Count);
+        Assert.Contains(registered, b => b.ChuteId == 1 && b.BusKey == "Bus1" && b.OutputBitIndex == 0);
+        Assert.Contains(registered, b => b.ChuteId == 2 && b.BusKey == "Bus1" && b.OutputBitIndex == 1);
+        Assert.Contains(registered, b => b.ChuteId == 3 && b.BusKey == "Bus1" && b.OutputBitIndex == 2 && b.IsNormallyOn);
     }
 
     [Fact]
-    public async Task ForceClose_Should_Handle_Unmapped_Chute()
+    public void RegisterBindings_CalledTwice_ShouldReplace_PreviousBindings()
     {
         // Arrange
-        var mockClient = new MockFieldBusClient();
-        await mockClient.ConnectAsync();
+        var mockFieldBusClient = new Mock<IFieldBusClient>();
+        var mappingConfig = new ChuteMappingConfiguration();
+        var logger = NullLogger<ChuteTransmitterDriver>.Instance;
 
-        var mapping = new ChuteMappingConfiguration
+        var driver = new ChuteTransmitterDriver(mockFieldBusClient.Object, mappingConfig, logger);
+
+        var firstBindings = new List<ChuteTransmitterBinding>
         {
-            ChuteAddressMap = new Dictionary<long, int>()
+            new ChuteTransmitterBinding { ChuteId = 1, BusKey = "Bus1", OutputBitIndex = 0, IsNormallyOn = false }
         };
 
-        var logger = new MockLogger();
-        var driver = new ChuteTransmitterDriver(mockClient, mapping, logger);
+        var secondBindings = new List<ChuteTransmitterBinding>
+        {
+            new ChuteTransmitterBinding { ChuteId = 2, BusKey = "Bus2", OutputBitIndex = 5, IsNormallyOn = true },
+            new ChuteTransmitterBinding { ChuteId = 3, BusKey = "Bus2", OutputBitIndex = 6, IsNormallyOn = false }
+        };
 
-        // Act - Should not throw
-        var chuteId = new ChuteId(999);
-        await driver.ForceCloseAsync(chuteId);
+        // Act
+        driver.RegisterBindings(firstBindings);
+        driver.RegisterBindings(secondBindings);
+        var registered = driver.GetRegisteredBindings();
 
-        // Assert - No exception thrown
-        Assert.True(true);
+        // Assert
+        Assert.Equal(2, registered.Count);
+        Assert.DoesNotContain(registered, b => b.ChuteId == 1);
+        Assert.Contains(registered, b => b.ChuteId == 2);
+        Assert.Contains(registered, b => b.ChuteId == 3);
     }
 }

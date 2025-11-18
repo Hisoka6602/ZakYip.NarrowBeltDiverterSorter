@@ -157,4 +157,119 @@ public class LiteDbSorterConfigurationStoreTests : IDisposable
         public int Value { get; set; }
         public bool IsEnabled { get; set; }
     }
+
+    [Fact]
+    public async Task GetAllBindingsAsync_WhenEmpty_ShouldReturnEmptyList()
+    {
+        // Act
+        var bindings = await _configStore.GetAllBindingsAsync();
+
+        // Assert
+        Assert.NotNull(bindings);
+        Assert.Empty(bindings);
+    }
+
+    [Fact]
+    public async Task UpsertBindingAsync_And_GetAllBindingsAsync_Should_RoundTrip()
+    {
+        // Arrange
+        var binding1 = new ZakYip.NarrowBeltDiverterSorter.Core.Domain.Chutes.ChuteTransmitterBinding
+        {
+            ChuteId = 1,
+            BusKey = "Modbus-1",
+            OutputBitIndex = 0,
+            IsNormallyOn = false
+        };
+        var binding2 = new ZakYip.NarrowBeltDiverterSorter.Core.Domain.Chutes.ChuteTransmitterBinding
+        {
+            ChuteId = 2,
+            BusKey = "Modbus-1",
+            OutputBitIndex = 1,
+            IsNormallyOn = true
+        };
+
+        // Act
+        await _configStore.UpsertBindingAsync(binding1);
+        await _configStore.UpsertBindingAsync(binding2);
+        var bindings = await _configStore.GetAllBindingsAsync();
+
+        // Assert
+        Assert.Equal(2, bindings.Count);
+        
+        var loaded1 = bindings.FirstOrDefault(b => b.ChuteId == 1);
+        Assert.NotNull(loaded1);
+        Assert.Equal("Modbus-1", loaded1.BusKey);
+        Assert.Equal(0, loaded1.OutputBitIndex);
+        Assert.False(loaded1.IsNormallyOn);
+
+        var loaded2 = bindings.FirstOrDefault(b => b.ChuteId == 2);
+        Assert.NotNull(loaded2);
+        Assert.Equal("Modbus-1", loaded2.BusKey);
+        Assert.Equal(1, loaded2.OutputBitIndex);
+        Assert.True(loaded2.IsNormallyOn);
+    }
+
+    [Fact]
+    public async Task UpsertBindingAsync_ShouldUpdate_ExistingBinding()
+    {
+        // Arrange
+        var binding = new ZakYip.NarrowBeltDiverterSorter.Core.Domain.Chutes.ChuteTransmitterBinding
+        {
+            ChuteId = 1,
+            BusKey = "Modbus-1",
+            OutputBitIndex = 0,
+            IsNormallyOn = false
+        };
+        await _configStore.UpsertBindingAsync(binding);
+
+        // Act - update the same chute
+        var updatedBinding = new ZakYip.NarrowBeltDiverterSorter.Core.Domain.Chutes.ChuteTransmitterBinding
+        {
+            ChuteId = 1,
+            BusKey = "Modbus-2",
+            OutputBitIndex = 5,
+            IsNormallyOn = true
+        };
+        await _configStore.UpsertBindingAsync(updatedBinding);
+
+        var bindings = await _configStore.GetAllBindingsAsync();
+
+        // Assert - should only have one binding with updated values
+        Assert.Single(bindings);
+        var loaded = bindings[0];
+        Assert.Equal(1, loaded.ChuteId);
+        Assert.Equal("Modbus-2", loaded.BusKey);
+        Assert.Equal(5, loaded.OutputBitIndex);
+        Assert.True(loaded.IsNormallyOn);
+    }
+
+    [Fact]
+    public async Task DeleteBindingAsync_ShouldRemove_Binding()
+    {
+        // Arrange
+        var binding1 = new ZakYip.NarrowBeltDiverterSorter.Core.Domain.Chutes.ChuteTransmitterBinding
+        {
+            ChuteId = 1,
+            BusKey = "Modbus-1",
+            OutputBitIndex = 0,
+            IsNormallyOn = false
+        };
+        var binding2 = new ZakYip.NarrowBeltDiverterSorter.Core.Domain.Chutes.ChuteTransmitterBinding
+        {
+            ChuteId = 2,
+            BusKey = "Modbus-1",
+            OutputBitIndex = 1,
+            IsNormallyOn = false
+        };
+        await _configStore.UpsertBindingAsync(binding1);
+        await _configStore.UpsertBindingAsync(binding2);
+
+        // Act
+        await _configStore.DeleteBindingAsync(1);
+        var bindings = await _configStore.GetAllBindingsAsync();
+
+        // Assert
+        Assert.Single(bindings);
+        Assert.Equal(2, bindings[0].ChuteId);
+    }
 }

@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
+using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Chutes;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Simulation.Fakes;
 
@@ -10,6 +11,7 @@ namespace ZakYip.NarrowBeltDiverterSorter.Simulation.Fakes;
 public class FakeChuteTransmitterPort : IChuteTransmitterPort
 {
     private readonly ConcurrentDictionary<long, bool> _chuteStates = new();
+    private readonly List<ChuteTransmitterBinding> _bindings = new();
 
     /// <summary>
     /// 获取所有格口的状态（格口ID -> 是否打开）
@@ -25,6 +27,9 @@ public class FakeChuteTransmitterPort : IChuteTransmitterPort
     /// 获取打开的格口数量
     /// </summary>
     public int GetOpenChuteCount() => _chuteStates.Count(kvp => kvp.Value);
+
+    /// <inheritdoc/>
+    public IReadOnlyList<ChuteTransmitterBinding> GetRegisteredBindings() => _bindings;
 
     public Task OpenWindowAsync(ChuteId chuteId, TimeSpan openDuration, CancellationToken cancellationToken = default)
     {

@@ -66,6 +66,31 @@ public class ChuteSafetyService : IChuteSafetyService
                 return;
             }
 
+            // 如果既没有 IChuteConfigProvider，尝试直接从 IChuteTransmitterPort 获取注册的绑定
+            if (_chuteTransmitterPort != null)
+            {
+                var bindings = _chuteTransmitterPort.GetRegisteredBindings();
+                _logger.LogInformation("安全控制: 正在通过 IChuteTransmitterPort 关闭全部 {Count} 个格口发信器...", bindings.Count);
+
+                if (bindings.Count == 0)
+                {
+                    _logger.LogWarning("安全控制: 格口 IO 配置为空，将无法进行真实分拣，仅能进行主线与小车仿真。");
+                }
+                else
+                {
+                    var closeTasks = new List<Task>();
+                    foreach (var binding in bindings)
+                    {
+                        closeTasks.Add(CloseChuteSafelyAsync(new ChuteId(binding.ChuteId), cancellationToken));
+                    }
+
+                    await Task.WhenAll(closeTasks);
+                }
+                
+                _logger.LogInformation("安全控制: 已通过 IChuteTransmitterPort 关闭全部格口发信器");
+                return;
+            }
+
             _logger.LogWarning("安全控制: 无可用的格口关闭实现");
         }
         catch (Exception ex)
