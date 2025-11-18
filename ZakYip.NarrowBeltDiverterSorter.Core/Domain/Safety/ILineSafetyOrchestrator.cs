@@ -19,13 +19,15 @@ public interface ILineSafetyOrchestrator
     SafetyState CurrentSafetyState { get; }
 
     /// <summary>
-    /// 线体运行状态变化事件
+    /// 线体运行状态变化事件（已废弃，请订阅 IEventBus）
     /// </summary>
+    [Obsolete("请使用 IEventBus 订阅 Observability.Events.LineRunStateChangedEventArgs，此事件将在未来版本中移除")]
     event EventHandler<LineRunStateChangedEventArgs>? LineRunStateChanged;
 
     /// <summary>
-    /// 安全状态变化事件
+    /// 安全状态变化事件（已废弃，请订阅 IEventBus）
     /// </summary>
+    [Obsolete("请使用 IEventBus 订阅 Observability.Events.SafetyStateChangedEventArgs，此事件将在未来版本中移除")]
     event EventHandler<SafetyStateChangedEventArgs>? SafetyStateChanged;
 
     /// <summary>

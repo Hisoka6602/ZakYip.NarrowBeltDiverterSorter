@@ -57,7 +57,10 @@ public class LineSafetyOrchestrator : ILineSafetyOrchestrator
         }
     }
 
+    [Obsolete("请使用 IEventBus 订阅 Observability.Events.LineRunStateChangedEventArgs，此事件将在未来版本中移除")]
     public event EventHandler<LineRunStateChangedEventArgs>? LineRunStateChanged;
+    
+    [Obsolete("请使用 IEventBus 订阅 Observability.Events.SafetyStateChangedEventArgs，此事件将在未来版本中移除")]
     public event EventHandler<SafetyStateChangedEventArgs>? SafetyStateChanged;
 
     public async Task<bool> RequestStartAsync(CancellationToken cancellationToken = default)
@@ -274,8 +277,10 @@ public class LineSafetyOrchestrator : ILineSafetyOrchestrator
                     newSafetyState,
                     eventArgs.Source);
 
-                // 发布安全状态变化事件 (Core层接口事件)
+                // 发布安全状态变化事件 (Core层接口事件，已废弃)
+#pragma warning disable CS0618 // Type or member is obsolete
                 SafetyStateChanged?.Invoke(this, safetyEventArgs);
+#pragma warning restore CS0618
 
                 // 同时发布到事件总线 (Observability层事件)
                 var observabilitySafetyEvent = new Observability.Events.SafetyStateChangedEventArgs
@@ -373,8 +378,10 @@ public class LineSafetyOrchestrator : ILineSafetyOrchestrator
             newState,
             message);
 
-        // 发布状态变化事件 (Core层接口事件)
+        // 发布状态变化事件 (Core层接口事件，已废弃)
+#pragma warning disable CS0618 // Type or member is obsolete
         LineRunStateChanged?.Invoke(this, eventArgs);
+#pragma warning restore CS0618
 
         // 同时发布到事件总线 (Observability层事件)
         var observabilityEvent = new Observability.Events.LineRunStateChangedEventArgs

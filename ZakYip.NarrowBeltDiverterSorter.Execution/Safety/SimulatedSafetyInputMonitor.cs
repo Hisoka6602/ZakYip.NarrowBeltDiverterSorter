@@ -24,6 +24,7 @@ public class SimulatedSafetyInputMonitor : ISafetyInputMonitor
         _safetyInputStates["Interlock1"] = true;
     }
 
+    [Obsolete("请使用 IEventBus 订阅 Observability.Events.SafetyInputChangedEventArgs，此事件将在未来版本中移除")]
     public event EventHandler<SafetyInputChangedEventArgs>? SafetyInputChanged;
 
     public Task StartMonitoringAsync(CancellationToken cancellationToken = default)
@@ -122,6 +123,8 @@ public class SimulatedSafetyInputMonitor : ISafetyInputMonitor
             OccurredAt = DateTimeOffset.UtcNow
         };
 
+#pragma warning disable CS0618 // Type or member is obsolete
         SafetyInputChanged?.Invoke(this, eventArgs);
+#pragma warning restore CS0618
     }
 }
