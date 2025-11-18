@@ -2,7 +2,7 @@ using ZakYip.NarrowBeltDiverterSorter.Core.Configuration;
 using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Core.Application;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Feeding;
-using ZakYip.NarrowBeltDiverterSorter.Observability;
+using ZakYip.NarrowBeltDiverterSorter.Observability.Events;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Host;
 
@@ -35,20 +35,37 @@ public class ParcelLoadCoordinatorWorker : BackgroundService
             _coordinator.SetLogAction(message => _logger.LogInformation(message));
         }
 
-        // 订阅包裹创建事件（需要适配器）
-        _eventBus.Subscribe<ParcelCreatedFromInfeedEventArgs>(async (eventArgs, ct) =>
+        // 订阅包裹创建事件
+        _eventBus.Subscribe<Observability.Events.ParcelCreatedFromInfeedEventArgs>(async (eventArgs, ct) =>
         {
-            _coordinator.HandleParcelCreatedFromInfeed(this, eventArgs);
+            // 转换为Core事件参数类型
+            var coreEventArgs = new Core.Domain.Feeding.ParcelCreatedFromInfeedEventArgs
+            {
+                ParcelId = new Core.Domain.ParcelId(eventArgs.ParcelId),
+                Barcode = eventArgs.Barcode,
+                InfeedTriggerTime = eventArgs.InfeedTriggerTime
+            };
+            _coordinator.HandleParcelCreatedFromInfeed(this, coreEventArgs);
             await Task.CompletedTask;
         });
+
+        // 订阅装载完成事件（Bring-up 模式日志）
+        if (_enableBringupLogging)
+        {
+            _eventBus.Subscribe<Observability.Events.ParcelLoadedOnCartEventArgs>(async (eventArgs, ct) =>
+            {
+                _logger.LogInformation(
+                    "入口触发 ParcelId={ParcelId}, 预计落车 CartId={CartId}",
+                    eventArgs.ParcelId,
+                    eventArgs.CartId);
+                await Task.CompletedTask;
+            });
+        }
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _logger.LogInformation("包裹装载协调器已启动");
-
-        // 订阅装载完成事件，输出 Bring-up 日志
-        _coordinator.ParcelLoadedOnCart += OnParcelLoadedOnCart;
 
         try
         {
@@ -61,22 +78,7 @@ public class ParcelLoadCoordinatorWorker : BackgroundService
         }
         finally
         {
-            _coordinator.ParcelLoadedOnCart -= OnParcelLoadedOnCart;
             _logger.LogInformation("包裹装载协调器已停止");
-        }
-    }
-
-    /// <summary>
-    /// 处理包裹装载到小车事件（Bring-up 模式日志）
-    /// </summary>
-    private void OnParcelLoadedOnCart(object? sender, ParcelLoadedOnCartEventArgs e)
-    {
-        if (_enableBringupLogging)
-        {
-            _logger.LogInformation(
-                "入口触发 ParcelId={ParcelId}, 预计落车 CartId={CartId}",
-                e.ParcelId.Value,
-                e.CartId.Value);
         }
     }
 }
