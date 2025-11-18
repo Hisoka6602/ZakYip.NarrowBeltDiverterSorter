@@ -51,7 +51,32 @@ builder.Services.AddSingleton(startupConfig);
 // ============================================================================
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    // 配置 API 元信息
+    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Title = "窄带分流器分拣系统 API",
+        Version = "v1",
+        Description = "窄带分流器分拣系统 RESTful API 文档，提供主线控制、包裹管理、格口配置、仿真控制等功能"
+    });
+
+    // 引入 XML 文档注释
+    var hostXmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var hostXmlPath = System.IO.Path.Combine(AppContext.BaseDirectory, hostXmlFile);
+    if (System.IO.File.Exists(hostXmlPath))
+    {
+        options.IncludeXmlComments(hostXmlPath);
+    }
+
+    // 引入 Host.Contracts XML 文档注释
+    var contractsXmlFile = "ZakYip.NarrowBeltDiverterSorter.Host.Contracts.xml";
+    var contractsXmlPath = System.IO.Path.Combine(AppContext.BaseDirectory, contractsXmlFile);
+    if (System.IO.File.Exists(contractsXmlPath))
+    {
+        options.IncludeXmlComments(contractsXmlPath);
+    }
+});
 
 // ============================================================================
 // 配置 SignalR

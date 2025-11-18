@@ -5,6 +5,9 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <UserSecretsId>dotnet-ZakYip.NarrowBeltDiverterSorter.Host-9d2972a3-ce4a-4823-84c9-6a9936aaab18</UserSecretsId>
+    <!-- Generate XML documentation for Swagger -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
