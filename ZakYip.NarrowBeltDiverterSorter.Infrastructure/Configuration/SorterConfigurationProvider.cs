@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using ZakYip.NarrowBeltDiverterSorter.Core.Configuration;
 
@@ -6,24 +5,48 @@ namespace ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
 
 /// <summary>
 /// Sorter 配置提供器实现
-/// 基于 LiteDB 存储，支持从 appsettings.json 初始化默认配置
+/// 基于 LiteDB 存储，使用内置默认值作为回退
 /// </summary>
 public sealed class SorterConfigurationProvider : ISorterConfigurationProvider
 {
     private const string ConfigKey = "Sorter";
     private readonly ISorterConfigurationStore _store;
-    private readonly IConfiguration _configuration;
     private readonly ILogger<SorterConfigurationProvider> _logger;
     private SorterOptions? _cachedOptions;
     private readonly object _cacheLock = new();
 
+    /// <summary>
+    /// 内置默认配置
+    /// 此默认值仅用于 LiteDB 中完全缺失配置时的回退
+    /// 与之前 appsettings 中的默认值保持一致
+    /// </summary>
+    private static readonly SorterOptions DefaultSorterOptions = new()
+    {
+        MainLine = new SorterMainLineOptions
+        {
+            Mode = "Simulation",
+            Rema = new RemaConnectionOptions
+            {
+                PortName = "COM3",
+                BaudRate = 38400,
+                DataBits = 8,
+                Parity = "None",
+                StopBits = "One",
+                SlaveAddress = 1,
+                ReadTimeout = TimeSpan.FromMilliseconds(1200),
+                WriteTimeout = TimeSpan.FromMilliseconds(1200),
+                ConnectTimeout = TimeSpan.FromSeconds(3),
+                MaxRetries = 3,
+                RetryDelay = TimeSpan.FromMilliseconds(200)
+            }
+        }
+    };
+
     public SorterConfigurationProvider(
         ISorterConfigurationStore store,
-        IConfiguration configuration,
         ILogger<SorterConfigurationProvider> logger)
     {
         _store = store ?? throw new ArgumentNullException(nameof(store));
-        _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -62,13 +85,13 @@ public sealed class SorterConfigurationProvider : ISorterConfigurationProvider
                 return options;
             }
 
-            // LiteDB 中没有配置，从 appsettings.json 读取默认值
-            _logger.LogInformation("LiteDB 中未找到 Sorter 配置，将从 appsettings.json 初始化默认配置");
-            options = LoadDefaultFromConfiguration();
+            // LiteDB 中没有配置，使用内置默认值
+            _logger.LogWarning("LiteDB 中未找到 Sorter 配置，将使用内置默认值");
+            options = CloneDefaultOptions();
 
             // 保存到 LiteDB
             await _store.SaveAsync(ConfigKey, options, cancellationToken);
-            _logger.LogInformation("已将默认 Sorter 配置保存到 LiteDB，模式: {Mode}", options.MainLine.Mode);
+            _logger.LogInformation("已将内置默认 Sorter 配置写入 LiteDB，模式: {Mode}", options.MainLine.Mode);
 
             lock (_cacheLock)
             {
@@ -109,43 +132,30 @@ public sealed class SorterConfigurationProvider : ISorterConfigurationProvider
     }
 
     /// <summary>
-    /// 从 IConfiguration 加载默认配置
+    /// 克隆内置默认配置
     /// </summary>
-    private SorterOptions LoadDefaultFromConfiguration()
+    private static SorterOptions CloneDefaultOptions()
     {
-        var options = new SorterOptions
+        return new SorterOptions
         {
-            MainLine = new SorterMainLineOptions()
-        };
-
-        // 绑定配置节
-        var section = _configuration.GetSection("Sorter:MainLine");
-        if (section.Exists())
-        {
-            options.MainLine.Mode = section.GetValue<string>("Mode") ?? "Simulation";
-            
-            // 读取 Rema 配置
-            var remaSection = section.GetSection("Rema");
-            if (remaSection.Exists())
+            MainLine = new SorterMainLineOptions
             {
-                options.MainLine.Rema = new RemaConnectionOptions
+                Mode = DefaultSorterOptions.MainLine.Mode,
+                Rema = new RemaConnectionOptions
                 {
-                    PortName = remaSection.GetValue<string>("PortName") ?? "COM3",
-                    BaudRate = remaSection.GetValue<int>("BaudRate", 38400),
-                    DataBits = remaSection.GetValue<int>("DataBits", 8),
-                    Parity = remaSection.GetValue<string>("Parity") ?? "None",
-                    StopBits = remaSection.GetValue<string>("StopBits") ?? "One",
-                    SlaveAddress = remaSection.GetValue<int>("SlaveAddress", 1),
-                    ReadTimeout = remaSection.GetValue<TimeSpan>("ReadTimeout", TimeSpan.FromMilliseconds(1200)),
-                    WriteTimeout = remaSection.GetValue<TimeSpan>("WriteTimeout", TimeSpan.FromMilliseconds(1200)),
-                    ConnectTimeout = remaSection.GetValue<TimeSpan>("ConnectTimeout", TimeSpan.FromSeconds(3)),
-                    MaxRetries = remaSection.GetValue<int>("MaxRetries", 3),
-                    RetryDelay = remaSection.GetValue<TimeSpan>("RetryDelay", TimeSpan.FromMilliseconds(200))
-                };
+                    PortName = DefaultSorterOptions.MainLine.Rema.PortName,
+                    BaudRate = DefaultSorterOptions.MainLine.Rema.BaudRate,
+                    DataBits = DefaultSorterOptions.MainLine.Rema.DataBits,
+                    Parity = DefaultSorterOptions.MainLine.Rema.Parity,
+                    StopBits = DefaultSorterOptions.MainLine.Rema.StopBits,
+                    SlaveAddress = DefaultSorterOptions.MainLine.Rema.SlaveAddress,
+                    ReadTimeout = DefaultSorterOptions.MainLine.Rema.ReadTimeout,
+                    WriteTimeout = DefaultSorterOptions.MainLine.Rema.WriteTimeout,
+                    ConnectTimeout = DefaultSorterOptions.MainLine.Rema.ConnectTimeout,
+                    MaxRetries = DefaultSorterOptions.MainLine.Rema.MaxRetries,
+                    RetryDelay = DefaultSorterOptions.MainLine.Rema.RetryDelay
+                }
             }
-        }
-
-        _logger.LogInformation("从 appsettings.json 读取默认 Sorter 配置，模式: {Mode}", options.MainLine.Mode);
-        return options;
+        };
     }
 }

@@ -59,16 +59,6 @@ public class MainLineRuntime : IMainLineRuntime
         }
         
         _logger.LogInformation("主线驱动初始化成功");
-
-        // 启动控制服务
-        var started = await _controlService.StartAsync(stoppingToken);
-        if (!started)
-        {
-            _logger.LogError("主线控制服务启动失败");
-            _logger.LogWarning("主线未就绪，系统无法进行正常分拣，请等待人工处理");
-            return;
-        }
-
         _logger.LogInformation("主线控制服务已启动（待机模式），等待系统运行状态变更为 Running");
 
         var loopPeriod = _options.LoopPeriod;
@@ -79,6 +69,7 @@ public class MainLineRuntime : IMainLineRuntime
             : (int)(TimeSpan.FromSeconds(5).TotalMilliseconds / loopPeriod.TotalMilliseconds);
 
         var lastState = _systemRunStateService.Current;
+        var hasStartedMainLine = false;
         _logger.LogInformation("当前系统运行状态: {State}，主线目标速度为 0 mm/s", lastState);
 
         while (!stoppingToken.IsCancellationRequested)
@@ -111,20 +102,46 @@ public class MainLineRuntime : IMainLineRuntime
                 // 只有在 Running 状态时才设定非零速度
                 if (currentState == SystemRunState.Running)
                 {
-                    // 读取设定点并更新目标速度
-                    var setpoint = _setpointProvider.IsEnabled ? _setpointProvider.TargetMmps : 0m;
-                    await _mainLineDrive.SetTargetSpeedAsync(setpoint, stoppingToken);
-
-                    // 执行控制循环
-                    var success = await _controlService.ExecuteControlLoopAsync(stoppingToken);
-                    
-                    if (!success && _controlService.IsRunning)
+                    // 首次进入 Running 状态时启动主线控制
+                    if (!hasStartedMainLine)
                     {
-                        _logger.LogWarning("控制循环执行失败");
+                        var started = await _controlService.StartAsync(stoppingToken);
+                        if (!started)
+                        {
+                            _logger.LogError("主线控制服务启动失败");
+                            _logger.LogWarning("主线未就绪，系统无法进行正常分拣，请等待人工处理");
+                            // 不退出，继续循环等待下次尝试
+                        }
+                        else
+                        {
+                            hasStartedMainLine = true;
+                        }
+                    }
+                    
+                    if (hasStartedMainLine)
+                    {
+                        // 读取设定点并更新目标速度
+                        var setpoint = _setpointProvider.IsEnabled ? _setpointProvider.TargetMmps : 0m;
+                        await _mainLineDrive.SetTargetSpeedAsync(setpoint, stoppingToken);
+
+                        // 执行控制循环
+                        var success = await _controlService.ExecuteControlLoopAsync(stoppingToken);
+                        
+                        if (!success && _controlService.IsRunning)
+                        {
+                            _logger.LogWarning("控制循环执行失败");
+                        }
                     }
                 }
                 else
                 {
+                    // 非运行状态：如果之前启动过主线，现在需要停止
+                    if (hasStartedMainLine)
+                    {
+                        await _controlService.StopAsync(stoppingToken);
+                        hasStartedMainLine = false;
+                    }
+                    
                     // 非运行状态：确保主线停止（目标速度为0）
                     await _mainLineDrive.SetTargetSpeedAsync(0m, stoppingToken);
                     
@@ -138,7 +155,7 @@ public class MainLineRuntime : IMainLineRuntime
                 }
 
                 // 定期输出状态日志
-                if (currentState == SystemRunState.Running)
+                if (currentState == SystemRunState.Running && hasStartedMainLine)
                 {
                     logCounter++;
                     if (logCounter >= logInterval)
@@ -172,7 +189,10 @@ public class MainLineRuntime : IMainLineRuntime
         }
 
         // 停止控制服务
-        await _controlService.StopAsync(CancellationToken.None);
+        if (hasStartedMainLine)
+        {
+            await _controlService.StopAsync(CancellationToken.None);
+        }
         
         // 安全关闭主线驱动
         _logger.LogInformation("开始安全关闭主线驱动");
