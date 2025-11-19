@@ -15,7 +15,6 @@ using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Parcels;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Sorting;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Tracking;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Feeding;
-using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Mainline;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Vendors.Simulated;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Sorting;
@@ -25,6 +24,8 @@ using ZakYip.NarrowBeltDiverterSorter.Ingress.Origin;
 using ZakYip.NarrowBeltDiverterSorter.Simulation;
 using ZakYip.NarrowBeltDiverterSorter.Simulation.Fakes;
 using ZakYip.NarrowBeltDiverterSorter.Observability;
+
+#pragma warning disable CS0618 // E2E 测试需要测试已过时的事件以确保系统完整性。新代码应使用 IEventBus 订阅事件。
 
 namespace ZakYip.NarrowBeltDiverterSorter.E2ETests;
 

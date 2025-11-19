@@ -3,6 +3,8 @@ using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Parcels;
 using ZakYip.NarrowBeltDiverterSorter.Core.Tests.Fakes;
 
+#pragma warning disable CS0618 // 此测试类需要测试已标记为过时的事件 LifecycleChanged，以确保向后兼容性。新代码应使用 IEventBus 订阅事件。
+
 namespace ZakYip.NarrowBeltDiverterSorter.Core.Tests.Parcels;
 
 /// <summary>
@@ -190,7 +192,7 @@ public class ParcelLifecycleTrackerTests
         var onlineParcels = tracker.GetOnlineParcels();
 
         // Assert
-        Assert.Equal(1, recentCompleted.Count); // Only 1 kept
+        Assert.Single(recentCompleted); // Only 1 kept
         Assert.Equal(2, onlineParcels.Count); // Online parcels not affected
     }
 

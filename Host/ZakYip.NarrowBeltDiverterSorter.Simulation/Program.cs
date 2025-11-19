@@ -15,7 +15,6 @@ using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Sorting;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Topology;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Tracking;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Feeding;
-using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Mainline;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Vendors.Simulated;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Sorting;
@@ -357,6 +356,7 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
         var cartLifecycleService = sp.GetRequiredService<ICartLifecycleService>();
         var logger = sp.GetRequiredService<ILogger<InfeedSensorMonitor>>();
         
+#pragma warning disable CS0618 // 仿真程序需要使用已过时的事件以便与旧代码保持兼容。实际生产代码应迁移到 IEventBus 模式。
         monitor.ParcelCreatedFromInfeed += async (sender, args) =>
         {
             try
@@ -400,6 +400,7 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
                 logger.LogError(ex, "处理包裹装载事件时发生错误");
             }
         };
+#pragma warning restore CS0618
         
         return monitor;
     });
@@ -1401,6 +1402,7 @@ static async Task RunLongRunLoadTestScenarioAsync(string? outputPath, bool reset
         var timelineRecorder = sp.GetRequiredService<ParcelTimelineRecorder>();
         var logger = sp.GetRequiredService<ILogger<InfeedSensorMonitor>>();
         
+#pragma warning disable CS0618 // 仿真程序需要使用已过时的事件以便与旧代码保持兼容。实际生产代码应迁移到 IEventBus 模式。
         monitor.ParcelCreatedFromInfeed += async (sender, args) =>
         {
             try
@@ -1444,6 +1446,7 @@ static async Task RunLongRunLoadTestScenarioAsync(string? outputPath, bool reset
                 logger.LogError(ex, "处理包裹装载事件时发生错误");
             }
         };
+#pragma warning restore CS0618
         
         return monitor;
     });

@@ -89,7 +89,7 @@ public class SystemFaultsController : ControllerBase
             _logger.LogError("故障复位失败: {Message}", resetResult.ErrorMessage);
             return BadRequest(new FaultErrorResponse
             {
-                Error = resetResult.ErrorMessage,
+                Error = resetResult.ErrorMessage ?? "未知错误",
                 CurrentState = _runStateService.Current.ToString()
             });
         }

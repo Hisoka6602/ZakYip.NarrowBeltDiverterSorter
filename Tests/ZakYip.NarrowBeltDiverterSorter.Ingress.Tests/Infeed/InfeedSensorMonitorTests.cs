@@ -5,6 +5,8 @@ using ZakYip.NarrowBeltDiverterSorter.Ingress.Infeed;
 using ZakYip.NarrowBeltDiverterSorter.Observability;
 using Microsoft.Extensions.Logging.Abstractions;
 
+#pragma warning disable CS0618 // 此测试类需要测试已标记为过时的事件 ParcelCreatedFromInfeed，以确保向后兼容性。新代码应使用 IEventBus 订阅事件。
+
 namespace ZakYip.NarrowBeltDiverterSorter.Ingress.Tests.Infeed;
 
 /// <summary>

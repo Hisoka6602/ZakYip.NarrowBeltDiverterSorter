@@ -11,7 +11,6 @@ using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Carts;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Cart;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Chute;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Chute.Drivers.ZhiQian32Relay;
-using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Mainline;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Vendors.Simulated;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Vendors.Rema;
@@ -333,8 +332,10 @@ builder.Services.AddSingleton<IFieldBusClient, FieldBusClient>();
 // ============================================================================
 
 // 从 LiteDB 加载 Sorter 配置（如果不存在，则从 appsettings.json 初始化）
+#pragma warning disable ASP0000 // 在配置阶段需要访问服务以读取配置，这是必要的架构设计，不会导致问题
 var sorterConfigProvider = builder.Services.BuildServiceProvider()
     .GetRequiredService<ZakYip.NarrowBeltDiverterSorter.Core.Configuration.ISorterConfigurationProvider>();
+#pragma warning restore ASP0000
 var sorterOptions = sorterConfigProvider.LoadAsync().GetAwaiter().GetResult();
 
 var mainLineMode = sorterOptions.MainLine.Mode;

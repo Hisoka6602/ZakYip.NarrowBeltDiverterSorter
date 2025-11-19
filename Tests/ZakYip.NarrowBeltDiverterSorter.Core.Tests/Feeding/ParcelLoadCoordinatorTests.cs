@@ -2,6 +2,8 @@ using ZakYip.NarrowBeltDiverterSorter.Core.Application;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Feeding;
 
+#pragma warning disable CS0618 // 此测试类需要测试已标记为过时的事件 ParcelLoadedOnCart，以确保向后兼容性。新代码应使用 IEventBus 订阅事件。
+
 namespace ZakYip.NarrowBeltDiverterSorter.Core.Tests.Feeding;
 
 /// <summary>

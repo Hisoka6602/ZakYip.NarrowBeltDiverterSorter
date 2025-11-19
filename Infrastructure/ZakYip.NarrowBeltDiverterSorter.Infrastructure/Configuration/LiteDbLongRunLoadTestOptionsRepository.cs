@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Logging;
 using ZakYip.NarrowBeltDiverterSorter.Core.Configuration;
 
+#pragma warning disable CS0618 // IConfigStore 已过时：此类使用旧的 IConfigStore 接口以保持向后兼容性。新代码应使用 ISorterConfigurationStore 和 LiteDbSorterConfigurationStore。
+
 namespace ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
 
 /// <summary>

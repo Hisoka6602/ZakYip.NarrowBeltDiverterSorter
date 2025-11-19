@@ -21,7 +21,9 @@ public class DisabledSortingRuleEngineClient : ISortingRuleEngineClient
     public bool IsConnected => false;
 
     /// <inheritdoc/>
+#pragma warning disable CS0067 // 事件 'SortingResultReceived' 未使用：此事件为 ISortingRuleEngineClient 接口的必需成员。此实现为禁用状态的客户端，不会触发事件。
     public event EventHandler<SortingResultMessage>? SortingResultReceived;
+#pragma warning restore CS0067
 
     /// <inheritdoc/>
     public Task<bool> ConnectAsync(CancellationToken cancellationToken = default)

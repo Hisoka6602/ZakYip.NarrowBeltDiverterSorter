@@ -4,6 +4,8 @@ using ZakYip.NarrowBeltDiverterSorter.Communication;
 using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
 
+#pragma warning disable CS0618 // IPanelIoCoordinator 已过时：此类实现旧的 IPanelIoCoordinator 接口以保持向后兼容性。新代码应使用 Core.Abstractions.IPanelIoCoordinator。
+
 namespace ZakYip.NarrowBeltDiverterSorter.Execution.Panel;
 
 /// <summary>
