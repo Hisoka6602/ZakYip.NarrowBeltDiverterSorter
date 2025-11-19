@@ -7,12 +7,6 @@ namespace ZakYip.NarrowBeltDiverterSorter.Core.Domain.Parcels;
 public interface IParcelLifecycleTracker
 {
     /// <summary>
-    /// 包裹生命周期状态变化事件（已废弃，请订阅 IEventBus）
-    /// </summary>
-    [Obsolete("请使用 IEventBus 订阅 Observability.Events.ParcelLifecycleChangedEventArgs，此事件将在未来版本中移除")]
-    event EventHandler<ParcelLifecycleChangedEventArgs>? LifecycleChanged;
-
-    /// <summary>
     /// 更新包裹的生命周期状态
     /// </summary>
     /// <param name="parcelId">包裹ID</param>

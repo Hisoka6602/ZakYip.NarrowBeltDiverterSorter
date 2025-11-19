@@ -50,26 +50,6 @@ public sealed class HostConfigurationProvider : IHostConfigurationProvider
         return await GetConfigurationAsync<InfeedLayoutOptions>(InfeedLayoutKey, ct);
     }
 
-    public async Task<UpstreamConnectionOptions> GetUpstreamConnectionOptionsAsync(CancellationToken ct = default)
-    {
-        // 特殊处理：UpstreamConnectionOptions 在 Communication 项目中，
-        // Core 层的 ConfigurationDefaultsProvider 无法直接引用它
-        // 所以直接在这里调用 CreateDefault
-        var defaultConfig = UpstreamConnectionOptions.CreateDefault();
-        var storedConfig = await _store.LoadAsync<UpstreamConnectionOptions>(UpstreamConnectionKey, ct);
-        
-        if (storedConfig != null)
-        {
-            _logger.LogDebug("使用 LiteDB 中的配置: {Key}", UpstreamConnectionKey);
-            return storedConfig;
-        }
-        else
-        {
-            _logger.LogInformation("未找到 LiteDB 配置 '{Key}'，使用默认值", UpstreamConnectionKey);
-            return defaultConfig;
-        }
-    }
-
     public async Task<UpstreamOptions> GetUpstreamOptionsAsync(CancellationToken ct = default)
     {
         // 创建默认配置

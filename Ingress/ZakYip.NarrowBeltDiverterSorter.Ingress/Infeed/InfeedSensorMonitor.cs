@@ -21,12 +21,6 @@ public class InfeedSensorMonitor : IIoMonitor
     private bool _isRunning;
 
     /// <summary>
-    /// 包裹从入口创建事件（已废弃，请订阅 IEventBus）
-    /// </summary>
-    [Obsolete("请使用 IEventBus 订阅 Observability.Events.ParcelCreatedFromInfeedEventArgs，此事件将在未来版本中移除")]
-    public event EventHandler<ParcelCreatedFromInfeedEventArgs>? ParcelCreatedFromInfeed;
-
-    /// <summary>
     /// 创建入口传感器监视器
     /// </summary>
     /// <param name="sensorPort">传感器端口</param>
@@ -123,11 +117,6 @@ public class InfeedSensorMonitor : IIoMonitor
             InfeedTriggerTime = e.DetectionTime
         };
         _ = _eventBus.PublishAsync(busEventArgs);
-
-        // 同时触发传统事件（向后兼容，已废弃）
-#pragma warning disable CS0618 // Type or member is obsolete
-        ParcelCreatedFromInfeed?.Invoke(this, coreEventArgs);
-#pragma warning restore CS0618
 
         // 发布传感器触发事件
         var sensorEvent = new Observability.Events.SensorTriggeredEventArgs
