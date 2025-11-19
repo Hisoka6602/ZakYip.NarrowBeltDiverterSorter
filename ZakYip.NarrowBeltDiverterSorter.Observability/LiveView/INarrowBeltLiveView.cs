@@ -65,4 +65,14 @@ public interface INarrowBeltLiveView
     /// 获取上游规则引擎状态快照
     /// </summary>
     UpstreamRuleEngineSnapshot GetUpstreamRuleEngineStatus();
+
+    /// <summary>
+    /// 获取最后分拣请求快照
+    /// </summary>
+    LastSortingRequestSnapshot? GetLastSortingRequest();
+
+    /// <summary>
+    /// 获取最后分拣结果快照
+    /// </summary>
+    LastSortingResultSnapshot? GetLastSortingResult();
 }

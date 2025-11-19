@@ -1,0 +1,47 @@
+namespace ZakYip.NarrowBeltDiverterSorter.Observability.Events;
+
+/// <summary>
+/// 分拣结果接收事件参数（从上游规则引擎接收）
+/// </summary>
+public record class SortingResultReceivedEventArgs
+{
+    /// <summary>
+    /// 包裹ID
+    /// </summary>
+    public required long ParcelId { get; init; }
+
+    /// <summary>
+    /// 格口编号
+    /// </summary>
+    public required int ChuteNumber { get; init; }
+
+    /// <summary>
+    /// 购物车编号（可选）
+    /// </summary>
+    public int? CartNumber { get; init; }
+
+    /// <summary>
+    /// 购物车计数（可选）
+    /// </summary>
+    public int? CartCount { get; init; }
+
+    /// <summary>
+    /// 分拣是否成功
+    /// </summary>
+    public required bool Success { get; init; }
+
+    /// <summary>
+    /// 处理时间（毫秒）
+    /// </summary>
+    public decimal? ProcessingTimeMs { get; init; }
+
+    /// <summary>
+    /// 失败原因（如果失败）
+    /// </summary>
+    public string? FailureReason { get; init; }
+
+    /// <summary>
+    /// 结果时间
+    /// </summary>
+    public DateTimeOffset ResultTime { get; init; } = DateTimeOffset.UtcNow;
+}

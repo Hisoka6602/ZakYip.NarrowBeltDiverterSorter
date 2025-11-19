@@ -29,6 +29,9 @@ public class MqttSortingRuleEngineClient : ISortingRuleEngineClient
     public bool IsConnected => _mqttClient?.IsConnected ?? false;
 
     /// <inheritdoc/>
+    public event EventHandler<SortingResultMessage>? SortingResultReceived;
+
+    /// <inheritdoc/>
     public async Task<bool> ConnectAsync(CancellationToken cancellationToken = default)
     {
         try
@@ -66,6 +69,10 @@ public class MqttSortingRuleEngineClient : ISortingRuleEngineClient
             if (result.ResultCode == MqttClientConnectResultCode.Success)
             {
                 _logger.LogInformation("RuleEngine MQTT 连接成功");
+                
+                // 订阅分拣结果主题
+                await SubscribeToSortingResultsAsync(cancellationToken);
+                
                 return true;
             }
             else
@@ -96,6 +103,69 @@ public class MqttSortingRuleEngineClient : ISortingRuleEngineClient
                 _logger.LogError(ex, "断开 RuleEngine MQTT 连接时发生异常");
             }
         }
+    }
+
+    /// <summary>
+    /// 订阅分拣结果主题
+    /// </summary>
+    private async Task SubscribeToSortingResultsAsync(CancellationToken cancellationToken = default)
+    {
+        if (_mqttClient == null)
+        {
+            return;
+        }
+
+        try
+        {
+            var resultTopic = $"{_options.BaseTopic}/sorting-result-response";
+            
+            // 注册消息处理器
+            _mqttClient.ApplicationMessageReceivedAsync += OnMessageReceivedAsync;
+            
+            // 订阅主题
+            await _mqttClient.SubscribeAsync(resultTopic, MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce, cancellationToken);
+            
+            _logger.LogInformation("已订阅分拣结果主题: {Topic}", resultTopic);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "订阅分拣结果主题失败");
+        }
+    }
+
+    /// <summary>
+    /// MQTT 消息接收处理
+    /// </summary>
+    private Task OnMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs e)
+    {
+        try
+        {
+            var topic = e.ApplicationMessage.Topic;
+            var payload = Encoding.UTF8.GetString(e.ApplicationMessage.PayloadSegment);
+            
+            _logger.LogDebug("收到 MQTT 消息: Topic={Topic}", topic);
+            
+            // 检查是否为分拣结果消息
+            if (topic.EndsWith("/sorting-result-response"))
+            {
+                var sortingResult = JsonSerializer.Deserialize<SortingResultMessage>(payload);
+                if (sortingResult != null)
+                {
+                    _logger.LogInformation(
+                        "收到分拣结果: ParcelId={ParcelId}, ChuteNumber={ChuteNumber}, Success={Success}",
+                        sortingResult.ParcelId, sortingResult.ChuteNumber, sortingResult.Success);
+                    
+                    // 触发事件
+                    SortingResultReceived?.Invoke(this, sortingResult);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "处理 MQTT 消息时发生异常");
+        }
+        
+        return Task.CompletedTask;
     }
 
     /// <inheritdoc/>
