@@ -6,6 +6,7 @@ using ZakYip.NarrowBeltDiverterSorter.Core.Domain.MainLine;
 using ZakYip.NarrowBeltDiverterSorter.Host.Contracts.Configuration;
 using ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
 using DTO = ZakYip.NarrowBeltDiverterSorter.Host.DTOs;
+using ZakYip.NarrowBeltDiverterSorter.Host.DTOs.Requests;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Host.Controllers;
 
@@ -55,204 +56,137 @@ public class ConfigController : ControllerBase
     /// 获取主线控制选项。
     /// </summary>
     [HttpGet("mainline")]
-    [ProducesResponseType(typeof(MainLineControlOptionsDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(DTO.ApiResult<MainLineControlOptionsDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetMainLineOptions(CancellationToken cancellationToken)
     {
-        try
+        var options = await _mainLineRepo.LoadAsync(cancellationToken);
+        var dto = new MainLineControlOptionsDto
         {
-            var options = await _mainLineRepo.LoadAsync(cancellationToken);
-            var dto = new MainLineControlOptionsDto
-            {
-                TargetSpeedMmps = options.TargetSpeedMmps,
-                LoopPeriodMs = (int)options.LoopPeriod.TotalMilliseconds,
-                ProportionalGain = options.ProportionalGain,
-                IntegralGain = options.IntegralGain,
-                DerivativeGain = options.DerivativeGain,
-                StableDeadbandMmps = options.StableDeadbandMmps,
-                StableHoldSeconds = (int)options.StableHold.TotalSeconds,
-                MinOutputMmps = options.MinOutputMmps,
-                MaxOutputMmps = options.MaxOutputMmps,
-                IntegralLimit = options.IntegralLimit
-            };
-            return Ok(dto);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "获取主线控制选项失败");
-            return StatusCode(500, new { error = "获取主线控制选项失败", message = ex.Message });
-        }
+            TargetSpeedMmps = options.TargetSpeedMmps,
+            LoopPeriodMs = (int)options.LoopPeriod.TotalMilliseconds,
+            ProportionalGain = options.ProportionalGain,
+            IntegralGain = options.IntegralGain,
+            DerivativeGain = options.DerivativeGain,
+            StableDeadbandMmps = options.StableDeadbandMmps,
+            StableHoldSeconds = (int)options.StableHold.TotalSeconds,
+            MinOutputMmps = options.MinOutputMmps,
+            MaxOutputMmps = options.MaxOutputMmps,
+            IntegralLimit = options.IntegralLimit
+        };
+        return Ok(DTO.ApiResult<MainLineControlOptionsDto>.Ok(dto));
     }
 
     /// <summary>
     /// 更新主线控制选项。
     /// </summary>
     [HttpPut("mainline")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(DTO.ApiResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(DTO.ApiResult), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> UpdateMainLineOptions(
-        [FromBody] MainLineControlOptionsDto dto,
+        [FromBody] UpdateMainLineControlOptionsRequest request,
         CancellationToken cancellationToken)
     {
-        try
+        // 业务逻辑验证
+        if (request.MaxOutputMmps <= request.MinOutputMmps)
         {
-            // 基础验证
-            if (dto.TargetSpeedMmps <= 0)
-                return BadRequest(new { error = "目标速度必须大于 0" });
-
-            if (dto.LoopPeriodMs <= 0)
-                return BadRequest(new { error = "控制循环周期必须大于 0" });
-
-            if (dto.MinOutputMmps < 0)
-                return BadRequest(new { error = "最小输出不能小于 0" });
-
-            if (dto.MaxOutputMmps <= dto.MinOutputMmps)
-                return BadRequest(new { error = "最大输出必须大于最小输出" });
-
-            var options = new MainLineControlOptions
-            {
-                TargetSpeedMmps = dto.TargetSpeedMmps,
-                LoopPeriod = TimeSpan.FromMilliseconds(dto.LoopPeriodMs),
-                ProportionalGain = dto.ProportionalGain,
-                IntegralGain = dto.IntegralGain,
-                DerivativeGain = dto.DerivativeGain,
-                StableDeadbandMmps = dto.StableDeadbandMmps,
-                StableHold = TimeSpan.FromSeconds(dto.StableHoldSeconds),
-                MinOutputMmps = dto.MinOutputMmps,
-                MaxOutputMmps = dto.MaxOutputMmps,
-                IntegralLimit = dto.IntegralLimit
-            };
-
-            await _mainLineRepo.SaveAsync(options, cancellationToken);
-            _logger.LogInformation("主线控制选项已更新");
-            return Ok(new { message = "主线控制选项已更新" });
+            return BadRequest(DTO.ApiResult.Fail("最大输出必须大于最小输出", "ValidationError"));
         }
-        catch (Exception ex)
+
+        var options = new MainLineControlOptions
         {
-            _logger.LogError(ex, "更新主线控制选项失败");
-            return StatusCode(500, new { error = "更新主线控制选项失败", message = ex.Message });
-        }
+            TargetSpeedMmps = request.TargetSpeedMmps,
+            LoopPeriod = TimeSpan.FromMilliseconds(request.LoopPeriodMs),
+            ProportionalGain = request.ProportionalGain,
+            IntegralGain = request.IntegralGain,
+            DerivativeGain = request.DerivativeGain,
+            StableDeadbandMmps = request.StableDeadbandMmps,
+            StableHold = TimeSpan.FromSeconds(request.StableHoldSeconds),
+            MinOutputMmps = request.MinOutputMmps,
+            MaxOutputMmps = request.MaxOutputMmps,
+            IntegralLimit = request.IntegralLimit
+        };
+
+        await _mainLineRepo.SaveAsync(options, cancellationToken);
+        _logger.LogInformation("主线控制选项已更新");
+        return Ok(DTO.ApiResult.Ok("主线控制选项已更新"));
     }
 
     /// <summary>
     /// 获取入口布局选项。
     /// </summary>
     [HttpGet("infeed-layout")]
-    [ProducesResponseType(typeof(InfeedLayoutOptionsDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(DTO.ApiResult<InfeedLayoutOptionsDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetInfeedLayoutOptions(CancellationToken cancellationToken)
     {
-        try
+        var options = await _infeedLayoutRepo.LoadAsync(cancellationToken);
+        var dto = new InfeedLayoutOptionsDto
         {
-            var options = await _infeedLayoutRepo.LoadAsync(cancellationToken);
-            var dto = new InfeedLayoutOptionsDto
-            {
-                InfeedToMainLineDistanceMm = options.InfeedToMainLineDistanceMm,
-                TimeToleranceMs = options.TimeToleranceMs,
-                CartOffsetCalibration = options.CartOffsetCalibration
-            };
-            return Ok(dto);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "获取入口布局选项失败");
-            return StatusCode(500, new { error = "获取入口布局选项失败", message = ex.Message });
-        }
+            InfeedToMainLineDistanceMm = options.InfeedToMainLineDistanceMm,
+            TimeToleranceMs = options.TimeToleranceMs,
+            CartOffsetCalibration = options.CartOffsetCalibration
+        };
+        return Ok(DTO.ApiResult<InfeedLayoutOptionsDto>.Ok(dto));
     }
 
     /// <summary>
     /// 更新入口布局选项。
     /// </summary>
     [HttpPut("infeed-layout")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(DTO.ApiResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(DTO.ApiResult), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> UpdateInfeedLayoutOptions(
-        [FromBody] InfeedLayoutOptionsDto dto,
+        [FromBody] UpdateInfeedLayoutOptionsRequest request,
         CancellationToken cancellationToken)
     {
-        try
+        var options = new InfeedLayoutOptions
         {
-            if (dto.InfeedToMainLineDistanceMm <= 0)
-                return BadRequest(new { error = "入口到主线距离必须大于 0" });
+            InfeedToMainLineDistanceMm = request.InfeedToMainLineDistanceMm,
+            TimeToleranceMs = request.TimeToleranceMs,
+            CartOffsetCalibration = request.CartOffsetCalibration
+        };
 
-            if (dto.TimeToleranceMs <= 0)
-                return BadRequest(new { error = "时间容差必须大于 0" });
-
-            var options = new InfeedLayoutOptions
-            {
-                InfeedToMainLineDistanceMm = dto.InfeedToMainLineDistanceMm,
-                TimeToleranceMs = dto.TimeToleranceMs,
-                CartOffsetCalibration = dto.CartOffsetCalibration
-            };
-
-            await _infeedLayoutRepo.SaveAsync(options, cancellationToken);
-            _logger.LogInformation("入口布局选项已更新");
-            return Ok(new { message = "入口布局选项已更新" });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "更新入口布局选项失败");
-            return StatusCode(500, new { error = "更新入口布局选项失败", message = ex.Message });
-        }
+        await _infeedLayoutRepo.SaveAsync(options, cancellationToken);
+        _logger.LogInformation("入口布局选项已更新");
+        return Ok(DTO.ApiResult.Ok("入口布局选项已更新"));
     }
 
     /// <summary>
     /// 获取上游连接选项。
     /// </summary>
     [HttpGet("upstream-connection")]
-    [ProducesResponseType(typeof(UpstreamConnectionOptionsDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(DTO.ApiResult<UpstreamConnectionOptionsDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetUpstreamConnectionOptions(CancellationToken cancellationToken)
     {
-        try
+        var options = await _upstreamConnectionRepo.LoadAsync(cancellationToken);
+        var dto = new UpstreamConnectionOptionsDto
         {
-            var options = await _upstreamConnectionRepo.LoadAsync(cancellationToken);
-            var dto = new UpstreamConnectionOptionsDto
-            {
-                BaseUrl = options.BaseUrl,
-                RequestTimeoutSeconds = options.RequestTimeoutSeconds,
-                AuthToken = options.AuthToken
-            };
-            return Ok(dto);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "获取上游连接选项失败");
-            return StatusCode(500, new { error = "获取上游连接选项失败", message = ex.Message });
-        }
+            BaseUrl = options.BaseUrl,
+            RequestTimeoutSeconds = options.RequestTimeoutSeconds,
+            AuthToken = options.AuthToken
+        };
+        return Ok(DTO.ApiResult<UpstreamConnectionOptionsDto>.Ok(dto));
     }
 
     /// <summary>
     /// 更新上游连接选项。
     /// </summary>
     [HttpPut("upstream-connection")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(DTO.ApiResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(DTO.ApiResult), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> UpdateUpstreamConnectionOptions(
-        [FromBody] UpstreamConnectionOptionsDto dto,
+        [FromBody] UpdateUpstreamConnectionOptionsRequest request,
         CancellationToken cancellationToken)
     {
-        try
+        var options = new UpstreamConnectionOptions
         {
-            if (string.IsNullOrWhiteSpace(dto.BaseUrl))
-                return BadRequest(new { error = "BaseUrl 不能为空" });
+            BaseUrl = request.BaseUrl,
+            RequestTimeoutSeconds = request.RequestTimeoutSeconds,
+            AuthToken = request.AuthToken
+        };
 
-            if (dto.RequestTimeoutSeconds <= 0)
-                return BadRequest(new { error = "请求超时时间必须大于 0" });
-
-            var options = new UpstreamConnectionOptions
-            {
-                BaseUrl = dto.BaseUrl,
-                RequestTimeoutSeconds = dto.RequestTimeoutSeconds,
-                AuthToken = dto.AuthToken
-            };
-
-            await _upstreamConnectionRepo.SaveAsync(options, cancellationToken);
-            _logger.LogInformation("上游连接选项已更新");
-            return Ok(new { message = "上游连接选项已更新" });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "更新上游连接选项失败");
-            return StatusCode(500, new { error = "更新上游连接选项失败", message = ex.Message });
-        }
+        await _upstreamConnectionRepo.SaveAsync(options, cancellationToken);
+        _logger.LogInformation("上游连接选项已更新");
+        return Ok(DTO.ApiResult.Ok("上游连接选项已更新"));
     }
 
     /// <summary>
