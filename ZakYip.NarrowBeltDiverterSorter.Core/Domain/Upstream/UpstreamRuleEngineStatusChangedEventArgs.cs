@@ -1,6 +1,4 @@
-using ZakYip.NarrowBeltDiverterSorter.Observability.LiveView;
-
-namespace ZakYip.NarrowBeltDiverterSorter.Observability.Events;
+namespace ZakYip.NarrowBeltDiverterSorter.Core.Domain.Upstream;
 
 /// <summary>
 /// 上游规则引擎状态变更事件参数

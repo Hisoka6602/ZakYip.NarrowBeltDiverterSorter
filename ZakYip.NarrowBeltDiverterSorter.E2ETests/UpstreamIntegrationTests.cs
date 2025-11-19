@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Xunit;
 using Xunit.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Communication.Upstream;
+using ZakYip.NarrowBeltDiverterSorter.Execution.Upstream;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Sorting;
 using ZakYip.NarrowBeltDiverterSorter.E2ETests.Fakes;
 

@@ -28,6 +28,7 @@ using ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
 using ZakYip.NarrowBeltDiverterSorter.Infrastructure.LiteDb;
 using ZakYip.NarrowBeltDiverterSorter.Communication.Upstream;
 using ZakYip.NarrowBeltDiverterSorter.Host;
+using ZakYip.NarrowBeltDiverterSorter.Host.Extensions;
 using ZakYip.NarrowBeltDiverterSorter.Host.SignalR;
 using ZakYip.NarrowBeltDiverterSorter.Observability.Recording;
 // Note: Simulation types cannot be used due to circular dependency
@@ -197,35 +198,10 @@ builder.Services.Configure<TargetChuteAssignmentProfile>(
 
 
 // ============================================================================
-// 注册事件总线 (Observability)
+// 注册 Observability 层服务（事件总线、录制、实时视图）
 // ============================================================================
 
-builder.Services.AddSingleton<IEventBus, InMemoryEventBus>();
-
-// ============================================================================
-// 注册事件录制与回放 (Observability)
-// ============================================================================
-
-// 注册文件事件录制管理器（同时实现管理器和录制器接口）
-builder.Services.AddSingleton<FileEventRecordingManager>();
-builder.Services.AddSingleton<IEventRecordingManager>(sp => sp.GetRequiredService<FileEventRecordingManager>());
-builder.Services.AddSingleton<IEventRecorder>(sp => sp.GetRequiredService<FileEventRecordingManager>());
-
-// 注册录制事件订阅器（作为托管服务自动启动）
-builder.Services.AddSingleton<RecordingEventSubscriber>();
-
-// ============================================================================
-// 注册实时视图聚合器 (Observability)
-// ============================================================================
-
-builder.Services.AddSingleton<INarrowBeltLiveView, NarrowBeltLiveView>();
-
-// 注册包裹时间线服务
-builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Abstractions.IParcelTimelineService>(sp =>
-{
-    var logger = sp.GetRequiredService<ILogger<ZakYip.NarrowBeltDiverterSorter.Observability.Timeline.ParcelTimelineService>>();
-    return new ZakYip.NarrowBeltDiverterSorter.Observability.Timeline.ParcelTimelineService(logger, capacity: 10000);
-});
+builder.Services.AddObservability();
 
 // ============================================================================
 // 注册 SignalR 推送桥接服务
@@ -328,10 +304,10 @@ builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Communication.Upst
         // 对于 Disabled 模式，发布初始状态事件
         if (eventBus != null)
         {
-            var eventArgs = new ZakYip.NarrowBeltDiverterSorter.Observability.Events.UpstreamRuleEngineStatusChangedEventArgs
+            var eventArgs = new ZakYip.NarrowBeltDiverterSorter.Core.Domain.Upstream.UpstreamRuleEngineStatusChangedEventArgs
             {
                 Mode = upstreamOptions.Mode.ToString(),
-                Status = ZakYip.NarrowBeltDiverterSorter.Observability.LiveView.UpstreamConnectionStatus.Disabled,
+                Status = ZakYip.NarrowBeltDiverterSorter.Core.Domain.Upstream.UpstreamConnectionStatus.Disabled,
                 ConnectionAddress = null
             };
             _ = eventBus.PublishAsync(eventArgs, CancellationToken.None);
@@ -343,7 +319,7 @@ builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Communication.Upst
 
 // 注册 ISortingRuleEnginePort（通过适配器）
 builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Domain.Sorting.ISortingRuleEnginePort, 
-    ZakYip.NarrowBeltDiverterSorter.Communication.Upstream.SortingRuleEnginePortAdapter>();
+    ZakYip.NarrowBeltDiverterSorter.Execution.Upstream.SortingRuleEnginePortAdapter>();
 
 // ============================================================================
 // 注册现场总线和驱动

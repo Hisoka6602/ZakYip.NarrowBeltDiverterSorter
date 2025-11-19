@@ -1,8 +1,7 @@
 using Microsoft.Extensions.Logging;
 using ZakYip.NarrowBeltDiverterSorter.Communication.Upstream;
 using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
-using ZakYip.NarrowBeltDiverterSorter.Observability.Events;
-using ZakYip.NarrowBeltDiverterSorter.Observability.LiveView;
+using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Upstream;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Communication.Upstream;
 
