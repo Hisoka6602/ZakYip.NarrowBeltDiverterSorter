@@ -15,17 +15,20 @@ public class ParcelLoadCoordinatorWorker : BackgroundService
     private readonly ILogger<ParcelLoadCoordinatorWorker> _logger;
     private readonly ParcelLoadCoordinator _coordinator;
     private readonly IEventBus _eventBus;
+    private readonly IParcelTimelineService _timelineService;
     private readonly bool _enableBringupLogging;
 
     public ParcelLoadCoordinatorWorker(
         ILogger<ParcelLoadCoordinatorWorker> logger,
         IParcelLoadPlanner loadPlanner,
         IEventBus eventBus,
+        IParcelTimelineService timelineService,
         StartupModeConfiguration startupConfig)
     {
         _logger = logger;
         _coordinator = new ParcelLoadCoordinator(loadPlanner);
         _eventBus = eventBus;
+        _timelineService = timelineService;
         _enableBringupLogging = startupConfig.EnableBringupLogging && 
                                 startupConfig.Mode >= StartupMode.BringupInfeed;
 
@@ -58,6 +61,33 @@ public class ParcelLoadCoordinatorWorker : BackgroundService
                     "入口触发 ParcelId={ParcelId}, 预计落车 CartId={CartId}",
                     eventArgs.ParcelId,
                     eventArgs.CartId);
+
+                // 记录装载到小车时间线事件
+                _timelineService.Append(new Core.Domain.Parcels.ParcelTimelineEventArgs
+                {
+                    ParcelId = eventArgs.ParcelId,
+                    EventType = Core.Domain.Parcels.ParcelTimelineEventType.LoadedToCart,
+                    OccurredAt = eventArgs.LoadedAt,
+                    CartId = eventArgs.CartId,
+                    Note = $"包裹装载到小车 {eventArgs.CartId}"
+                });
+
+                await Task.CompletedTask;
+            });
+        }
+        else
+        {
+            // 非 Bring-up 模式也需要记录时间线
+            _eventBus.Subscribe<Observability.Events.ParcelLoadedOnCartEventArgs>(async (eventArgs, ct) =>
+            {
+                _timelineService.Append(new Core.Domain.Parcels.ParcelTimelineEventArgs
+                {
+                    ParcelId = eventArgs.ParcelId,
+                    EventType = Core.Domain.Parcels.ParcelTimelineEventType.LoadedToCart,
+                    OccurredAt = eventArgs.LoadedAt,
+                    CartId = eventArgs.CartId,
+                    Note = $"包裹装载到小车 {eventArgs.CartId}"
+                });
                 await Task.CompletedTask;
             });
         }

@@ -17,6 +17,7 @@ public class ParcelSortingOrchestrator : IDisposable
     private readonly ISortingRuleEnginePort _ruleEnginePort;
     private readonly IParcelLifecycleService _parcelLifecycleService;
     private readonly IEventBus _eventBus;
+    private readonly IParcelTimelineService _timelineService;
     private readonly ChuteId _fallbackChuteId;
     private bool _disposed;
 
@@ -24,12 +25,14 @@ public class ParcelSortingOrchestrator : IDisposable
         ILogger<ParcelSortingOrchestrator> logger,
         ISortingRuleEnginePort ruleEnginePort,
         IParcelLifecycleService parcelLifecycleService,
-        IEventBus eventBus)
+        IEventBus eventBus,
+        IParcelTimelineService timelineService)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _ruleEnginePort = ruleEnginePort ?? throw new ArgumentNullException(nameof(ruleEnginePort));
         _parcelLifecycleService = parcelLifecycleService ?? throw new ArgumentNullException(nameof(parcelLifecycleService));
         _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
+        _timelineService = timelineService ?? throw new ArgumentNullException(nameof(timelineService));
 
         // TODO: 从配置读取降级格口ID，这里使用默认值 999
         _fallbackChuteId = new ChuteId(999);
@@ -50,6 +53,16 @@ public class ParcelSortingOrchestrator : IDisposable
             _logger.LogInformation(
                 "开始处理包裹创建事件: ParcelId={ParcelId}, Barcode={Barcode}",
                 eventArgs.ParcelId, eventArgs.Barcode);
+
+            // 记录包裹创建时间线事件
+            _timelineService.Append(new ParcelTimelineEventArgs
+            {
+                ParcelId = eventArgs.ParcelId,
+                EventType = ParcelTimelineEventType.Created,
+                OccurredAt = eventArgs.InfeedTriggerTime,
+                Barcode = eventArgs.Barcode,
+                Note = "包裹从入口传感器检测到"
+            });
 
             // 构造分拣请求
             var sortingRequest = new SortingRequestEventArgs
@@ -82,6 +95,16 @@ public class ParcelSortingOrchestrator : IDisposable
                 "已向上游规则引擎发送包裹创建请求: ParcelId={ParcelId}, Barcode={Barcode}",
                 request.ParcelId, request.Barcode);
 
+            // 记录上游请求发送时间线事件
+            _timelineService.Append(new ParcelTimelineEventArgs
+            {
+                ParcelId = request.ParcelId,
+                EventType = ParcelTimelineEventType.UpstreamRequestSent,
+                OccurredAt = DateTimeOffset.UtcNow,
+                Barcode = request.Barcode,
+                Note = "向上游规则引擎发送分拣请求"
+            });
+
             // 调用 RuleEngine 请求分拣
             await _ruleEnginePort.RequestSortingAsync(request, ct);
         }
@@ -90,6 +113,16 @@ public class ParcelSortingOrchestrator : IDisposable
             _logger.LogWarning(
                 "规则引擎请求被取消: ParcelId={ParcelId}",
                 request.ParcelId);
+
+            // 记录中断事件
+            _timelineService.Append(new ParcelTimelineEventArgs
+            {
+                ParcelId = request.ParcelId,
+                EventType = ParcelTimelineEventType.Aborted,
+                OccurredAt = DateTimeOffset.UtcNow,
+                Barcode = request.Barcode,
+                Note = "上游请求被取消"
+            });
 
             // 使用降级策略
             ApplyFallbackStrategy(request.ParcelId);
@@ -100,6 +133,16 @@ public class ParcelSortingOrchestrator : IDisposable
                 ex,
                 "调用规则引擎时发生异常: ParcelId={ParcelId}，将使用降级策略",
                 request.ParcelId);
+
+            // 记录中断事件
+            _timelineService.Append(new ParcelTimelineEventArgs
+            {
+                ParcelId = request.ParcelId,
+                EventType = ParcelTimelineEventType.Aborted,
+                OccurredAt = DateTimeOffset.UtcNow,
+                Barcode = request.Barcode,
+                Note = $"上游请求失败: {ex.Message}"
+            });
 
             // 使用降级策略
             ApplyFallbackStrategy(request.ParcelId);
