@@ -11,6 +11,7 @@
     <ProjectReference Include="..\..\Core\ZakYip.NarrowBeltDiverterSorter.Core\ZakYip.NarrowBeltDiverterSorter.Core.csproj" />
     <ProjectReference Include="..\..\Communication\ZakYip.NarrowBeltDiverterSorter.Communication\ZakYip.NarrowBeltDiverterSorter.Communication.csproj" />
     <ProjectReference Include="..\..\Observability\ZakYip.NarrowBeltDiverterSorter.Observability\ZakYip.NarrowBeltDiverterSorter.Observability.csproj" />
+    <ProjectReference Include="..\..\Shared\ZakYip.NarrowBeltDiverterSorter.Shared\ZakYip.NarrowBeltDiverterSorter.Shared.csproj" />
   </ItemGroup>
 
 </Project>

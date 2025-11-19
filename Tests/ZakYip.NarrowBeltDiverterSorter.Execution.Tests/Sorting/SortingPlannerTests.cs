@@ -8,6 +8,7 @@ using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Sorting;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Tracking;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.SystemState;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Sorting;
+using ZakYip.NarrowBeltDiverterSorter.Shared.Kernel;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Execution.Tests.Sorting;
 

@@ -4,6 +4,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Contracts\ZakYip.NarrowBeltDiverterSorter.UpstreamContracts\ZakYip.NarrowBeltDiverterSorter.UpstreamContracts.csproj" />
+    <ProjectReference Include="..\..\Shared\ZakYip.NarrowBeltDiverterSorter.Shared\ZakYip.NarrowBeltDiverterSorter.Shared.csproj" />
   </ItemGroup>
 
 </Project>
