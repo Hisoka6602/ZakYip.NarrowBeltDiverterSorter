@@ -140,6 +140,21 @@ Build succeeded.
     0 Error(s)
 ```
 
+### 8. Unit Test Results ⚠️
+
+**Core.Tests Results**:
+- ✅ Passed: 120 tests
+- ❌ Failed: 22 tests (pre-existing SystemRunState test failures)
+- Total: 142 tests
+
+**Failed Tests**: All related to SystemRunState service expecting "Ready" initial state but getting "Stopped":
+- `SystemRunStateServiceTests.Constructor_Should_Initialize_With_Ready_State`
+- `SystemRunStateServiceTests.TryHandleStart_From_Ready_Should_Transition_To_Running`
+- `SystemRunStateServiceTests.TryHandleStop_From_Ready_Should_Transition_To_Stopped`
+- etc. (22 tests total)
+
+**Note**: These are **pre-existing test failures** unrelated to domain layer purification. The failures exist in the baseline code and are not introduced by this PR. No code changes were made in this PR - only documentation was added.
+
 ## Architecture Compliance Matrix
 
 | Layer | Can Reference Core? | Core Can Reference? | Status |
@@ -201,16 +216,20 @@ The Core domain layer is already pure and properly architected:
 **Status**: ✅ VERIFICATION PASSED
 
 The Core domain layer meets all purification requirements:
-- Zero downward dependencies
-- Clean namespace organization  
-- Proper event layering
-- UpstreamContracts independence maintained
-- Builds successfully with no errors or warnings
+- ✅ Zero downward dependencies
+- ✅ Clean namespace organization  
+- ✅ Proper event layering
+- ✅ UpstreamContracts independence maintained
+- ✅ Builds successfully with no errors or warnings
+- ⚠️ 22 pre-existing test failures in SystemRunState (unrelated to this PR)
 
-The architecture is clean, follows hexagonal/ports-and-adapters pattern, and maintains proper separation of concerns. No code changes are required.
+The architecture is clean, follows hexagonal/ports-and-adapters pattern, and maintains proper separation of concerns. **No code changes are required.**
+
+**Note on Test Failures**: The 22 failed tests in Core.Tests are pre-existing and unrelated to domain layer purification. They relate to SystemRunState initialization (tests expect "Ready" but system initializes to "Stopped"). Since this PR makes no code changes (only documentation), these failures existed before this PR and are not introduced by it.
 
 ---
 
 *Verification Date*: 2025-11-19  
 *Verification Method*: Automated script + manual code review  
-*Build Status*: ✅ Success (0 errors, 0 warnings)
+*Build Status*: ✅ Success (0 errors, 0 warnings)  
+*Test Status*: ⚠️ 120/142 passed (22 pre-existing failures)
