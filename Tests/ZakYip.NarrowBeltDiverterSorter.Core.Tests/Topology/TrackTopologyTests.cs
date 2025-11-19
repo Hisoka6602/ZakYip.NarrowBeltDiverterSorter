@@ -217,6 +217,8 @@ public class TrackTopologyTests
         {
             CartCount = cartCount,
             CartSpacingMm = spacingMm,
+            CartWidthMm = 400m, // 小车宽度 400mm
+            ChuteWidthMm = 300m, // 格口宽度 300mm
             ForceEjectChuteId = forceEjectChuteId,
             InfeedDropPointOffsetMm = 0m,
             ChutePositions = new List<ChutePositionConfig>()

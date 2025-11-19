@@ -57,6 +57,27 @@
 
 ## 开发指南 (Development Guide)
 
+### 本地一键验证 (Local One-Click Verification)
+
+为确保代码质量，项目提供了一键构建和测试脚本，执行完整的验证流程：
+
+**Windows (PowerShell)：**
+
+```powershell
+.\build.ps1
+```
+
+**Linux / macOS (Bash)：**
+
+```bash
+./build.sh
+```
+
+脚本会自动执行以下步骤：
+1. 还原 NuGet 包
+2. 编译解决方案（Release 模式，警告视为错误）
+3. 运行所有测试（包括单元测试和 E2E 测试）
+
 ### 构建项目 (Build)
 
 ```bash
