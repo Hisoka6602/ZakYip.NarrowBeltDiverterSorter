@@ -737,6 +737,12 @@ if (startupConfig.ShouldStartParcelRoutingWorker())
     builder.Services.AddHostedService<ParcelRoutingWorker>();
 }
 
+// 上游 Bring-up 诊断工作器（仅 bringup-upstream 模式）
+if (startupConfig.ShouldStartUpstreamBringupWorker())
+{
+    builder.Services.AddHostedService<UpstreamBringupWorker>();
+}
+
 // 注册占位符工作器（可以移除）
 builder.Services.AddHostedService<Worker>();
 

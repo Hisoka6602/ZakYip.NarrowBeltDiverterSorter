@@ -7,7 +7,7 @@ using ZakYip.NarrowBeltDiverterSorter.Observability.LiveView;
 namespace ZakYip.NarrowBeltDiverterSorter.Communication.Upstream;
 
 /// <summary>
-/// 规则引擎客户端包装器，负责发布状态变更事件
+/// 规则引擎客户端包装器，负责发布状态变更事件和收集指标
 /// </summary>
 public class ObservableSortingRuleEngineClient : ISortingRuleEngineClient
 {
@@ -16,6 +16,16 @@ public class ObservableSortingRuleEngineClient : ISortingRuleEngineClient
     private readonly ILogger<ObservableSortingRuleEngineClient> _logger;
     private readonly string _mode;
     private readonly string? _connectionAddress;
+
+    // 指标统计
+    private long _totalRequests = 0;
+    private long _successfulResponses = 0;
+    private long _failedResponses = 0;
+    private readonly object _metricsLock = new();
+    private readonly List<double> _latencySamples = new();
+    private const int MaxLatencySamples = 100; // 保留最近100个样本用于计算平均值
+    private string? _lastError;
+    private DateTimeOffset? _lastErrorAt;
 
     public ObservableSortingRuleEngineClient(
         ISortingRuleEngineClient innerClient,
@@ -62,22 +72,111 @@ public class ObservableSortingRuleEngineClient : ISortingRuleEngineClient
 
     public Task<bool> SendParcelCreatedAsync(UpstreamContracts.Models.ParcelCreatedMessage message, CancellationToken cancellationToken = default)
     {
-        return _innerClient.SendParcelCreatedAsync(message, cancellationToken);
+        return TrackRequestAsync(() => _innerClient.SendParcelCreatedAsync(message, cancellationToken));
     }
 
     public Task<bool> SendDwsDataAsync(UpstreamContracts.Models.DwsDataMessage message, CancellationToken cancellationToken = default)
     {
-        return _innerClient.SendDwsDataAsync(message, cancellationToken);
+        return TrackRequestAsync(() => _innerClient.SendDwsDataAsync(message, cancellationToken));
     }
 
     public Task<bool> SendSortingResultAsync(UpstreamContracts.Models.SortingResultMessage message, CancellationToken cancellationToken = default)
     {
-        return _innerClient.SendSortingResultAsync(message, cancellationToken);
+        return TrackRequestAsync(() => _innerClient.SendSortingResultAsync(message, cancellationToken));
     }
 
     public void Dispose()
     {
         _innerClient.Dispose();
+    }
+
+    private async Task<bool> TrackRequestAsync(Func<Task<bool>> operation)
+    {
+        var startTime = DateTimeOffset.UtcNow;
+        bool success = false;
+        string? errorMessage = null;
+
+        try
+        {
+            Interlocked.Increment(ref _totalRequests);
+            success = await operation();
+
+            if (success)
+            {
+                Interlocked.Increment(ref _successfulResponses);
+            }
+            else
+            {
+                Interlocked.Increment(ref _failedResponses);
+                errorMessage = "操作返回 false";
+            }
+        }
+        catch (Exception ex)
+        {
+            Interlocked.Increment(ref _failedResponses);
+            errorMessage = ex.Message;
+            throw;
+        }
+        finally
+        {
+            var latency = (DateTimeOffset.UtcNow - startTime).TotalMilliseconds;
+            
+            lock (_metricsLock)
+            {
+                _latencySamples.Add(latency);
+                if (_latencySamples.Count > MaxLatencySamples)
+                {
+                    _latencySamples.RemoveAt(0);
+                }
+
+                if (!success && errorMessage != null)
+                {
+                    _lastError = errorMessage;
+                    _lastErrorAt = DateTimeOffset.UtcNow;
+                }
+            }
+
+            PublishMetrics();
+        }
+
+        return success;
+    }
+
+    private void PublishMetrics()
+    {
+        if (_eventBus == null)
+            return;
+
+        try
+        {
+            double avgLatency;
+            string? lastError;
+            DateTimeOffset? lastErrorAt;
+
+            lock (_metricsLock)
+            {
+                avgLatency = _latencySamples.Count > 0 ? _latencySamples.Average() : 0;
+                lastError = _lastError;
+                lastErrorAt = _lastErrorAt;
+            }
+
+            var eventArgs = new UpstreamMetricsEventArgs
+            {
+                TotalRequests = _totalRequests,
+                SuccessfulResponses = _successfulResponses,
+                FailedResponses = _failedResponses,
+                AverageLatencyMs = avgLatency,
+                LastError = lastError,
+                LastErrorAt = lastErrorAt,
+                Timestamp = DateTimeOffset.UtcNow
+            };
+
+            _ = _eventBus.PublishAsync(eventArgs, CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "发布上游规则引擎指标事件失败");
+        }
     }
 
     private void PublishStatusChange(UpstreamConnectionStatus status)
