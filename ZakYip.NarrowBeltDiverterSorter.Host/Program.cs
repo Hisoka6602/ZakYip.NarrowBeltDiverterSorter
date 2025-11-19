@@ -219,6 +219,13 @@ builder.Services.AddSingleton<RecordingEventSubscriber>();
 
 builder.Services.AddSingleton<INarrowBeltLiveView, NarrowBeltLiveView>();
 
+// 注册包裹时间线服务
+builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Abstractions.IParcelTimelineService>(sp =>
+{
+    var logger = sp.GetRequiredService<ILogger<ZakYip.NarrowBeltDiverterSorter.Observability.Timeline.ParcelTimelineService>>();
+    return new ZakYip.NarrowBeltDiverterSorter.Observability.Timeline.ParcelTimelineService(logger, capacity: 10000);
+});
+
 // ============================================================================
 // 注册 SignalR 推送桥接服务
 // ============================================================================
