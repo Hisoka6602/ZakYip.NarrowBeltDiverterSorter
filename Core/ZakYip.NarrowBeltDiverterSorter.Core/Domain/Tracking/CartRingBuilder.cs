@@ -25,10 +25,6 @@ public class CartRingBuilder : ICartRingBuilder
     public CartRingSnapshot? CurrentSnapshot { get; private set; }
 
     /// <inheritdoc/>
-    [Obsolete("请使用 IEventBus 订阅 Observability.Events.CartPassedEventArgs，此事件将在未来版本中移除")]
-    public event EventHandler<CartPassedEventArgs>? OnCartPassed;
-
-    /// <inheritdoc/>
     public void OnOriginSensorTriggered(bool isFirstSensor, bool isRisingEdge, DateTimeOffset timestamp)
     {
         if (_state != BuildState.Building)
@@ -119,9 +115,5 @@ public class CartRingBuilder : ICartRingBuilder
             CartId = cartId,
             PassAt = timestamp
         };
-
-#pragma warning disable CS0618 // Type or member is obsolete
-        OnCartPassed?.Invoke(this, eventArgs);
-#pragma warning restore CS0618
     }
 }
