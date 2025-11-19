@@ -18,18 +18,21 @@ public class SortingResultHandler : IDisposable
     private readonly ISortingRuleEngineClient _ruleEngineClient;
     private readonly IParcelLifecycleService _parcelLifecycleService;
     private readonly IEventBus _eventBus;
+    private readonly IParcelTimelineService _timelineService;
     private bool _disposed;
 
     public SortingResultHandler(
         ILogger<SortingResultHandler> logger,
         ISortingRuleEngineClient ruleEngineClient,
         IParcelLifecycleService parcelLifecycleService,
-        IEventBus eventBus)
+        IEventBus eventBus,
+        IParcelTimelineService timelineService)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _ruleEngineClient = ruleEngineClient ?? throw new ArgumentNullException(nameof(ruleEngineClient));
         _parcelLifecycleService = parcelLifecycleService ?? throw new ArgumentNullException(nameof(parcelLifecycleService));
         _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
+        _timelineService = timelineService ?? throw new ArgumentNullException(nameof(timelineService));
 
         // 订阅 RuleEngine 客户端的分拣结果事件
         _ruleEngineClient.SortingResultReceived += OnSortingResultReceived;
@@ -80,6 +83,26 @@ public class SortingResultHandler : IDisposable
                     "包裹 {ParcelId} 成功分配到格口 {ChuteId}（来自上游规则引擎）",
                     result.ParcelId, result.ChuteNumber);
 
+                // 记录上游结果接收时间线事件
+                _timelineService.Append(new ParcelTimelineEventArgs
+                {
+                    ParcelId = result.ParcelId,
+                    EventType = ParcelTimelineEventType.UpstreamResultReceived,
+                    OccurredAt = result.ResultTime,
+                    ChuteId = result.ChuteNumber,
+                    Note = $"上游分配成功，CartCount={result.CartCount}, 处理时间={result.ProcessingTimeMs}ms"
+                });
+
+                // 记录分拣计划创建事件
+                _timelineService.Append(new ParcelTimelineEventArgs
+                {
+                    ParcelId = result.ParcelId,
+                    EventType = ParcelTimelineEventType.PlanCreated,
+                    OccurredAt = DateTimeOffset.UtcNow,
+                    ChuteId = result.ChuteNumber,
+                    Note = $"分拣计划已创建，目标格口={result.ChuteNumber}"
+                });
+
                 // 发布路由成功事件到事件总线
                 _ = _eventBus.PublishAsync(new SortingResultReceivedEventArgs
                 {
@@ -110,6 +133,24 @@ public class SortingResultHandler : IDisposable
                 _logger.LogWarning(
                     "上游规则引擎返回失败: ParcelId={ParcelId}, Reason={Reason}",
                     result.ParcelId, result.FailureReason);
+
+                // 记录上游结果接收时间线事件（失败）
+                _timelineService.Append(new ParcelTimelineEventArgs
+                {
+                    ParcelId = result.ParcelId,
+                    EventType = ParcelTimelineEventType.UpstreamResultReceived,
+                    OccurredAt = result.ResultTime,
+                    Note = $"上游分配失败: {result.FailureReason}"
+                });
+
+                // 记录中断事件
+                _timelineService.Append(new ParcelTimelineEventArgs
+                {
+                    ParcelId = result.ParcelId,
+                    EventType = ParcelTimelineEventType.Aborted,
+                    OccurredAt = DateTimeOffset.UtcNow,
+                    Note = $"上游分拣失败: {result.FailureReason}"
+                });
 
                 // 发布失败事件
                 _ = _eventBus.PublishAsync(new SortingResultReceivedEventArgs

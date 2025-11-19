@@ -27,6 +27,7 @@ public class SortingExecutionWorker : BackgroundService
     private readonly IUpstreamSortingApiClient _upstreamApiClient;
     private readonly IChuteConfigProvider _chuteConfigProvider;
     private readonly IMainLineDrive _mainLineDrive;
+    private readonly IParcelTimelineService _timelineService;
     private readonly SortingExecutionOptions _options;
     private readonly bool _enableBringupLogging;
 
@@ -40,6 +41,7 @@ public class SortingExecutionWorker : BackgroundService
         IUpstreamSortingApiClient upstreamApiClient,
         IChuteConfigProvider chuteConfigProvider,
         IMainLineDrive mainLineDrive,
+        IParcelTimelineService timelineService,
         IOptions<SortingExecutionOptions> options,
         StartupModeConfiguration startupConfig)
     {
@@ -52,6 +54,7 @@ public class SortingExecutionWorker : BackgroundService
         _upstreamApiClient = upstreamApiClient;
         _chuteConfigProvider = chuteConfigProvider;
         _mainLineDrive = mainLineDrive;
+        _timelineService = timelineService;
         _options = options.Value;
         _enableBringupLogging = startupConfig.EnableBringupLogging && 
                                 startupConfig.Mode >= StartupMode.BringupChutes;
@@ -127,6 +130,17 @@ public class SortingExecutionWorker : BackgroundService
     {
         try
         {
+            // 记录接近格口时间线事件
+            _timelineService.Append(new Core.Domain.Parcels.ParcelTimelineEventArgs
+            {
+                ParcelId = plan.ParcelId.Value,
+                EventType = Core.Domain.Parcels.ParcelTimelineEventType.ApproachingChute,
+                OccurredAt = DateTimeOffset.UtcNow,
+                ChuteId = plan.ChuteId.Value,
+                CartId = plan.CartId.Value,
+                Note = $"小车 {plan.CartId.Value} 接近格口 {plan.ChuteId.Value}"
+            });
+
             // Bring-up 模式：输出吐件计划执行信息
             if (_enableBringupLogging)
             {
@@ -162,6 +176,17 @@ public class SortingExecutionWorker : BackgroundService
                         plan.ChuteId.Value,
                         plan.CartId.Value);
 
+                    // 记录落格失败时间线事件（强排视为失败）
+                    _timelineService.Append(new Core.Domain.Parcels.ParcelTimelineEventArgs
+                    {
+                        ParcelId = plan.ParcelId.Value,
+                        EventType = Core.Domain.Parcels.ParcelTimelineEventType.DivertFailed,
+                        OccurredAt = DateTimeOffset.UtcNow,
+                        ChuteId = plan.ChuteId.Value,
+                        CartId = plan.CartId.Value,
+                        Note = "包裹被强制排出"
+                    });
+
                     // Report to upstream
                     await ReportSortingResultAsync(
                         plan.ParcelId,
@@ -184,6 +209,27 @@ public class SortingExecutionWorker : BackgroundService
                 _cartLifecycleService.UnloadCart(plan.CartId, DateTimeOffset.UtcNow);
                 _parcelLifecycleService.MarkSorted(plan.ParcelId, DateTimeOffset.UtcNow);
                 _parcelLifecycleService.UnbindCartId(plan.ParcelId);
+
+                // 记录落格成功时间线事件
+                _timelineService.Append(new Core.Domain.Parcels.ParcelTimelineEventArgs
+                {
+                    ParcelId = plan.ParcelId.Value,
+                    EventType = Core.Domain.Parcels.ParcelTimelineEventType.DivertedToChute,
+                    OccurredAt = DateTimeOffset.UtcNow,
+                    ChuteId = plan.ChuteId.Value,
+                    CartId = plan.CartId.Value,
+                    Note = $"包裹成功落入目标格口 {plan.ChuteId.Value}"
+                });
+
+                // 记录完成时间线事件
+                _timelineService.Append(new Core.Domain.Parcels.ParcelTimelineEventArgs
+                {
+                    ParcelId = plan.ParcelId.Value,
+                    EventType = Core.Domain.Parcels.ParcelTimelineEventType.Completed,
+                    OccurredAt = DateTimeOffset.UtcNow,
+                    ChuteId = plan.ChuteId.Value,
+                    Note = "包裹分拣流程完成"
+                });
 
                 // 更新生命周期状态：已成功落入目标格口
                 _lifecycleTracker.UpdateStatus(
@@ -215,6 +261,17 @@ public class SortingExecutionWorker : BackgroundService
                 plan.ParcelId.Value,
                 plan.CartId.Value,
                 plan.ChuteId.Value);
+
+            // 记录落格失败时间线事件
+            _timelineService.Append(new Core.Domain.Parcels.ParcelTimelineEventArgs
+            {
+                ParcelId = plan.ParcelId.Value,
+                EventType = Core.Domain.Parcels.ParcelTimelineEventType.DivertFailed,
+                OccurredAt = DateTimeOffset.UtcNow,
+                ChuteId = plan.ChuteId.Value,
+                CartId = plan.CartId.Value,
+                Note = $"吐件失败: {ex.Message}"
+            });
 
             // Update parcel state to failed
             _parcelLifecycleService.UpdateRouteState(plan.ParcelId, ParcelRouteState.Failed);
