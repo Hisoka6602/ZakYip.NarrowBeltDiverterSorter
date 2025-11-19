@@ -320,6 +320,20 @@ builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Communication.Upst
 builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Domain.Sorting.ISortingRuleEnginePort, 
     ZakYip.NarrowBeltDiverterSorter.Execution.Upstream.SortingRuleEnginePortAdapter>();
 
+// 注册上游路由配置提供器
+builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Abstractions.IUpstreamRoutingConfigProvider,
+    ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration.LiteDbUpstreamRoutingConfigProvider>();
+
+// 注册上游请求追踪器
+builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Domain.Upstream.IUpstreamRequestTracker,
+    ZakYip.NarrowBeltDiverterSorter.Core.Application.UpstreamRequestTracker>();
+
+// 注册上游超时检查器
+builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Execution.Upstream.UpstreamTimeoutChecker>();
+
+// 注册上游响应处理器
+builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Execution.Upstream.UpstreamResponseHandler>();
+
 // ============================================================================
 // 注册现场总线和驱动
 // ============================================================================

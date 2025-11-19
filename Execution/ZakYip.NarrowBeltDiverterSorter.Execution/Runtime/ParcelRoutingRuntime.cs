@@ -1,58 +1,111 @@
 using Microsoft.Extensions.Logging;
+using ZakYip.NarrowBeltDiverterSorter.Communication.Upstream;
 using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Feeding;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Parcels;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Runtime;
+using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Upstream;
+using ZakYip.NarrowBeltDiverterSorter.Execution.Upstream;
 using ZakYip.NarrowBeltDiverterSorter.UpstreamContracts.Models;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Execution.Runtime;
 
 /// <summary>
 /// 包裹路由运行时实现
-/// 订阅包裹创建事件，调用上游系统请求格口，并更新包裹状态
+/// 订阅包裹创建事件，以火忘式（fire-and-forget）方式向上游请求格口分配
+/// 上游响应通过推送机制异步到达，由UpstreamResponseHandler处理
 /// </summary>
 public class ParcelRoutingRuntime : IParcelRoutingRuntime
 {
     private readonly ILogger<ParcelRoutingRuntime> _logger;
-    private readonly IUpstreamSortingApiClient _upstreamClient;
+    private readonly ISortingRuleEngineClient _ruleEngineClient;
     private readonly IParcelLifecycleService _parcelLifecycleService;
     private readonly IParcelLifecycleTracker _lifecycleTracker;
-
-    /// <summary>
-    /// 包裹路由完成事件（已废弃，请订阅 IEventBus）
-    /// </summary>
-    [Obsolete("请使用 IEventBus 订阅 Observability.Events.ParcelRoutedEventArgs，此事件将在未来版本中移除")]
-    public event EventHandler<ParcelRoutedEventArgs>? ParcelRouted;
+    private readonly IUpstreamRequestTracker _requestTracker;
+    private readonly IUpstreamRoutingConfigProvider _configProvider;
+    private readonly UpstreamTimeoutChecker _timeoutChecker;
+    private CancellationTokenSource? _runningCts;
 
     public ParcelRoutingRuntime(
         ILogger<ParcelRoutingRuntime> logger,
-        IUpstreamSortingApiClient upstreamClient,
+        ISortingRuleEngineClient ruleEngineClient,
         IParcelLifecycleService parcelLifecycleService,
-        IParcelLifecycleTracker lifecycleTracker)
+        IParcelLifecycleTracker lifecycleTracker,
+        IUpstreamRequestTracker requestTracker,
+        IUpstreamRoutingConfigProvider configProvider,
+        UpstreamTimeoutChecker timeoutChecker)
     {
         _logger = logger;
-        _upstreamClient = upstreamClient;
+        _ruleEngineClient = ruleEngineClient;
         _parcelLifecycleService = parcelLifecycleService;
         _lifecycleTracker = lifecycleTracker;
+        _requestTracker = requestTracker;
+        _configProvider = configProvider;
+        _timeoutChecker = timeoutChecker;
     }
 
     public async Task RunAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("包裹路由运行时已启动");
+        _logger.LogInformation("包裹路由运行时已启动（火忘式模式）");
 
-        // 这里只是框架，实际需要订阅ParcelCreatedFromInfeedEventArgs
-        // 在真实实现中，需要通过事件总线或其他机制来订阅入口事件
-        while (!stoppingToken.IsCancellationRequested)
+        _runningCts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
+
+        // 启动周期性超时检查任务
+        var timeoutCheckTask = RunTimeoutCheckLoopAsync(_runningCts.Token);
+
+        try
         {
-            await Task.Delay(1000, stoppingToken);
+            // 主循环保持运行
+            await Task.Delay(Timeout.Infinite, stoppingToken);
+        }
+        catch (OperationCanceledException)
+        {
+            // 正常停止
+        }
+        finally
+        {
+            _runningCts?.Cancel();
+            await timeoutCheckTask;
         }
 
         _logger.LogInformation("包裹路由运行时已停止");
     }
 
     /// <summary>
-    /// 处理包裹创建事件
+    /// 超时检查循环
+    /// </summary>
+    private async Task RunTimeoutCheckLoopAsync(CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("启动上游请求超时检查循环");
+
+        try
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                try
+                {
+                    _timeoutChecker.CheckTimeouts();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "超时检查循环发生异常");
+                }
+
+                // 每秒检查一次
+                await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // 正常停止
+        }
+
+        _logger.LogInformation("上游请求超时检查循环已停止");
+    }
+
+    /// <summary>
+    /// 处理包裹创建事件（火忘式，立即返回）
     /// 此方法应该由事件订阅机制调用
     /// </summary>
     /// <param name="eventArgs">包裹创建事件参数</param>
@@ -64,121 +117,85 @@ public class ParcelRoutingRuntime : IParcelRoutingRuntime
         try
         {
             _logger.LogInformation(
-                "开始为包裹 {ParcelId} 请求格口分配",
+                "开始处理包裹创建: ParcelId={ParcelId}",
                 eventArgs.ParcelId.Value);
 
-            // 创建包裹
+            // 1. 创建包裹（立即完成）
             _parcelLifecycleService.CreateParcel(
                 eventArgs.ParcelId,
                 eventArgs.Barcode,
                 eventArgs.InfeedTriggerTime);
 
-            // 更新生命周期状态：已创建
+            // 2. 更新生命周期状态：已创建
             _lifecycleTracker.UpdateStatus(
                 eventArgs.ParcelId,
                 ParcelStatus.Created,
                 ParcelFailureReason.None,
                 "包裹从入口传感器创建");
 
-            // 调用上游系统请求格口
-            var request = new ParcelRoutingRequestDto
+            var requestedAt = DateTimeOffset.UtcNow;
+            var config = _configProvider.GetCurrentOptions();
+            var deadline = requestedAt.Add(config.UpstreamResultTtl);
+
+            // 3. 记录上游请求（计算Deadline）
+            _requestTracker.RecordRequest(eventArgs.ParcelId, requestedAt, deadline);
+
+            _logger.LogDebug(
+                "包裹 {ParcelId} 上游请求已记录，Deadline={Deadline}",
+                eventArgs.ParcelId.Value,
+                deadline);
+
+            // 4. 火忘式发送请求到上游（不等待响应）
+            var message = new ParcelCreatedMessage
             {
                 ParcelId = eventArgs.ParcelId.Value,
-                RequestTime = DateTimeOffset.UtcNow
+                Barcode = eventArgs.Barcode,
+                CreatedTime = eventArgs.InfeedTriggerTime
             };
 
-            var response = await _upstreamClient.RequestChuteAsync(request, cancellationToken);
-
-            // 根据响应更新包裹状态
-            if (response.IsSuccess)
+            // 异步发送，不等待结果
+            _ = Task.Run(async () =>
             {
-                var chuteId = new ChuteId(response.ChuteId);
-                _parcelLifecycleService.BindChuteId(eventArgs.ParcelId, chuteId);
-
-                _logger.LogInformation(
-                    "包裹 {ParcelId} 成功分配到格口 {ChuteId}",
-                    eventArgs.ParcelId.Value,
-                    response.ChuteId);
-
-                // 发布路由成功事件
-#pragma warning disable CS0618 // Type or member is obsolete
-                ParcelRouted?.Invoke(this, new ParcelRoutedEventArgs
+                try
                 {
-                    ParcelId = eventArgs.ParcelId,
-                    ChuteId = chuteId,
-                    IsSuccess = true,
-                    RoutedTime = response.ResponseTime
-                });
-#pragma warning restore CS0618 // Type or member is obsolete
-            }
-            else
-            {
-                // 路由失败，更新状态为失败
-                _parcelLifecycleService.UpdateRouteState(
-                    eventArgs.ParcelId,
-                    ParcelRouteState.Failed);
-
-                // 更新生命周期状态：失败（上游超时）
-                _lifecycleTracker.UpdateStatus(
-                    eventArgs.ParcelId,
-                    ParcelStatus.Failed,
-                    ParcelFailureReason.UpstreamTimeout,
-                    $"上游返回失败: {response.ErrorMessage}");
-
-                _logger.LogWarning(
-                    "包裹 {ParcelId} 格口分配失败: {ErrorMessage}",
-                    eventArgs.ParcelId.Value,
-                    response.ErrorMessage);
-
-                // 发布路由失败事件
-#pragma warning disable CS0618 // Type or member is obsolete
-                ParcelRouted?.Invoke(this, new ParcelRoutedEventArgs
+                    bool sent = await _ruleEngineClient.SendParcelCreatedAsync(message, cancellationToken);
+                    if (sent)
+                    {
+                        _logger.LogDebug(
+                            "包裹 {ParcelId} 的上游请求已发送",
+                            eventArgs.ParcelId.Value);
+                    }
+                    else
+                    {
+                        _logger.LogWarning(
+                            "包裹 {ParcelId} 的上游请求发送失败（规则引擎未连接或已禁用）",
+                            eventArgs.ParcelId.Value);
+                    }
+                }
+                catch (Exception ex)
                 {
-                    ParcelId = eventArgs.ParcelId,
-                    ChuteId = null,
-                    IsSuccess = false,
-                    ErrorMessage = response.ErrorMessage,
-                    RoutedTime = response.ResponseTime
-                });
-#pragma warning restore CS0618 // Type or member is obsolete
-            }
+                    _logger.LogError(
+                        ex,
+                        "发送包裹 {ParcelId} 的上游请求时发生异常",
+                        eventArgs.ParcelId.Value);
+                }
+            }, cancellationToken);
+
+            _logger.LogInformation(
+                "包裹 {ParcelId} 创建完成，上游请求已发送（火忘式）",
+                eventArgs.ParcelId.Value);
+
+            // 方法立即返回，不等待上游响应
         }
         catch (Exception ex)
         {
             _logger.LogError(
                 ex,
-                "处理包裹 {ParcelId} 路由请求时发生异常",
+                "处理包裹 {ParcelId} 创建时发生异常",
                 eventArgs.ParcelId.Value);
 
-            // 更新状态为失败
-            try
-            {
-                _parcelLifecycleService.UpdateRouteState(
-                    eventArgs.ParcelId,
-                    ParcelRouteState.Failed);
-
-                // 更新生命周期状态：失败（未知原因）
-                _lifecycleTracker.UpdateStatus(
-                    eventArgs.ParcelId,
-                    ParcelStatus.Failed,
-                    ParcelFailureReason.Unknown,
-                    $"处理路由请求时发生异常: {ex.Message}");
-            }
-            catch
-            {
-                // 忽略更新状态失败的异常
-            }
-
-            // 发布路由失败事件
-#pragma warning disable CS0618 // Type or member is obsolete
-            ParcelRouted?.Invoke(this, new ParcelRoutedEventArgs
-            {
-                ParcelId = eventArgs.ParcelId,
-                ChuteId = null,
-                IsSuccess = false,
-                ErrorMessage = $"处理异常: {ex.Message}"
-            });
-#pragma warning restore CS0618 // Type or member is obsolete
+            // 即使发生异常也要快速返回，避免阻塞
+            throw;
         }
     }
 }

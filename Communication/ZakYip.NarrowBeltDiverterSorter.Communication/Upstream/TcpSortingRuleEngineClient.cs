@@ -27,8 +27,9 @@ public class TcpSortingRuleEngineClient : ISortingRuleEngineClient
     public bool IsConnected => false;
 
     /// <inheritdoc/>
-#pragma warning disable CS0067 // 事件 'SortingResultReceived' 未使用：此事件为 ISortingRuleEngineClient 接口的必需成员，用于向外部订阅者发送分拣结果。当前 TCP 实现尚未完成，故暂未触发此事件。
+#pragma warning disable CS0067 // 事件 'SortingResultReceived' 和 'ChuteAssignmentReceived' 未使用：这些事件为 ISortingRuleEngineClient 接口的必需成员，用于向外部订阅者发送消息。当前 TCP 实现尚未完成，故暂未触发这些事件。
     public event EventHandler<SortingResultMessage>? SortingResultReceived;
+    public event EventHandler<ChuteAssignmentNotificationEventArgs>? ChuteAssignmentReceived;
 #pragma warning restore CS0067
 
     /// <inheritdoc/>

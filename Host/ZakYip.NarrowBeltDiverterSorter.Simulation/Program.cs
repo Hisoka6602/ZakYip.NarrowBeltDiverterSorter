@@ -270,7 +270,32 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
     builder.Services.AddSingleton(fakeChuteTransmitter);
     builder.Services.AddSingleton<IChuteTransmitterPort>(fakeChuteTransmitter);
 
-    builder.Services.AddSingleton<IUpstreamSortingApiClient, FakeUpstreamSortingApiClient>();
+    // 注册上游规则引擎客户端（仿真使用Disabled模式）
+    builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Communication.Upstream.ISortingRuleEngineClient>(sp =>
+    {
+        var logger = sp.GetRequiredService<ILoggerFactory>()
+            .CreateLogger<ZakYip.NarrowBeltDiverterSorter.Communication.Upstream.DisabledSortingRuleEngineClient>();
+        return new ZakYip.NarrowBeltDiverterSorter.Communication.Upstream.DisabledSortingRuleEngineClient(logger);
+    });
+
+    // 注册上游路由配置提供器（仿真使用内存配置）
+    builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Abstractions.IUpstreamRoutingConfigProvider>(sp =>
+    {
+        var logger = sp.GetRequiredService<ILoggerFactory>()
+            .CreateLogger<ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration.LiteDbUpstreamRoutingConfigProvider>();
+        var configStore = sp.GetRequiredService<ZakYip.NarrowBeltDiverterSorter.Core.Configuration.ISorterConfigurationStore>();
+        return new ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration.LiteDbUpstreamRoutingConfigProvider(configStore, logger);
+    });
+
+    // 注册上游请求追踪器
+    builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Domain.Upstream.IUpstreamRequestTracker,
+        ZakYip.NarrowBeltDiverterSorter.Core.Application.UpstreamRequestTracker>();
+
+    // 注册上游超时检查器
+    builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Execution.Upstream.UpstreamTimeoutChecker>();
+
+    // 注册上游响应处理器
+    builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Execution.Upstream.UpstreamResponseHandler>();
 
     // ============================================================================
     // 注册领域服务 (E2E Scenario)

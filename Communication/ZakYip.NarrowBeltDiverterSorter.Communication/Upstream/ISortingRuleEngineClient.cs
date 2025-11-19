@@ -58,4 +58,9 @@ public interface ISortingRuleEngineClient : IDisposable
     /// 分拣结果接收事件（从上游规则引擎接收到分拣结果时触发）
     /// </summary>
     event EventHandler<SortingResultMessage>? SortingResultReceived;
+
+    /// <summary>
+    /// 格口分配通知接收事件（从上游规则引擎接收到格口分配推送时触发）
+    /// </summary>
+    event EventHandler<ChuteAssignmentNotificationEventArgs>? ChuteAssignmentReceived;
 }

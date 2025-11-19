@@ -23,6 +23,7 @@ public class DisabledSortingRuleEngineClient : ISortingRuleEngineClient
     /// <inheritdoc/>
 #pragma warning disable CS0067 // 事件 'SortingResultReceived' 未使用：此事件为 ISortingRuleEngineClient 接口的必需成员。此实现为禁用状态的客户端，不会触发事件。
     public event EventHandler<SortingResultMessage>? SortingResultReceived;
+    public event EventHandler<ChuteAssignmentNotificationEventArgs>? ChuteAssignmentReceived;
 #pragma warning restore CS0067
 
     /// <inheritdoc/>

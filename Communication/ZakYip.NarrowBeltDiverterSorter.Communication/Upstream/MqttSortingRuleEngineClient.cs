@@ -32,6 +32,9 @@ public class MqttSortingRuleEngineClient : ISortingRuleEngineClient
     public event EventHandler<SortingResultMessage>? SortingResultReceived;
 
     /// <inheritdoc/>
+    public event EventHandler<ChuteAssignmentNotificationEventArgs>? ChuteAssignmentReceived;
+
+    /// <inheritdoc/>
     public async Task<bool> ConnectAsync(CancellationToken cancellationToken = default)
     {
         try
@@ -118,18 +121,22 @@ public class MqttSortingRuleEngineClient : ISortingRuleEngineClient
         try
         {
             var resultTopic = $"{_options.BaseTopic}/sorting-result-response";
+            var chuteAssignmentTopic = $"{_options.BaseTopic}/chute-assignment";
             
             // 注册消息处理器
             _mqttClient.ApplicationMessageReceivedAsync += OnMessageReceivedAsync;
             
-            // 订阅主题
+            // 订阅分拣结果主题
             await _mqttClient.SubscribeAsync(resultTopic, MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce, cancellationToken);
-            
             _logger.LogInformation("已订阅分拣结果主题: {Topic}", resultTopic);
+            
+            // 订阅格口分配主题
+            await _mqttClient.SubscribeAsync(chuteAssignmentTopic, MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce, cancellationToken);
+            _logger.LogInformation("已订阅格口分配主题: {Topic}", chuteAssignmentTopic);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "订阅分拣结果主题失败");
+            _logger.LogError(ex, "订阅主题失败");
         }
     }
 
@@ -157,6 +164,20 @@ public class MqttSortingRuleEngineClient : ISortingRuleEngineClient
                     
                     // 触发事件
                     SortingResultReceived?.Invoke(this, sortingResult);
+                }
+            }
+            // 检查是否为格口分配消息
+            else if (topic.EndsWith("/chute-assignment"))
+            {
+                var chuteAssignment = JsonSerializer.Deserialize<ChuteAssignmentNotificationEventArgs>(payload);
+                if (chuteAssignment != null)
+                {
+                    _logger.LogInformation(
+                        "收到格口分配: ParcelId={ParcelId}, ChuteId={ChuteId}",
+                        chuteAssignment.ParcelId, chuteAssignment.ChuteId);
+                    
+                    // 触发事件
+                    ChuteAssignmentReceived?.Invoke(this, chuteAssignment);
                 }
             }
         }
