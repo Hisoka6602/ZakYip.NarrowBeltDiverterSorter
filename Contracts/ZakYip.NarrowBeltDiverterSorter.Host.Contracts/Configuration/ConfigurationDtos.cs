@@ -4,6 +4,45 @@ using System.ComponentModel.DataAnnotations;
 namespace ZakYip.NarrowBeltDiverterSorter.Host.Contracts.Configuration;
 
 /// <summary>
+/// 上游路由配置 DTO
+/// </summary>
+/// <remarks>
+/// 配置与上游规则引擎交互的关键参数，包括超时时间和异常格口
+/// </remarks>
+/// <example>
+/// {
+///   "upstreamResultTtlSeconds": 30,
+///   "errorChuteId": 9999
+/// }
+/// </example>
+public sealed record UpstreamRoutingSettingsDto
+{
+    /// <summary>
+    /// 上游结果超时时间（秒）
+    /// </summary>
+    /// <remarks>
+    /// 从发送请求到接收结果的最大等待时间，超时后包裹将被分配到异常格口
+    /// </remarks>
+    /// <example>30</example>
+    [Required]
+    [Range(1, 300)]
+    [DefaultValue(30)]
+    public required int UpstreamResultTtlSeconds { get; init; }
+
+    /// <summary>
+    /// 异常格口ID
+    /// </summary>
+    /// <remarks>
+    /// 当上游超时或无法分配时使用的默认格口编号
+    /// </remarks>
+    /// <example>9999</example>
+    [Required]
+    [Range(1, 99999)]
+    [DefaultValue(9999)]
+    public required long ErrorChuteId { get; init; }
+}
+
+/// <summary>
 /// 主线控制选项 DTO
 /// </summary>
 /// <remarks>
