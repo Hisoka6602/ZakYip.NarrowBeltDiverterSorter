@@ -2,6 +2,7 @@ using System.Threading;
 using Microsoft.Extensions.Logging;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Feeding;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Parcels;
+using ZakYip.NarrowBeltDiverterSorter.Shared.Kernel;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Execution.Feeding;
 
@@ -13,6 +14,7 @@ public class FeedingBackpressureController : IFeedingBackpressureController
 {
     private readonly IFeedingCapacityOptionsRepository _optionsRepository;
     private readonly IParcelLifecycleTracker _lifecycleTracker;
+    private readonly ILocalTimeProvider _timeProvider;
     private readonly ILogger<FeedingBackpressureController> _logger;
     
     private long _throttleCount;
@@ -24,10 +26,12 @@ public class FeedingBackpressureController : IFeedingBackpressureController
     public FeedingBackpressureController(
         IFeedingCapacityOptionsRepository optionsRepository,
         IParcelLifecycleTracker lifecycleTracker,
+        ILocalTimeProvider timeProvider,
         ILogger<FeedingBackpressureController> logger)
     {
         _optionsRepository = optionsRepository ?? throw new ArgumentNullException(nameof(optionsRepository));
         _lifecycleTracker = lifecycleTracker ?? throw new ArgumentNullException(nameof(lifecycleTracker));
+        _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -174,7 +178,7 @@ public class FeedingBackpressureController : IFeedingBackpressureController
 
     private FeedingCapacityOptions GetOrRefreshOptions()
     {
-        var now = DateTime.UtcNow;
+        var now = _timeProvider.Now;
         
         // 如果缓存有效，直接返回
         if (_cachedOptions != null && (now - _lastOptionsLoadTime) < OptionsRefreshInterval)

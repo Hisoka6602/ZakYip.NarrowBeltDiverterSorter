@@ -7,6 +7,7 @@ using ZakYip.NarrowBeltDiverterSorter.Core.Domain.MainLine;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Runtime;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.SystemState;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Vendors.Rema;
+using ZakYip.NarrowBeltDiverterSorter.Shared.Kernel;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Execution.Runtime;
 
@@ -21,6 +22,7 @@ public class MainLineRuntime : IMainLineRuntime
     private readonly IMainLineDrive _mainLineDrive;
     private readonly IMainLineSetpointProvider _setpointProvider;
     private readonly ISystemRunStateService _systemRunStateService;
+    private readonly ILocalTimeProvider _timeProvider;
     private readonly MainLineControlOptions _options;
     private readonly bool _enableBringupLogging;
     private SystemRunState _lastRunState = SystemRunState.Stopped;
@@ -31,6 +33,7 @@ public class MainLineRuntime : IMainLineRuntime
         IMainLineDrive mainLineDrive,
         IMainLineSetpointProvider setpointProvider,
         ISystemRunStateService systemRunStateService,
+        ILocalTimeProvider timeProvider,
         IOptions<MainLineControlOptions> options,
         StartupModeConfiguration startupConfig)
     {
@@ -39,6 +42,7 @@ public class MainLineRuntime : IMainLineRuntime
         _mainLineDrive = mainLineDrive;
         _setpointProvider = setpointProvider;
         _systemRunStateService = systemRunStateService;
+        _timeProvider = timeProvider;
         _options = options.Value;
         _enableBringupLogging = startupConfig.EnableBringupLogging && 
                                 startupConfig.Mode >= StartupMode.BringupMainline;
@@ -252,7 +256,7 @@ public class MainLineRuntime : IMainLineRuntime
         var lastSetTime = remaDrive.LastSuccessfulSpeedSetTime;
         if (lastSetTime != DateTime.MinValue)
         {
-            var elapsed = DateTime.UtcNow - lastSetTime;
+            var elapsed = _timeProvider.Now - lastSetTime;
             _logger.LogInformation(
                 "[Rema 命令] 最后成功下发速度: {LastSpeed:F1} mm/s ({ElapsedSeconds:F1}秒前)",
                 lastSuccessfulSpeed,

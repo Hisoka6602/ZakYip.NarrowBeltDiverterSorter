@@ -3,6 +3,7 @@ using Moq;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Feeding;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Parcels;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Feeding;
+using ZakYip.NarrowBeltDiverterSorter.Shared.Kernel;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Execution.Tests.Feeding;
 
@@ -13,13 +14,18 @@ public class FeedingBackpressureControllerTests
 {
     private readonly Mock<IFeedingCapacityOptionsRepository> _mockRepository;
     private readonly Mock<IParcelLifecycleTracker> _mockTracker;
+    private readonly Mock<ILocalTimeProvider> _mockTimeProvider;
     private readonly Mock<ILogger<FeedingBackpressureController>> _mockLogger;
 
     public FeedingBackpressureControllerTests()
     {
         _mockRepository = new Mock<IFeedingCapacityOptionsRepository>();
         _mockTracker = new Mock<IParcelLifecycleTracker>();
+        _mockTimeProvider = new Mock<ILocalTimeProvider>();
         _mockLogger = new Mock<ILogger<FeedingBackpressureController>>();
+        
+        // 设置默认时间
+        _mockTimeProvider.Setup(x => x.Now).Returns(DateTime.Now);
     }
 
     private FeedingBackpressureController CreateController(FeedingCapacityOptions? options = null)
@@ -37,6 +43,7 @@ public class FeedingBackpressureControllerTests
         return new FeedingBackpressureController(
             _mockRepository.Object,
             _mockTracker.Object,
+            _mockTimeProvider.Object,
             _mockLogger.Object);
     }
 

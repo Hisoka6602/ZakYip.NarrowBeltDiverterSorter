@@ -87,6 +87,13 @@ builder.Services.AddSignalR();
 // 配置选项
 // ============================================================================
 
+// 注册时间提供器（用于统一时间语义）
+builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Shared.Kernel.ILocalTimeProvider, 
+    ZakYip.NarrowBeltDiverterSorter.Shared.Kernel.LocalTimeProvider>();
+
+// 注册安全隔离器（用于异常处理和安全隔离）
+builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Shared.Kernel.SafetyIsolator>();
+
 // 注册统一配置中心基础设施
 builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Configuration.IConfigurationDefaultsProvider, 
     ZakYip.NarrowBeltDiverterSorter.Core.Configuration.ConfigurationDefaultsProvider>();
@@ -258,6 +265,18 @@ builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Abstractions.
 // 注册工厂和客户端
 builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Communication.Upstream.SortingRuleEngineClientFactory>();
 
+// 配置 UpstreamOptions 为 IOptionsMonitor（用于热更新支持）
+builder.Services.AddOptions<ZakYip.NarrowBeltDiverterSorter.Communication.Upstream.UpstreamOptions>()
+    .Configure<ZakYip.NarrowBeltDiverterSorter.Host.Configuration.IHostConfigurationProvider>((options, provider) =>
+    {
+        var upstreamOptions = provider.GetUpstreamOptionsAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+        options.Mode = upstreamOptions.Mode;
+        options.Role = upstreamOptions.Role;
+        options.Mqtt = upstreamOptions.Mqtt;
+        options.Tcp = upstreamOptions.Tcp;
+        options.Retry = upstreamOptions.Retry;
+    });
+
 // 注册 ISortingRuleEngineClient
 builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Communication.Upstream.ISortingRuleEngineClient>(serviceProvider =>
 {
@@ -277,12 +296,30 @@ builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Communication.Upst
         _ => null
     };
     
+    // 如果是客户端模式且启用重试，包装为重试客户端
+    ZakYip.NarrowBeltDiverterSorter.Communication.Upstream.ISortingRuleEngineClient wrappedClient;
+    if (upstreamOptions.Role == ZakYip.NarrowBeltDiverterSorter.Communication.Upstream.UpstreamRole.Client 
+        && upstreamOptions.Mode != ZakYip.NarrowBeltDiverterSorter.Communication.Upstream.UpstreamMode.Disabled)
+    {
+        var optionsMonitor = serviceProvider.GetRequiredService<IOptionsMonitor<ZakYip.NarrowBeltDiverterSorter.Communication.Upstream.UpstreamOptions>>();
+        var retryLogger = serviceProvider.GetRequiredService<ILoggerFactory>()
+            .CreateLogger<ZakYip.NarrowBeltDiverterSorter.Communication.Upstream.UpstreamClientRetryWrapper>();
+        wrappedClient = new ZakYip.NarrowBeltDiverterSorter.Communication.Upstream.UpstreamClientRetryWrapper(
+            innerClient,
+            optionsMonitor,
+            retryLogger);
+    }
+    else
+    {
+        wrappedClient = innerClient;
+    }
+    
     // 包装为可观察的客户端
     var eventBus = serviceProvider.GetService<ZakYip.NarrowBeltDiverterSorter.Core.Abstractions.IEventBus>();
     var logger = serviceProvider.GetRequiredService<ILoggerFactory>()
         .CreateLogger<ZakYip.NarrowBeltDiverterSorter.Communication.Upstream.ObservableSortingRuleEngineClient>();
     var client = new ZakYip.NarrowBeltDiverterSorter.Communication.Upstream.ObservableSortingRuleEngineClient(
-        innerClient, 
+        wrappedClient, 
         upstreamOptions.Mode.ToString(), 
         connectionAddress,
         eventBus, 
