@@ -457,6 +457,9 @@ public class SimulationOutputTests
         var e2eSetpointProvider = app.Services.GetRequiredService<SimulationMainLineSetpoint>();
         e2eSetpointProvider.SetSetpoint(true, (decimal)simulationConfig.MainLineSpeedMmPerSec);
         
+        // 获取 runner 实例（在 app.RunAsync 启动之前）
+        var runner = app.Services.GetRequiredService<EndToEndSimulationRunner>();
+        
         // 启动 fake 设备
         await fakeInfeedConveyor.StartAsync();
         await fakeInfeedConveyor.SetSpeedAsync(simulationConfig.InfeedConveyorSpeedMmPerSec);
@@ -468,7 +471,6 @@ public class SimulationOutputTests
         {
             await Task.Delay(1000, cts.Token);
             
-            var runner = app.Services.GetRequiredService<EndToEndSimulationRunner>();
             var report = await runner.RunAsync(simulationConfig.ParcelCount, cts.Token);
             
             cts.Cancel();

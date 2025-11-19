@@ -114,8 +114,8 @@ public class PanelButtonStateMachineTests
         var stateService = new SystemRunStateService();
         var parcelService = new ParcelLifecycleService(stateService);
 
-        // Assert: 初始状态为就绪
-        Assert.Equal(SystemRunState.Ready, stateService.Current);
+        // Assert: 初始状态为停止
+        Assert.Equal(SystemRunState.Stopped, stateService.Current);
 
         // Act: 按下启动按钮
         var startResult = stateService.TryHandleStart();
@@ -302,10 +302,10 @@ public class PanelButtonStateMachineTests
         // Assert: 解除成功
         Assert.True(resetResult.IsSuccess);
 
-        // Assert: 系统状态变更为就绪
-        Assert.Equal(SystemRunState.Ready, stateService.Current);
+        // Assert: 系统状态变更为停止
+        Assert.Equal(SystemRunState.Stopped, stateService.Current);
 
-        // Act: 在就绪状态下测试场景 1、2、3
+        // Act: 在停止状态下测试场景 1、2、3
         
         // 测试启动
         var startResult = stateService.TryHandleStart();
