@@ -22,6 +22,22 @@ public enum UpstreamMode
 }
 
 /// <summary>
+/// 上游通讯角色枚举
+/// </summary>
+public enum UpstreamRole
+{
+    /// <summary>
+    /// 客户端模式：主动连接到上游服务器
+    /// </summary>
+    Client,
+
+    /// <summary>
+    /// 服务端模式：作为服务器接收上游连接
+    /// </summary>
+    Server
+}
+
+/// <summary>
 /// 上游连接配置选项
 /// </summary>
 public class UpstreamOptions
@@ -32,6 +48,11 @@ public class UpstreamOptions
     public UpstreamMode Mode { get; set; } = UpstreamMode.Disabled;
 
     /// <summary>
+    /// 通讯角色（客户端或服务端）
+    /// </summary>
+    public UpstreamRole Role { get; set; } = UpstreamRole.Client;
+
+    /// <summary>
     /// MQTT 连接配置（当 Mode = Mqtt 时使用）
     /// </summary>
     public MqttOptions? Mqtt { get; set; }
@@ -40,6 +61,11 @@ public class UpstreamOptions
     /// TCP 连接配置（当 Mode = Tcp 时使用）
     /// </summary>
     public TcpOptions? Tcp { get; set; }
+
+    /// <summary>
+    /// 连接重试配置（仅客户端模式有效）
+    /// </summary>
+    public RetryOptions Retry { get; set; } = new RetryOptions();
 }
 
 /// <summary>
@@ -97,4 +123,30 @@ public class TcpOptions
     /// 服务器端口
     /// </summary>
     public int Port { get; set; } = 8888;
+}
+
+/// <summary>
+/// 连接重试配置
+/// </summary>
+public class RetryOptions
+{
+    /// <summary>
+    /// 初始退避间隔（毫秒）
+    /// </summary>
+    public int InitialBackoffMs { get; set; } = 100;
+
+    /// <summary>
+    /// 最大退避间隔（毫秒），默认 2000ms（2秒）
+    /// </summary>
+    public int MaxBackoffMs { get; set; } = 2000;
+
+    /// <summary>
+    /// 退避倍数（每次失败后退避时间乘以此倍数）
+    /// </summary>
+    public double BackoffMultiplier { get; set; } = 2.0;
+
+    /// <summary>
+    /// 是否启用无限重试（默认启用）
+    /// </summary>
+    public bool InfiniteRetry { get; set; } = true;
 }
