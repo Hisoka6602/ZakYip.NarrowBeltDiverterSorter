@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using ZakYip.NarrowBeltDiverterSorter.Core.Configuration;
 using ZakYip.NarrowBeltDiverterSorter.Host.Contracts.API;
 using ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
+using ZakYip.NarrowBeltDiverterSorter.Infrastructure.Simulation;
 // Note: INarrowBeltSimulationScenarioRunner and related types cannot be used due to circular dependency
 // between Host and Simulation projects. This will be resolved in a future PR.
 // using ZakYip.NarrowBeltDiverterSorter.Simulation;
@@ -18,6 +19,7 @@ public class SimulationsController : ControllerBase
 {
     private readonly ILongRunLoadTestOptionsRepository _longRunRepo;
     private readonly IMainLineOptionsRepository _mainLineRepo;
+    private readonly ISimulationStatisticsService? _statisticsService;
     // Note: These services are commented out due to circular dependency with Simulation project
     // private readonly INarrowBeltSimulationScenarioRunner? _scenarioRunner;
     // private readonly INarrowBeltSimulationReportService? _reportService;
@@ -32,7 +34,8 @@ public class SimulationsController : ControllerBase
         IOptions<NarrowBeltSimulationOptions> simulationOptions,
         IOptions<ChuteLayoutProfile> chuteLayoutOptions,
         IOptions<TargetChuteAssignmentProfile> assignmentOptions,
-        ILogger<SimulationsController> logger)
+        ILogger<SimulationsController> logger,
+        ISimulationStatisticsService? statisticsService = null)
     {
         _longRunRepo = longRunRepo ?? throw new ArgumentNullException(nameof(longRunRepo));
         _mainLineRepo = mainLineRepo ?? throw new ArgumentNullException(nameof(mainLineRepo));
@@ -40,6 +43,7 @@ public class SimulationsController : ControllerBase
         _chuteLayoutOptions = chuteLayoutOptions ?? throw new ArgumentNullException(nameof(chuteLayoutOptions));
         _assignmentOptions = assignmentOptions ?? throw new ArgumentNullException(nameof(assignmentOptions));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _statisticsService = statisticsService;
     }
 
     /// <summary>
@@ -100,6 +104,58 @@ public class SimulationsController : ControllerBase
         {
             _logger.LogError(ex, "启动长跑仿真失败");
             return StatusCode(500, new { error = "启动长跑仿真失败", message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// 获取窄带仿真结果统计。
+    /// </summary>
+    /// <param name="runId">运行标识符。如果未提供，则返回当前活动的仿真统计。</param>
+    [HttpGet("narrowbelt/result")]
+    [ProducesResponseType(typeof(SimulationResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+    public IActionResult GetNarrowBeltSimulationResult([FromQuery] string? runId = null)
+    {
+        if (_statisticsService == null)
+        {
+            return StatusCode(503, new { error = "仿真统计服务未启用", message = "统计服务未注册" });
+        }
+
+        try
+        {
+            // 如果未提供 runId，使用当前活动的运行
+            var targetRunId = runId ?? _statisticsService.GetActiveRunId();
+            
+            if (string.IsNullOrWhiteSpace(targetRunId))
+            {
+                return NotFound(new { error = "未找到活动的仿真运行", message = "请提供有效的 runId 或启动仿真" });
+            }
+
+            var statistics = _statisticsService.GetStatistics(targetRunId);
+            
+            if (statistics == null)
+            {
+                return NotFound(new { error = "未找到仿真统计", runId = targetRunId });
+            }
+
+            return Ok(new SimulationResultDto
+            {
+                RunId = statistics.RunId,
+                TotalParcels = statistics.TotalParcels,
+                SortedToTargetChutes = statistics.SortedToTargetChutes,
+                SortedToErrorChute = statistics.SortedToErrorChute,
+                TimedOutCount = statistics.TimedOutCount,
+                MisSortedCount = statistics.MisSortedCount,
+                IsCompleted = statistics.IsCompleted,
+                StartTime = statistics.StartTime,
+                EndTime = statistics.EndTime
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "获取仿真结果失败");
+            return StatusCode(500, new { error = "获取仿真结果失败", message = ex.Message });
         }
     }
 
