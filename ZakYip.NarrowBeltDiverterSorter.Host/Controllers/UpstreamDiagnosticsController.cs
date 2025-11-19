@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using ZakYip.NarrowBeltDiverterSorter.Communication.Upstream;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Sorting;
+using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Upstream;
 using ZakYip.NarrowBeltDiverterSorter.Observability.LiveView;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Host.Controllers;

@@ -1,8 +1,9 @@
 using Microsoft.Extensions.Logging;
+using ZakYip.NarrowBeltDiverterSorter.Communication.Upstream;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Sorting;
 using ZakYip.NarrowBeltDiverterSorter.UpstreamContracts.Models;
 
-namespace ZakYip.NarrowBeltDiverterSorter.Communication.Upstream;
+namespace ZakYip.NarrowBeltDiverterSorter.Execution.Upstream;
 
 /// <summary>
 /// 规则引擎端口适配器

@@ -328,10 +328,10 @@ builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Communication.Upst
         // 对于 Disabled 模式，发布初始状态事件
         if (eventBus != null)
         {
-            var eventArgs = new ZakYip.NarrowBeltDiverterSorter.Observability.Events.UpstreamRuleEngineStatusChangedEventArgs
+            var eventArgs = new ZakYip.NarrowBeltDiverterSorter.Core.Domain.Upstream.UpstreamRuleEngineStatusChangedEventArgs
             {
                 Mode = upstreamOptions.Mode.ToString(),
-                Status = ZakYip.NarrowBeltDiverterSorter.Observability.LiveView.UpstreamConnectionStatus.Disabled,
+                Status = ZakYip.NarrowBeltDiverterSorter.Core.Domain.Upstream.UpstreamConnectionStatus.Disabled,
                 ConnectionAddress = null
             };
             _ = eventBus.PublishAsync(eventArgs, CancellationToken.None);
@@ -343,7 +343,7 @@ builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Communication.Upst
 
 // 注册 ISortingRuleEnginePort（通过适配器）
 builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Domain.Sorting.ISortingRuleEnginePort, 
-    ZakYip.NarrowBeltDiverterSorter.Communication.Upstream.SortingRuleEnginePortAdapter>();
+    ZakYip.NarrowBeltDiverterSorter.Execution.Upstream.SortingRuleEnginePortAdapter>();
 
 // ============================================================================
 // 注册现场总线和驱动

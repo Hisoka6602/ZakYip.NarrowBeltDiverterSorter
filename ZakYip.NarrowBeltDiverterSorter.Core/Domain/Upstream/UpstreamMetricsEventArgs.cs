@@ -1,4 +1,4 @@
-namespace ZakYip.NarrowBeltDiverterSorter.Observability.Events;
+namespace ZakYip.NarrowBeltDiverterSorter.Core.Domain.Upstream;
 
 /// <summary>
 /// 上游请求/响应指标事件参数

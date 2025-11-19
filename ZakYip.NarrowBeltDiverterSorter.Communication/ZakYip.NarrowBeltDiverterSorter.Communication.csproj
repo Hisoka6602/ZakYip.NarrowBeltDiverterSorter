@@ -5,7 +5,6 @@
   <ItemGroup>
     <ProjectReference Include="..\ZakYip.NarrowBeltDiverterSorter.Core\ZakYip.NarrowBeltDiverterSorter.Core.csproj" />
     <ProjectReference Include="..\ZakYip.NarrowBeltDiverterSorter.UpstreamContracts\ZakYip.NarrowBeltDiverterSorter.UpstreamContracts.csproj" />
-    <ProjectReference Include="..\ZakYip.NarrowBeltDiverterSorter.Observability\ZakYip.NarrowBeltDiverterSorter.Observability.csproj" />
   </ItemGroup>
 
   <ItemGroup>

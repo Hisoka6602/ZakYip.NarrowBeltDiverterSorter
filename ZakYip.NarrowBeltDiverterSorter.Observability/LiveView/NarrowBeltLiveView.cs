@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.SystemState;
+using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Upstream;
 using ZakYip.NarrowBeltDiverterSorter.Observability.Events;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Observability.LiveView;
