@@ -40,7 +40,7 @@ public class RepositoryBackedChuteConfigProvider : IChuteConfigProvider
             {
                 if (_configSet == null)
                 {
-                    _configSet = _repository.LoadAsync().GetAwaiter().GetResult();
+                    _configSet = _repository.LoadAsync(CancellationToken.None).ConfigureAwait(false).GetAwaiter().GetResult();
                 }
             }
         }

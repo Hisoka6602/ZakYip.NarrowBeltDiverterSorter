@@ -60,7 +60,7 @@ public sealed class SorterConfigurationProvider : ISorterConfigurationProvider
                 if (_cachedOptions == null)
                 {
                     // 同步加载（在启动时应该已经调用过 LoadAsync）
-                    _cachedOptions = LoadAsync().GetAwaiter().GetResult();
+                    _cachedOptions = LoadAsync(CancellationToken.None).ConfigureAwait(false).GetAwaiter().GetResult();
                 }
                 return _cachedOptions;
             }
