@@ -68,6 +68,14 @@ public class NarrowBeltLiveView : INarrowBeltLiveView, IDisposable
         LastUpdatedAt = DateTimeOffset.UtcNow
     };
 
+    private UpstreamRuleEngineSnapshot _upstreamRuleEngineSnapshot = new()
+    {
+        Mode = "Disabled",
+        Status = UpstreamConnectionStatus.Disabled,
+        ConnectionAddress = null,
+        LastUpdatedAt = DateTimeOffset.UtcNow
+    };
+
     public NarrowBeltLiveView(IEventBus eventBus, ILogger<NarrowBeltLiveView> logger)
     {
         _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
@@ -90,6 +98,7 @@ public class NarrowBeltLiveView : INarrowBeltLiveView, IDisposable
         _eventBus.Subscribe<CartLayoutChangedEventArgs>(OnCartLayoutChangedAsync);
         _eventBus.Subscribe<LineRunStateChangedEventArgs>(OnLineRunStateChangedAsync);
         _eventBus.Subscribe<SafetyStateChangedEventArgs>(OnSafetyStateChangedAsync);
+        _eventBus.Subscribe<UpstreamRuleEngineStatusChangedEventArgs>(OnUpstreamRuleEngineStatusChangedAsync);
 
         _logger.LogDebug("已订阅所有实时监控事件");
     }
@@ -280,6 +289,25 @@ public class NarrowBeltLiveView : INarrowBeltLiveView, IDisposable
         return Task.CompletedTask;
     }
 
+    private Task OnUpstreamRuleEngineStatusChangedAsync(UpstreamRuleEngineStatusChangedEventArgs eventArgs, CancellationToken cancellationToken)
+    {
+        lock (_lock)
+        {
+            _upstreamRuleEngineSnapshot = new UpstreamRuleEngineSnapshot
+            {
+                Mode = eventArgs.Mode,
+                Status = eventArgs.Status,
+                ConnectionAddress = eventArgs.ConnectionAddress,
+                LastUpdatedAt = eventArgs.Timestamp
+            };
+        }
+
+        _logger.LogInformation("上游规则引擎状态快照已更新: Mode={Mode}, Status={Status}", 
+            eventArgs.Mode, eventArgs.Status);
+
+        return Task.CompletedTask;
+    }
+
     public LineSpeedSnapshot GetLineSpeed()
     {
         lock (_lock)
@@ -362,6 +390,14 @@ public class NarrowBeltLiveView : INarrowBeltLiveView, IDisposable
         lock (_lock)
         {
             return _safetyStateSnapshot;
+        }
+    }
+
+    public UpstreamRuleEngineSnapshot GetUpstreamRuleEngineStatus()
+    {
+        lock (_lock)
+        {
+            return _upstreamRuleEngineSnapshot;
         }
     }
 
