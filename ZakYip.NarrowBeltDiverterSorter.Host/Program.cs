@@ -624,6 +624,13 @@ builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Domain.Safety
     ZakYip.NarrowBeltDiverterSorter.Execution.Safety.LineSafetyOrchestrator>();
 
 // ============================================================================
+// 注册包裹分拣编排器和分拣结果处理器
+// ============================================================================
+
+builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Execution.Orchestration.ParcelSortingOrchestrator>();
+builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Execution.Orchestration.SortingResultHandler>();
+
+// ============================================================================
 // 注册面板按钮监控和 IO 联动
 // ============================================================================
 

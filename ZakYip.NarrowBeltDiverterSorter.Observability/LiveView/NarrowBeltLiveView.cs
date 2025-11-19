@@ -76,6 +76,9 @@ public class NarrowBeltLiveView : INarrowBeltLiveView, IDisposable
         LastUpdatedAt = DateTimeOffset.UtcNow
     };
 
+    private LastSortingRequestSnapshot? _lastSortingRequest;
+    private LastSortingResultSnapshot? _lastSortingResult;
+
     public NarrowBeltLiveView(IEventBus eventBus, ILogger<NarrowBeltLiveView> logger)
     {
         _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
@@ -99,6 +102,8 @@ public class NarrowBeltLiveView : INarrowBeltLiveView, IDisposable
         _eventBus.Subscribe<LineRunStateChangedEventArgs>(OnLineRunStateChangedAsync);
         _eventBus.Subscribe<SafetyStateChangedEventArgs>(OnSafetyStateChangedAsync);
         _eventBus.Subscribe<UpstreamRuleEngineStatusChangedEventArgs>(OnUpstreamRuleEngineStatusChangedAsync);
+        _eventBus.Subscribe<ParcelCreatedFromInfeedEventArgs>(OnParcelCreatedFromInfeedAsync);
+        _eventBus.Subscribe<SortingResultReceivedEventArgs>(OnSortingResultReceivedAsync);
 
         _logger.LogDebug("已订阅所有实时监控事件");
     }
@@ -399,6 +404,59 @@ public class NarrowBeltLiveView : INarrowBeltLiveView, IDisposable
         {
             return _upstreamRuleEngineSnapshot;
         }
+    }
+
+    public LastSortingRequestSnapshot? GetLastSortingRequest()
+    {
+        lock (_lock)
+        {
+            return _lastSortingRequest;
+        }
+    }
+
+    public LastSortingResultSnapshot? GetLastSortingResult()
+    {
+        lock (_lock)
+        {
+            return _lastSortingResult;
+        }
+    }
+
+    private Task OnParcelCreatedFromInfeedAsync(ParcelCreatedFromInfeedEventArgs eventArgs, CancellationToken cancellationToken)
+    {
+        lock (_lock)
+        {
+            _lastSortingRequest = new LastSortingRequestSnapshot
+            {
+                ParcelId = eventArgs.ParcelId,
+                Barcode = eventArgs.Barcode,
+                CartNumber = null,
+                RequestTime = eventArgs.InfeedTriggerTime
+            };
+        }
+
+        _logger.LogTrace("最后分拣请求快照已更新: ParcelId={ParcelId}", eventArgs.ParcelId);
+        return Task.CompletedTask;
+    }
+
+    private Task OnSortingResultReceivedAsync(SortingResultReceivedEventArgs eventArgs, CancellationToken cancellationToken)
+    {
+        lock (_lock)
+        {
+            _lastSortingResult = new LastSortingResultSnapshot
+            {
+                ParcelId = eventArgs.ParcelId,
+                ChuteNumber = eventArgs.ChuteNumber,
+                CartCount = eventArgs.CartCount,
+                Success = eventArgs.Success,
+                FailureReason = eventArgs.FailureReason,
+                ResultTime = eventArgs.ResultTime
+            };
+        }
+
+        _logger.LogTrace("最后分拣结果快照已更新: ParcelId={ParcelId}, Success={Success}", 
+            eventArgs.ParcelId, eventArgs.Success);
+        return Task.CompletedTask;
     }
 
     public void Dispose()
