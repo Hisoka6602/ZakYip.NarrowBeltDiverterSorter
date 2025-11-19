@@ -9,21 +9,21 @@ namespace ZakYip.NarrowBeltDiverterSorter.Core.Tests.SystemState;
 public class SystemRunStateServiceTests
 {
     [Fact]
-    public void Constructor_Should_Initialize_With_Ready_State()
+    public void Constructor_Should_Initialize_With_Stopped_State()
     {
         // Act
         var service = new SystemRunStateService();
 
         // Assert
-        Assert.Equal(SystemRunState.Ready, service.Current);
+        Assert.Equal(SystemRunState.Stopped, service.Current);
     }
 
     [Fact]
-    public void TryHandleStart_From_Ready_Should_Transition_To_Running()
+    public void TryHandleStart_From_Stopped_Initial_Should_Transition_To_Running()
     {
         // Arrange
         var service = new SystemRunStateService();
-        Assert.Equal(SystemRunState.Ready, service.Current);
+        Assert.Equal(SystemRunState.Stopped, service.Current);
 
         // Act
         var result = service.TryHandleStart();
@@ -34,11 +34,12 @@ public class SystemRunStateServiceTests
     }
 
     [Fact]
-    public void TryHandleStart_From_Stopped_Should_Transition_To_Running()
+    public void TryHandleStart_From_Stopped_After_Stop_Should_Transition_To_Running()
     {
         // Arrange
         var service = new SystemRunStateService();
-        service.TryHandleStop();
+        service.TryHandleStart(); // Start first
+        service.TryHandleStop(); // Then stop
         Assert.Equal(SystemRunState.Stopped, service.Current);
 
         // Act
@@ -84,11 +85,12 @@ public class SystemRunStateServiceTests
     }
 
     [Fact]
-    public void TryHandleStop_From_Ready_Should_Transition_To_Stopped()
+    public void TryHandleStop_From_Running_Initial_Should_Transition_To_Stopped()
     {
         // Arrange
         var service = new SystemRunStateService();
-        Assert.Equal(SystemRunState.Ready, service.Current);
+        service.TryHandleStart(); // Start first since we begin at Stopped
+        Assert.Equal(SystemRunState.Running, service.Current);
 
         // Act
         var result = service.TryHandleStop();
@@ -119,7 +121,7 @@ public class SystemRunStateServiceTests
     {
         // Arrange
         var service = new SystemRunStateService();
-        service.TryHandleStop();
+        // Service starts at Stopped state
         Assert.Equal(SystemRunState.Stopped, service.Current);
 
         // Act
@@ -149,11 +151,11 @@ public class SystemRunStateServiceTests
     }
 
     [Fact]
-    public void TryHandleEmergencyStop_From_Ready_Should_Transition_To_Fault()
+    public void TryHandleEmergencyStop_From_Stopped_Should_Transition_To_Fault()
     {
         // Arrange
         var service = new SystemRunStateService();
-        Assert.Equal(SystemRunState.Ready, service.Current);
+        Assert.Equal(SystemRunState.Stopped, service.Current);
 
         // Act
         var result = service.TryHandleEmergencyStop();
@@ -180,11 +182,12 @@ public class SystemRunStateServiceTests
     }
 
     [Fact]
-    public void TryHandleEmergencyStop_From_Stopped_Should_Transition_To_Fault()
+    public void TryHandleEmergencyStop_From_Stopped_After_Stop_Should_Transition_To_Fault()
     {
         // Arrange
         var service = new SystemRunStateService();
-        service.TryHandleStop();
+        service.TryHandleStart(); // Start first
+        service.TryHandleStop(); // Then stop
         Assert.Equal(SystemRunState.Stopped, service.Current);
 
         // Act
@@ -213,7 +216,7 @@ public class SystemRunStateServiceTests
     }
 
     [Fact]
-    public void TryHandleEmergencyReset_From_Fault_Should_Transition_To_Ready()
+    public void TryHandleEmergencyReset_From_Fault_Should_Transition_To_Stopped()
     {
         // Arrange
         var service = new SystemRunStateService();
@@ -225,7 +228,7 @@ public class SystemRunStateServiceTests
 
         // Assert
         Assert.True(result.IsSuccess);
-        Assert.Equal(SystemRunState.Ready, service.Current);
+        Assert.Equal(SystemRunState.Stopped, service.Current);
     }
 
     [Fact]
@@ -233,7 +236,7 @@ public class SystemRunStateServiceTests
     {
         // Arrange
         var service = new SystemRunStateService();
-        Assert.Equal(SystemRunState.Ready, service.Current);
+        Assert.Equal(SystemRunState.Stopped, service.Current);
 
         // Act
         var result = service.TryHandleEmergencyReset();
@@ -241,7 +244,7 @@ public class SystemRunStateServiceTests
         // Assert
         Assert.False(result.IsSuccess);
         Assert.Contains("不需要解除急停", result.ErrorMessage);
-        Assert.Equal(SystemRunState.Ready, service.Current);
+        Assert.Equal(SystemRunState.Stopped, service.Current);
     }
 
     [Fact]
@@ -260,27 +263,28 @@ public class SystemRunStateServiceTests
     }
 
     [Fact]
-    public void ValidateCanCreateParcel_When_Ready_Should_Fail()
+    public void ValidateCanCreateParcel_When_Stopped_Initial_Should_Fail()
     {
         // Arrange
         var service = new SystemRunStateService();
-        Assert.Equal(SystemRunState.Ready, service.Current);
+        Assert.Equal(SystemRunState.Stopped, service.Current);
 
         // Act
         var result = service.ValidateCanCreateParcel();
 
         // Assert
         Assert.False(result.IsSuccess);
-        Assert.Contains("就绪", result.ErrorMessage);
+        Assert.Contains("停止", result.ErrorMessage);
         Assert.Contains("禁止创建包裹", result.ErrorMessage);
     }
 
     [Fact]
-    public void ValidateCanCreateParcel_When_Stopped_Should_Fail()
+    public void ValidateCanCreateParcel_When_Stopped_After_Stop_Should_Fail()
     {
         // Arrange
         var service = new SystemRunStateService();
-        service.TryHandleStop();
+        service.TryHandleStart(); // Start first
+        service.TryHandleStop(); // Then stop
         Assert.Equal(SystemRunState.Stopped, service.Current);
 
         // Act
@@ -312,13 +316,13 @@ public class SystemRunStateServiceTests
     [Fact]
     public void State_Transitions_Full_Lifecycle_Should_Work()
     {
-        // Test full lifecycle: Ready -> Running -> Stopped -> Running -> Fault -> Ready
+        // Test full lifecycle: Stopped -> Running -> Stopped -> Running -> Fault -> Stopped
         var service = new SystemRunStateService();
         
         // Initial state
-        Assert.Equal(SystemRunState.Ready, service.Current);
+        Assert.Equal(SystemRunState.Stopped, service.Current);
         
-        // Ready -> Running
+        // Stopped -> Running
         Assert.True(service.TryHandleStart().IsSuccess);
         Assert.Equal(SystemRunState.Running, service.Current);
         
@@ -334,8 +338,8 @@ public class SystemRunStateServiceTests
         Assert.True(service.TryHandleEmergencyStop().IsSuccess);
         Assert.Equal(SystemRunState.Fault, service.Current);
         
-        // Fault -> Ready
+        // Fault -> Stopped
         Assert.True(service.TryHandleEmergencyReset().IsSuccess);
-        Assert.Equal(SystemRunState.Ready, service.Current);
+        Assert.Equal(SystemRunState.Stopped, service.Current);
     }
 }

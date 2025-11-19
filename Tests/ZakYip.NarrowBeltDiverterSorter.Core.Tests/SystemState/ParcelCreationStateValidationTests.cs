@@ -30,11 +30,11 @@ public class ParcelCreationStateValidationTests
     }
 
     [Fact]
-    public void CreateParcel_When_System_Ready_Should_Throw()
+    public void CreateParcel_When_System_Stopped_Initial_Should_Throw()
     {
         // Arrange
         var systemRunStateService = new SystemRunStateService();
-        Assert.Equal(SystemRunState.Ready, systemRunStateService.Current);
+        Assert.Equal(SystemRunState.Stopped, systemRunStateService.Current);
         var service = new ParcelLifecycleService(systemRunStateService);
         
         var parcelId = new ParcelId(1234567890123);
@@ -45,16 +45,17 @@ public class ParcelCreationStateValidationTests
         var exception = Assert.Throws<InvalidOperationException>(() =>
             service.CreateParcel(parcelId, barcode, infeedTime));
         
-        Assert.Contains("就绪", exception.Message);
+        Assert.Contains("停止", exception.Message);
         Assert.Contains("禁止创建包裹", exception.Message);
     }
 
     [Fact]
-    public void CreateParcel_When_System_Stopped_Should_Throw()
+    public void CreateParcel_When_System_Stopped_After_Stop_Should_Throw()
     {
         // Arrange
         var systemRunStateService = new SystemRunStateService();
-        systemRunStateService.TryHandleStop();
+        systemRunStateService.TryHandleStart(); // Start first
+        systemRunStateService.TryHandleStop(); // Then stop
         Assert.Equal(SystemRunState.Stopped, systemRunStateService.Current);
         var service = new ParcelLifecycleService(systemRunStateService);
         
@@ -103,8 +104,8 @@ public class ParcelCreationStateValidationTests
         var barcode = "TEST";
         var infeedTime = DateTimeOffset.UtcNow;
 
-        // Act & Assert: Ready state - should fail
-        Assert.Equal(SystemRunState.Ready, systemRunStateService.Current);
+        // Act & Assert: Stopped state (initial) - should fail
+        Assert.Equal(SystemRunState.Stopped, systemRunStateService.Current);
         Assert.Throws<InvalidOperationException>(() =>
             service.CreateParcel(parcelId1, barcode, infeedTime));
 

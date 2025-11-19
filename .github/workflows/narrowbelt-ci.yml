@@ -1,0 +1,30 @@
+name: NarrowBelt CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-and-test:
+    name: 构建和测试
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+      
+    - name: 设置 .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+        
+    - name: 还原 NuGet 包
+      run: dotnet restore ZakYip.NarrowBeltDiverterSorter.sln
+      
+    - name: 编译解决方案 (Release, 警告视为错误)
+      run: dotnet build ZakYip.NarrowBeltDiverterSorter.sln -c Release --no-restore
+      
+    - name: 运行测试
+      run: dotnet test ZakYip.NarrowBeltDiverterSorter.sln -c Release --no-build --verbosity normal
