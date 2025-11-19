@@ -187,3 +187,49 @@ public record class SafetyStateSnapshot
     /// </summary>
     public DateTimeOffset LastUpdatedAt { get; init; }
 }
+
+/// <summary>
+/// 供包容量快照
+/// </summary>
+public record class FeedingCapacitySnapshot
+{
+    /// <summary>
+    /// 当前在途包裹数
+    /// </summary>
+    public int CurrentInFlightParcels { get; init; }
+
+    /// <summary>
+    /// 最大在途包裹数限制
+    /// </summary>
+    public int MaxInFlightParcels { get; init; }
+
+    /// <summary>
+    /// 当前等待上游决策的包裹数
+    /// </summary>
+    public int CurrentUpstreamPendingRequests { get; init; }
+
+    /// <summary>
+    /// 最大上游等待数限制
+    /// </summary>
+    public int MaxUpstreamPendingRequests { get; init; }
+
+    /// <summary>
+    /// 供包节流次数（累计）
+    /// </summary>
+    public long FeedingThrottledCount { get; init; }
+
+    /// <summary>
+    /// 供包暂停次数（累计）
+    /// </summary>
+    public long FeedingPausedCount { get; init; }
+
+    /// <summary>
+    /// 当前节流模式
+    /// </summary>
+    public string ThrottleMode { get; init; } = string.Empty;
+
+    /// <summary>
+    /// 最后更新时间
+    /// </summary>
+    public DateTimeOffset LastUpdatedAt { get; init; }
+}

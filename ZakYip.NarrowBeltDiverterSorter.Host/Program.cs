@@ -105,6 +105,7 @@ builder.Services.AddSingleton<IInfeedLayoutOptionsRepository, LiteDbInfeedLayout
 builder.Services.AddSingleton<IChuteConfigRepository, LiteDbChuteConfigRepository>();
 builder.Services.AddSingleton<IUpstreamConnectionOptionsRepository, LiteDbUpstreamConnectionOptionsRepository>();
 builder.Services.AddSingleton<ILongRunLoadTestOptionsRepository, LiteDbLongRunLoadTestOptionsRepository>();
+builder.Services.AddSingleton<IFeedingCapacityOptionsRepository, LiteDbFeedingCapacityOptionsRepository>();
 
 // 从统一配置提供器加载主线控制选项
 builder.Services.AddSingleton<IOptions<MainLineControlOptions>>(sp =>
@@ -231,6 +232,9 @@ builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Abstractions.
 // ============================================================================
 
 builder.Services.AddHostedService<LiveViewBridgeService>();
+
+// 注册供包容量监控工作器
+builder.Services.AddHostedService<FeedingCapacityMonitorWorker>();
 
 // ============================================================================
 // 注册配置存储 (Infrastructure)
@@ -568,6 +572,9 @@ builder.Services.AddSingleton<IParcelLifecycleService, ParcelLifecycleService>()
 
 // 注册包裹生命周期追踪器（用于可观测性）
 builder.Services.AddSingleton<IParcelLifecycleTracker, ParcelLifecycleTracker>();
+
+// 注册供包背压控制器
+builder.Services.AddSingleton<IFeedingBackpressureController, ZakYip.NarrowBeltDiverterSorter.Execution.Feeding.FeedingBackpressureController>();
 
 // 注册小车生命周期服务
 builder.Services.AddSingleton<ICartLifecycleService, CartLifecycleService>();

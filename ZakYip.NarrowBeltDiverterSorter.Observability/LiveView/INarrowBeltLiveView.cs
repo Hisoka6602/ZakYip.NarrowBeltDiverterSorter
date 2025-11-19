@@ -75,4 +75,9 @@ public interface INarrowBeltLiveView
     /// 获取最后分拣结果快照
     /// </summary>
     LastSortingResultSnapshot? GetLastSortingResult();
+
+    /// <summary>
+    /// 获取供包容量快照
+    /// </summary>
+    FeedingCapacitySnapshot GetFeedingCapacity();
 }

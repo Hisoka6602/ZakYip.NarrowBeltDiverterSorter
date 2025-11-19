@@ -79,6 +79,18 @@ public class NarrowBeltLiveView : INarrowBeltLiveView, IDisposable
     private LastSortingRequestSnapshot? _lastSortingRequest;
     private LastSortingResultSnapshot? _lastSortingResult;
 
+    private FeedingCapacitySnapshot _feedingCapacitySnapshot = new()
+    {
+        CurrentInFlightParcels = 0,
+        MaxInFlightParcels = 200,
+        CurrentUpstreamPendingRequests = 0,
+        MaxUpstreamPendingRequests = 10,
+        FeedingThrottledCount = 0,
+        FeedingPausedCount = 0,
+        ThrottleMode = "None",
+        LastUpdatedAt = DateTimeOffset.UtcNow
+    };
+
     public NarrowBeltLiveView(IEventBus eventBus, ILogger<NarrowBeltLiveView> logger)
     {
         _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
@@ -480,6 +492,25 @@ public class NarrowBeltLiveView : INarrowBeltLiveView, IDisposable
         _logger.LogTrace("最后分拣结果快照已更新: ParcelId={ParcelId}, Success={Success}", 
             eventArgs.ParcelId, eventArgs.Success);
         return Task.CompletedTask;
+    }
+
+    public FeedingCapacitySnapshot GetFeedingCapacity()
+    {
+        lock (_lock)
+        {
+            return _feedingCapacitySnapshot;
+        }
+    }
+
+    /// <summary>
+    /// 更新供包容量快照（由外部服务定期调用）
+    /// </summary>
+    public void UpdateFeedingCapacity(FeedingCapacitySnapshot snapshot)
+    {
+        lock (_lock)
+        {
+            _feedingCapacitySnapshot = snapshot;
+        }
     }
 
     public void Dispose()

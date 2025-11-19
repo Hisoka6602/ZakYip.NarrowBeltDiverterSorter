@@ -16,6 +16,7 @@ public class InfeedSensorMonitor : IIoMonitor
     private readonly IInfeedSensorPort _sensorPort;
     private readonly IEventBus _eventBus;
     private readonly ILogger<InfeedSensorMonitor> _logger;
+    private readonly IFeedingBackpressureController? _backpressureController;
     private long _nextParcelIdCounter = 1;
     private bool _isRunning;
 
@@ -31,14 +32,17 @@ public class InfeedSensorMonitor : IIoMonitor
     /// <param name="sensorPort">传感器端口</param>
     /// <param name="eventBus">事件总线</param>
     /// <param name="logger">日志记录器</param>
+    /// <param name="backpressureController">供包背压控制器（可选）</param>
     public InfeedSensorMonitor(
         IInfeedSensorPort sensorPort,
         IEventBus eventBus,
-        ILogger<InfeedSensorMonitor> logger)
+        ILogger<InfeedSensorMonitor> logger,
+        IFeedingBackpressureController? backpressureController = null)
     {
         _sensorPort = sensorPort ?? throw new ArgumentNullException(nameof(sensorPort));
         _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _backpressureController = backpressureController;
         _sensorPort.ParcelDetected += OnParcelDetected;
     }
 
@@ -67,6 +71,35 @@ public class InfeedSensorMonitor : IIoMonitor
         if (!e.IsBlocked)
         {
             return;
+        }
+
+        // 检查背压控制
+        if (_backpressureController != null)
+        {
+            var decision = _backpressureController.CheckFeedingAllowed();
+            
+            if (decision.Decision == FeedingDecision.Reject)
+            {
+                _backpressureController.RecordPauseEvent();
+                _logger.LogWarning(
+                    "当前在途包裹数已达上限，启动背压策略：暂停供包。原因：{Reason}，在途数：{InFlight}，上游等待数：{Pending}",
+                    decision.Reason,
+                    decision.CurrentInFlightCount,
+                    decision.CurrentUpstreamPendingCount);
+                return;
+            }
+            
+            if (decision.Decision == FeedingDecision.Delay)
+            {
+                _backpressureController.RecordThrottleEvent();
+                _logger.LogWarning(
+                    "当前在途包裹数接近上限，启动背压策略：降速供包。原因：{Reason}，在途数：{InFlight}，上游等待数：{Pending}",
+                    decision.Reason,
+                    decision.CurrentInFlightCount,
+                    decision.CurrentUpstreamPendingCount);
+                // 注意：实际的降速逻辑需要在调用方实现（例如延长定时器间隔）
+                // 这里我们仍然允许创建包裹，但记录了降速事件
+            }
         }
 
         // 生成新的包裹ID
