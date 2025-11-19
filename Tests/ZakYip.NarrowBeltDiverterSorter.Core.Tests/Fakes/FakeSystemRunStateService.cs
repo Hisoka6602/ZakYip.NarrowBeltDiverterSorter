@@ -1,5 +1,6 @@
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.SystemState;
+using ZakYip.NarrowBeltDiverterSorter.Shared.Kernel;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Core.Tests.Fakes;
 

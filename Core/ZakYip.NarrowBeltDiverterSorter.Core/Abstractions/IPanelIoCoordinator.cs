@@ -1,4 +1,4 @@
-using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
+using ZakYip.NarrowBeltDiverterSorter.Shared.Kernel;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 

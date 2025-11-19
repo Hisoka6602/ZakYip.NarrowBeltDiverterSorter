@@ -1,3 +1,5 @@
+using ZakYip.NarrowBeltDiverterSorter.Shared.Kernel;
+
 namespace ZakYip.NarrowBeltDiverterSorter.Core.Domain.SystemState;
 
 /// <summary>

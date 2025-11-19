@@ -29,6 +29,7 @@
     <ProjectReference Include="..\..\Ingress\ZakYip.NarrowBeltDiverterSorter.Ingress\ZakYip.NarrowBeltDiverterSorter.Ingress.csproj" />
     <ProjectReference Include="..\..\Infrastructure\ZakYip.NarrowBeltDiverterSorter.Infrastructure\ZakYip.NarrowBeltDiverterSorter.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Contracts\ZakYip.NarrowBeltDiverterSorter.Host.Contracts\ZakYip.NarrowBeltDiverterSorter.Host.Contracts.csproj" />
+    <ProjectReference Include="..\..\Shared\ZakYip.NarrowBeltDiverterSorter.Shared\ZakYip.NarrowBeltDiverterSorter.Shared.csproj" />
   </ItemGroup>
 
 </Project>
