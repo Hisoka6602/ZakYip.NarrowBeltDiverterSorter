@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
+using ZakYip.NarrowBeltDiverterSorter.Core.Domain.SystemState;
 using ZakYip.NarrowBeltDiverterSorter.Observability.Events;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Observability.LiveView;
@@ -12,6 +13,7 @@ namespace ZakYip.NarrowBeltDiverterSorter.Observability.LiveView;
 public class NarrowBeltLiveView : INarrowBeltLiveView, IDisposable
 {
     private readonly IEventBus _eventBus;
+    private readonly ISystemFaultService _faultService;
     private readonly ILogger<NarrowBeltLiveView> _logger;
     private readonly object _lock = new();
 
@@ -91,9 +93,10 @@ public class NarrowBeltLiveView : INarrowBeltLiveView, IDisposable
         LastUpdatedAt = DateTimeOffset.UtcNow
     };
 
-    public NarrowBeltLiveView(IEventBus eventBus, ILogger<NarrowBeltLiveView> logger)
+    public NarrowBeltLiveView(IEventBus eventBus, ISystemFaultService faultService, ILogger<NarrowBeltLiveView> logger)
     {
         _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
+        _faultService = faultService ?? throw new ArgumentNullException(nameof(faultService));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         // 订阅事件
@@ -511,6 +514,25 @@ public class NarrowBeltLiveView : INarrowBeltLiveView, IDisposable
         {
             _feedingCapacitySnapshot = snapshot;
         }
+    }
+
+    public SystemFaultsStateSnapshot GetSystemFaultsState()
+    {
+        var faults = _faultService.GetActiveFaults();
+        var hasBlockingFault = _faultService.HasBlockingFault();
+
+        return new SystemFaultsStateSnapshot
+        {
+            CurrentFaults = faults.Select(f => new SystemFaultSnapshot
+            {
+                FaultCode = f.FaultCode.ToString(),
+                Message = f.Message,
+                OccurredAt = f.OccurredAt,
+                IsBlocking = f.IsBlocking
+            }).ToList(),
+            HasBlockingFault = hasBlockingFault,
+            LastUpdatedAt = DateTimeOffset.UtcNow
+        };
     }
 
     public void Dispose()

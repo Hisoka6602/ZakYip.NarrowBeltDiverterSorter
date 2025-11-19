@@ -1,4 +1,5 @@
 using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
+using ZakYip.NarrowBeltDiverterSorter.Core.Domain.SystemState;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
@@ -12,12 +13,14 @@ namespace ZakYip.NarrowBeltDiverterSorter.Observability.Tests.LiveView;
 public class NarrowBeltLiveViewTests
 {
     private readonly IEventBus _eventBus;
+    private readonly ISystemFaultService _faultService;
     private readonly NarrowBeltLiveView _liveView;
 
     public NarrowBeltLiveViewTests()
     {
         _eventBus = new InMemoryEventBus(NullLogger<InMemoryEventBus>.Instance);
-        _liveView = new NarrowBeltLiveView(_eventBus, NullLogger<NarrowBeltLiveView>.Instance);
+        _faultService = new SystemFaultService();
+        _liveView = new NarrowBeltLiveView(_eventBus, _faultService, NullLogger<NarrowBeltLiveView>.Instance);
     }
 
     [Fact]

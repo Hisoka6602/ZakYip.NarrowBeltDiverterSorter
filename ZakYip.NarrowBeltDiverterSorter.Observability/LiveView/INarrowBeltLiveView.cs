@@ -80,4 +80,9 @@ public interface INarrowBeltLiveView
     /// 获取供包容量快照
     /// </summary>
     FeedingCapacitySnapshot GetFeedingCapacity();
+
+    /// <summary>
+    /// 获取系统故障状态快照
+    /// </summary>
+    SystemFaultsStateSnapshot GetSystemFaultsState();
 }

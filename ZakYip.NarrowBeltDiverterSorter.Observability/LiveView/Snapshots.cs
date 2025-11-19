@@ -233,3 +233,50 @@ public record class FeedingCapacitySnapshot
     /// </summary>
     public DateTimeOffset LastUpdatedAt { get; init; }
 }
+
+/// <summary>
+/// 系统故障快照（用于LiveView）
+/// </summary>
+public record class SystemFaultSnapshot
+{
+    /// <summary>
+    /// 故障代码
+    /// </summary>
+    public string FaultCode { get; init; } = string.Empty;
+
+    /// <summary>
+    /// 故障消息
+    /// </summary>
+    public string Message { get; init; } = string.Empty;
+
+    /// <summary>
+    /// 故障发生时间
+    /// </summary>
+    public DateTimeOffset OccurredAt { get; init; }
+
+    /// <summary>
+    /// 是否阻断系统运行
+    /// </summary>
+    public bool IsBlocking { get; init; }
+}
+
+/// <summary>
+/// 系统故障状态快照
+/// </summary>
+public record class SystemFaultsStateSnapshot
+{
+    /// <summary>
+    /// 当前活动故障列表
+    /// </summary>
+    public IReadOnlyList<SystemFaultSnapshot> CurrentFaults { get; init; } = Array.Empty<SystemFaultSnapshot>();
+
+    /// <summary>
+    /// 是否存在阻断运行的故障
+    /// </summary>
+    public bool HasBlockingFault { get; init; }
+
+    /// <summary>
+    /// 最后更新时间
+    /// </summary>
+    public DateTimeOffset LastUpdatedAt { get; init; }
+}
