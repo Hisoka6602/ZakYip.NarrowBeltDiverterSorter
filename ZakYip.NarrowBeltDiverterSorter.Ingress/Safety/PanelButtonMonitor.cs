@@ -14,6 +14,7 @@ public class PanelButtonMonitor
 {
     private readonly IFieldBusClient _fieldBusClient;
     private readonly ISystemRunStateService _systemRunStateService;
+    private readonly ISystemFaultService _systemFaultService;
     private readonly IPanelIoCoordinator _panelIoCoordinator;
     private readonly PanelButtonConfiguration _config;
     private readonly ILogger<PanelButtonMonitor> _logger;
@@ -30,12 +31,14 @@ public class PanelButtonMonitor
     public PanelButtonMonitor(
         IFieldBusClient fieldBusClient,
         ISystemRunStateService systemRunStateService,
+        ISystemFaultService systemFaultService,
         IPanelIoCoordinator panelIoCoordinator,
         PanelButtonConfiguration config,
         ILogger<PanelButtonMonitor> logger)
     {
         _fieldBusClient = fieldBusClient ?? throw new ArgumentNullException(nameof(fieldBusClient));
         _systemRunStateService = systemRunStateService ?? throw new ArgumentNullException(nameof(systemRunStateService));
+        _systemFaultService = systemFaultService ?? throw new ArgumentNullException(nameof(systemFaultService));
         _panelIoCoordinator = panelIoCoordinator ?? throw new ArgumentNullException(nameof(panelIoCoordinator));
         _config = config ?? throw new ArgumentNullException(nameof(config));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -208,7 +211,13 @@ public class PanelButtonMonitor
         var result = _systemRunStateService.TryHandleEmergencyStop();
         if (result.IsSuccess)
         {
-            _logger.LogWarning("急停触发，系统进入故障状态，当前状态: {State}", _systemRunStateService.Current);
+            _logger.LogWarning("检测到急停，系统进入故障状态，当前状态: {State}", _systemRunStateService.Current);
+            
+            // 注册急停故障
+            _systemFaultService.RegisterFault(
+                SystemFaultCode.EmergencyStopActive,
+                "面板急停按钮被按下",
+                isBlocking: true);
             
             // 执行停止 IO 联动（急停时也需要关闭相关设备）
             var linkageResult = await _panelIoCoordinator.ExecuteStopLinkageAsync();
@@ -232,6 +241,9 @@ public class PanelButtonMonitor
         if (result.IsSuccess)
         {
             _logger.LogInformation("急停已解除，系统进入停止状态，当前状态: {State}（需要按启动按钮恢复运行）", _systemRunStateService.Current);
+            
+            // 清除急停故障
+            _systemFaultService.ClearFault(SystemFaultCode.EmergencyStopActive);
         }
         else
         {

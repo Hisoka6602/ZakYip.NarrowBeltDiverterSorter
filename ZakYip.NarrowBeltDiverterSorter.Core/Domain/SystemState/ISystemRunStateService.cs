@@ -40,4 +40,11 @@ public interface ISystemRunStateService
     /// </summary>
     /// <returns>操作结果</returns>
     OperationResult ValidateCanCreateParcel();
+
+    /// <summary>
+    /// 强制系统进入故障状态
+    /// 由外部故障管理服务调用
+    /// </summary>
+    /// <param name="reason">故障原因</param>
+    void ForceToFaultState(string reason);
 }

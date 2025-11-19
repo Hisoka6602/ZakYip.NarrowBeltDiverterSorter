@@ -567,6 +567,10 @@ builder.Services.AddSingleton<ICartPositionTracker, CartPositionTracker>();
 builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Domain.SystemState.ISystemRunStateService, 
     ZakYip.NarrowBeltDiverterSorter.Core.Domain.SystemState.SystemRunStateService>();
 
+// 注册系统故障服务
+builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Domain.SystemState.ISystemFaultService,
+    ZakYip.NarrowBeltDiverterSorter.Core.Domain.SystemState.SystemFaultService>();
+
 // 注册包裹生命周期服务（单例，内存存储）
 builder.Services.AddSingleton<IParcelLifecycleService, ParcelLifecycleService>();
 

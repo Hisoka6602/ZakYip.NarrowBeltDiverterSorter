@@ -127,4 +127,16 @@ public class SystemRunStateService : ISystemRunStateService
             return OperationResult.Success();
         }
     }
+
+    /// <inheritdoc/>
+    public void ForceToFaultState(string reason)
+    {
+        lock (_stateLock)
+        {
+            if (_currentState != SystemRunState.Fault)
+            {
+                _currentState = SystemRunState.Fault;
+            }
+        }
+    }
 }
