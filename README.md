@@ -2,6 +2,30 @@
 
 针对直线窄带分拣系统的专用项目 (Dedicated project for narrow belt diverter sorting system)
 
+## 目录 (Table of Contents)
+
+- [系统概览](#系统概览-system-overview)
+- [项目结构](#项目结构-project-structure)
+- [系统架构](#系统架构-system-architecture)
+- [运行流程](#运行流程-execution-flow)
+- [技术栈](#技术栈-technology-stack)
+- [开发指南](#开发指南-development-guide)
+- [文档导航](#文档导航-documentation-navigation)
+- [贡献指南](#贡献指南-contributing)
+
+## 系统概览 (System Overview)
+
+本项目是一个高性能、可扩展的窄带分拣系统控制软件，采用分层架构设计，支持实时包裹跟踪、动态路由和多种硬件驱动。
+
+### 核心特性
+
+- ✅ 分层架构设计，各层职责清晰
+- ✅ 支持仿真模式和真实硬件模式
+- ✅ 实时可观测性（日志、事件总线、实时监控）
+- ✅ 高可靠性（异常隔离、故障管理、安全控制）
+- ✅ 灵活配置（LiteDB 持久化配置、API 动态更新）
+- ✅ 完整测试覆盖（单元测试、集成测试、E2E 测试）
+
 ## 项目结构 (Project Structure)
 
 本解决方案采用分层架构设计，各层职责清晰：
@@ -223,7 +247,240 @@ dotnet run
 
 详细设计文档请参阅 [docs/NarrowBeltDesign.md](docs/NarrowBeltDesign.md)
 
-## 文档 (Documentation)
+## 文档导航 (Documentation Navigation)
+
+### 架构设计文档
+
+- **[Layering.md](docs/architecture/Layering.md)** - 分层架构设计原则与规范
+- **[Dependencies.md](docs/architecture/Dependencies.md)** - 项目依赖关系与管理
+- **[Contracts.md](docs/architecture/Contracts.md)** - 契约层设计与接口定义
+- **[ARCHITECTURE_BASELINE_SUMMARY.md](docs/architecture/ARCHITECTURE_BASELINE_SUMMARY.md)** - 架构基线总结
+- **[DOMAIN_PURIFICATION_SUMMARY_CN.md](docs/architecture/DOMAIN_PURIFICATION_SUMMARY_CN.md)** - 领域层净化总结
+- **[PORTS_ADAPTERS_REFACTORING_SUMMARY.md](docs/architecture/PORTS_ADAPTERS_REFACTORING_SUMMARY.md)** - 端口适配器重构总结
+- **[SORTING_SYSTEM.md](docs/architecture/SORTING_SYSTEM.md)** - 分拣系统架构文档
+
+### 执行与运维文档
+
+- **[BringUpGuide.md](docs/BringUpGuide.md)** - Bring-up 模式指南，包含逐步调试步骤
+- **[RemaLm1000HBringUpGuide.md](docs/RemaLm1000HBringUpGuide.md)** - Rema LM1000H 主线实机 Bring-up 详细指南
+- **[NarrowBeltDesign.md](docs/NarrowBeltDesign.md)** - 窄带分拣机设计文档
+  - 与 WheelDiverterSorter 的异同对比
+  - 双 IO 数小车算法说明
+  - 入口 IO 到落车的时间-位置换算
+  - 主驱稳速与格口发信器窗口控制
+  - 强排口清空策略
+
+### 可观测性文档
+
+- **[SAFETY_CONTROL.md](docs/SAFETY_CONTROL.md)** - 安全控制设计
+- **[CHUTE_IO_SIMULATION.md](docs/CHUTE_IO_SIMULATION.md)** - 格口 IO 仿真
+- **[ChuteIoArchitecture.md](docs/ChuteIoArchitecture.md)** - 格口 IO 架构
+- **[SIGNALR_REALTIME_MONITORING.md](docs/SIGNALR_REALTIME_MONITORING.md)** - SignalR 实时监控
+- **[REALTIME_MONITORING_PR_SUMMARY.md](docs/REALTIME_MONITORING_PR_SUMMARY.md)** - 实时监控 PR 总结
+- **[RECORDING_REPLAY_README.md](docs/observability/RECORDING_REPLAY_README.md)** - 录制回放功能说明
+- **[RECORDING_REPLAY_SIMULATION_SETUP.md](docs/observability/RECORDING_REPLAY_SIMULATION_SETUP.md)** - 录制回放仿真设置
+
+### 配置与集成文档
+
+- **[LiteDB_Configuration_Refactoring.md](docs/LiteDB_Configuration_Refactoring.md)** - LiteDB 配置重构说明
+- **[UPSTREAM_ROUTING_CONFIG_API.md](docs/UPSTREAM_ROUTING_CONFIG_API.md)** - 上游路由配置 API
+
+### 实施总结文档
+
+存放在 `docs/implementation-summaries/` 目录下，包含各个功能模块的实施总结：
+
+- **[IMPLEMENTATION_SUMMARY.md](docs/implementation-summaries/IMPLEMENTATION_SUMMARY.md)** - 总体实施总结
+- **[PR1_RUNTIME_COMMUNICATION_REFACTOR_SUMMARY.md](docs/implementation-summaries/PR1_RUNTIME_COMMUNICATION_REFACTOR_SUMMARY.md)** - PR1 运行时通信重构
+- **[PR2_IMPLEMENTATION_GUIDE.md](docs/implementation-summaries/PR2_IMPLEMENTATION_GUIDE.md)** - PR2 实施指南
+- **[PR2_WORK_SUMMARY.md](docs/implementation-summaries/PR2_WORK_SUMMARY.md)** - PR2 工作总结
+- **[PR4_IMPLEMENTATION_SUMMARY.md](docs/implementation-summaries/PR4_IMPLEMENTATION_SUMMARY.md)** - PR4 实施总结
+- **[FAULT_MANAGEMENT_IMPLEMENTATION_SUMMARY.md](docs/implementation-summaries/FAULT_MANAGEMENT_IMPLEMENTATION_SUMMARY.md)** - 故障管理实施
+- **[FEEDING_BACKPRESSURE_IMPLEMENTATION.md](docs/implementation-summaries/FEEDING_BACKPRESSURE_IMPLEMENTATION.md)** - 供料背压实施
+- **[RECORDING_REPLAY_IMPLEMENTATION_SUMMARY.md](docs/implementation-summaries/RECORDING_REPLAY_IMPLEMENTATION_SUMMARY.md)** - 录制回放实施
+- **[SHARED_LAYER_IMPLEMENTATION_SUMMARY.md](docs/implementation-summaries/SHARED_LAYER_IMPLEMENTATION_SUMMARY.md)** - 共享层实施
+- **[TECHNICAL_DEBT_CLEANUP_SUMMARY.md](docs/implementation-summaries/TECHNICAL_DEBT_CLEANUP_SUMMARY.md)** - 技术债清理
+- **[UPSTREAM_RULE_ENGINE_PORT_IMPLEMENTATION.md](docs/implementation-summaries/UPSTREAM_RULE_ENGINE_PORT_IMPLEMENTATION.md)** - 上游规则引擎端口实施
+
+## 贡献指南 (Contributing)
+
+在贡献代码前，请务必阅读 [CONTRIBUTING.md](CONTRIBUTING.md)，了解：
+
+- 编码规范与命名约定
+- 架构分层原则
+- 技术偏好（.NET 8 特性、LINQ 优先、性能优化）
+- 测试要求
+
+我们期待您的贡献！🎉
+
+## 系统架构 (System Architecture)
+
+### 项目依赖图
+
+```mermaid
+graph TB
+    Host[Host 宿主层]
+    Simulation[Simulation 仿真层]
+    
+    Execution[Execution 执行层]
+    Ingress[Ingress 入站层]
+    Communication[Communication 通信层]
+    Infrastructure[Infrastructure 基础设施层]
+    Observability[Observability 可观测层]
+    
+    Core[Core 核心领域层]
+    Shared[Shared 共享层]
+    Contracts[Contracts 契约层]
+    
+    Host --> Execution
+    Host --> Ingress
+    Host --> Communication
+    Host --> Infrastructure
+    Host --> Observability
+    Host --> Core
+    Host --> Contracts
+    
+    Simulation --> Execution
+    Simulation --> Ingress
+    Simulation --> Communication
+    Simulation --> Infrastructure
+    Simulation --> Observability
+    Simulation --> Core
+    
+    Execution --> Core
+    Execution --> Shared
+    Ingress --> Core
+    Ingress --> Shared
+    Communication --> Core
+    Communication --> Contracts
+    Infrastructure --> Core
+    
+    Observability --> Core
+    Observability --> Shared
+    
+    Core --> Shared
+    
+    style Core fill:#90EE90
+    style Host fill:#FFB6C1
+    style Simulation fill:#FFB6C1
+```
+
+### 系统拓扑图
+
+```mermaid
+graph LR
+    WCS[上游 WCS/规则引擎]
+    Host[Host 应用]
+    PLC[PLC 驱动板]
+    MainDrive[主线驱动器]
+    Sensors[传感器阵列]
+    Chutes[格口分拣器]
+    
+    WCS -->|分拣指令| Host
+    Host -->|运行状态| WCS
+    
+    Host -->|速度控制| MainDrive
+    MainDrive -->|速度反馈| Host
+    
+    Host -->|IO 读写| PLC
+    PLC -->|传感器信号| Sensors
+    PLC -->|分拣触发| Chutes
+    
+    Sensors -.->|入口检测| Host
+    Sensors -.->|原点检测| Host
+    Sensors -.->|格口到位| Host
+    
+    style Host fill:#FFB6C1
+    style WCS fill:#87CEEB
+    style PLC fill:#DDA0DD
+```
+
+## 运行流程 (Execution Flow)
+
+### 完整分拣流程
+
+```mermaid
+sequenceDiagram
+    participant WCS as 上游 WCS
+    participant Communication as Communication 层
+    participant Core as Core 领域层
+    participant Execution as Execution 执行层
+    participant Ingress as Ingress 入站层
+    participant Drivers as Drivers 驱动层
+    participant Device as 硬件设备
+    
+    WCS->>Communication: 下发分拣指令
+    Communication->>Core: 解析并存储路由规则
+    
+    Device->>Drivers: 入口传感器触发
+    Drivers->>Ingress: 传感器事件
+    Ingress->>Core: 包裹到达事件
+    Core->>Core: 查询路由规则
+    Core->>Execution: 创建分拣任务
+    
+    Execution->>Execution: 计算小车位置
+    Execution->>Execution: PID 速度控制
+    
+    Note over Execution: 等待分拣窗口
+    
+    Execution->>Drivers: 触发格口分拣
+    Drivers->>Device: IO 输出
+    Device->>Device: 包裹分拣到格口
+    
+    Device->>Drivers: 格口传感器确认
+    Drivers->>Ingress: 分拣完成事件
+    Ingress->>Core: 更新包裹状态
+    Core->>Communication: 上报分拣结果
+    Communication->>WCS: 反馈执行状态
+```
+
+### 异常处理流程
+
+```mermaid
+flowchart TD
+    Start[异常产生] --> Catch{异常捕获位置}
+    
+    Catch -->|外部调用| Isolator[安全隔离器]
+    Catch -->|内部逻辑| Handler[异常处理器]
+    
+    Isolator --> Log1[记录详细日志]
+    Handler --> Log2[记录详细日志]
+    
+    Log1 --> Throttle{日志节流检查}
+    Log2 --> Throttle
+    
+    Throttle -->|首次/超过间隔| Output[输出日志]
+    Throttle -->|节流中| Suppress[抑制输出]
+    
+    Output --> Event[发布异常事件]
+    Suppress --> Skip[跳过]
+    
+    Event --> Monitor[实时监控面板]
+    Event --> Alert{是否需要告警}
+    
+    Alert -->|严重错误| Notify[发送通知]
+    Alert -->|一般错误| Record[仅记录]
+    
+    Monitor --> Dashboard[Dashboard 显示]
+    Notify --> Dashboard
+    Record --> Dashboard
+    
+    Dashboard --> API[API 查询接口]
+    
+    style Isolator fill:#FFB6C1
+    style Throttle fill:#90EE90
+    style Output fill:#87CEEB
+```
+
+## 技术栈 (Technology Stack)
+
+- .NET 8.0
+- C# 12 (with nullable reference types enabled)
+- xUnit (for testing)
+- LiteDB (for configuration persistence)
+- SignalR (for real-time monitoring)
+- Modbus RTU (for hardware communication)
+
+## 开发指南 (Development Guide)
 
 - [BringUpGuide.md](docs/BringUpGuide.md) - Bring-up 模式指南，包含逐步调试步骤
 - [RemaLm1000HBringUpGuide.md](docs/RemaLm1000HBringUpGuide.md) - Rema LM1000H 主线实机 Bring-up 详细指南
