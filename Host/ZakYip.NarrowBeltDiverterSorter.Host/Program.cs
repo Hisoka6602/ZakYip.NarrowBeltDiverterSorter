@@ -111,7 +111,7 @@ builder.Services.AddSingleton<IFeedingCapacityOptionsRepository, LiteDbFeedingCa
 builder.Services.AddSingleton<IOptions<MainLineControlOptions>>(sp =>
 {
     var provider = sp.GetRequiredService<ZakYip.NarrowBeltDiverterSorter.Host.Configuration.IHostConfigurationProvider>();
-    var options = provider.GetMainLineControlOptionsAsync().GetAwaiter().GetResult();
+    var options = provider.GetMainLineControlOptionsAsync().ConfigureAwait(false).GetAwaiter().GetResult();
     return Options.Create(options);
 });
 
@@ -119,7 +119,7 @@ builder.Services.AddSingleton<IOptions<MainLineControlOptions>>(sp =>
 builder.Services.AddSingleton<IOptions<InfeedLayoutOptions>>(sp =>
 {
     var provider = sp.GetRequiredService<ZakYip.NarrowBeltDiverterSorter.Host.Configuration.IHostConfigurationProvider>();
-    var options = provider.GetInfeedLayoutOptionsAsync().GetAwaiter().GetResult();
+    var options = provider.GetInfeedLayoutOptionsAsync().ConfigureAwait(false).GetAwaiter().GetResult();
     return Options.Create(options);
 });
 
@@ -127,7 +127,7 @@ builder.Services.AddSingleton<IOptions<InfeedLayoutOptions>>(sp =>
 builder.Services.AddSingleton(sp =>
 {
     var provider = sp.GetRequiredService<ZakYip.NarrowBeltDiverterSorter.Host.Configuration.IHostConfigurationProvider>();
-    return provider.GetInfeedLayoutOptionsAsync().GetAwaiter().GetResult();
+    return provider.GetInfeedLayoutOptionsAsync().ConfigureAwait(false).GetAwaiter().GetResult();
 });
 
 // ========================================================================
@@ -262,7 +262,7 @@ builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Communication.Upst
 builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Communication.Upstream.ISortingRuleEngineClient>(serviceProvider =>
 {
     var configProvider = serviceProvider.GetRequiredService<ZakYip.NarrowBeltDiverterSorter.Host.Configuration.IHostConfigurationProvider>();
-    var upstreamOptions = configProvider.GetUpstreamOptionsAsync().GetAwaiter().GetResult();
+    var upstreamOptions = configProvider.GetUpstreamOptionsAsync().ConfigureAwait(false).GetAwaiter().GetResult();
     
     var factory = serviceProvider.GetRequiredService<ZakYip.NarrowBeltDiverterSorter.Communication.Upstream.SortingRuleEngineClientFactory>();
     var innerClient = factory.CreateClient(upstreamOptions);
@@ -291,7 +291,7 @@ builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Communication.Upst
     // 如果不是 Disabled 模式，尝试连接
     if (upstreamOptions.Mode != ZakYip.NarrowBeltDiverterSorter.Communication.Upstream.UpstreamMode.Disabled)
     {
-        _ = client.ConnectAsync().GetAwaiter().GetResult();
+        _ = client.ConnectAsync().ConfigureAwait(false).GetAwaiter().GetResult();
     }
     else
     {
@@ -345,7 +345,7 @@ builder.Services.AddSingleton<IFieldBusClient, FieldBusClient>();
 var sorterConfigProvider = builder.Services.BuildServiceProvider()
     .GetRequiredService<ZakYip.NarrowBeltDiverterSorter.Core.Configuration.ISorterConfigurationProvider>();
 #pragma warning restore ASP0000
-var sorterOptions = sorterConfigProvider.LoadAsync().GetAwaiter().GetResult();
+var sorterOptions = sorterConfigProvider.LoadAsync(CancellationToken.None).ConfigureAwait(false).GetAwaiter().GetResult();
 
 var mainLineMode = sorterOptions.MainLine.Mode;
 var remaOptions = sorterOptions.MainLine.Rema;

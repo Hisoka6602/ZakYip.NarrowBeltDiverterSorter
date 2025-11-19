@@ -29,8 +29,8 @@ public class LiteDbUpstreamRoutingConfigProvider : IUpstreamRoutingConfigProvide
         _configStore = configStore ?? throw new ArgumentNullException(nameof(configStore));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-        // 初始化时加载配置
-        _currentOptions = LoadFromStoreAsync().GetAwaiter().GetResult();
+        // 初始化时同步加载配置
+        _currentOptions = LoadFromStore();
     }
 
     /// <inheritdoc/>
@@ -84,6 +84,41 @@ public class LiteDbUpstreamRoutingConfigProvider : IUpstreamRoutingConfigProvide
         catch (Exception ex)
         {
             var message = $"更新上游路由配置失败: {ex.Message}";
+            _logger.LogError(ex, message);
+            throw new ConfigurationAccessException(message, ex);
+        }
+    }
+
+    private UpstreamRoutingOptions LoadFromStore()
+    {
+        try
+        {
+            // 由于 LiteDb 操作本质上是同步的，直接调用同步版本
+            var options = _configStore.LoadAsync<UpstreamRoutingOptions>(ConfigKey, CancellationToken.None)
+                .ConfigureAwait(false).GetAwaiter().GetResult();
+
+            if (options == null)
+            {
+                _logger.LogInformation("上游路由配置不存在，创建默认配置");
+                options = UpstreamRoutingOptions.CreateDefault();
+                _configStore.SaveAsync(ConfigKey, options, CancellationToken.None)
+                    .ConfigureAwait(false).GetAwaiter().GetResult();
+            }
+
+            _logger.LogInformation(
+                "已加载上游路由配置：TTL={TtlSeconds}秒，异常格口={ErrorChuteId}",
+                options.UpstreamResultTtl.TotalSeconds,
+                options.ErrorChuteId);
+
+            return options;
+        }
+        catch (ConfigurationAccessException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            var message = $"加载上游路由配置失败: {ex.Message}";
             _logger.LogError(ex, message);
             throw new ConfigurationAccessException(message, ex);
         }

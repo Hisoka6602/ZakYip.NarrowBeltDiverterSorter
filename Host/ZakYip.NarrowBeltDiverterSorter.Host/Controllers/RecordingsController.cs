@@ -161,7 +161,7 @@ public class RecordingsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status501NotImplemented)]
     [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
-    public async Task<IActionResult> ReplayRecording(
+    public IActionResult ReplayRecording(
         Guid sessionId,
         [FromBody] ReplayRequest request,
         CancellationToken cancellationToken)

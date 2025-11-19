@@ -185,7 +185,7 @@ public class FeedingBackpressureController : IFeedingBackpressureController
         try
         {
             // 同步加载配置（在热路径上，避免异步开销）
-            _cachedOptions = _optionsRepository.LoadAsync(CancellationToken.None).GetAwaiter().GetResult();
+            _cachedOptions = _optionsRepository.LoadAsync(CancellationToken.None).ConfigureAwait(false).GetAwaiter().GetResult();
             _lastOptionsLoadTime = now;
             return _cachedOptions;
         }
