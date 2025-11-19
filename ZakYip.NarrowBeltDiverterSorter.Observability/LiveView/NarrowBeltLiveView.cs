@@ -102,6 +102,7 @@ public class NarrowBeltLiveView : INarrowBeltLiveView, IDisposable
         _eventBus.Subscribe<LineRunStateChangedEventArgs>(OnLineRunStateChangedAsync);
         _eventBus.Subscribe<SafetyStateChangedEventArgs>(OnSafetyStateChangedAsync);
         _eventBus.Subscribe<UpstreamRuleEngineStatusChangedEventArgs>(OnUpstreamRuleEngineStatusChangedAsync);
+        _eventBus.Subscribe<UpstreamMetricsEventArgs>(OnUpstreamMetricsAsync);
         _eventBus.Subscribe<ParcelCreatedFromInfeedEventArgs>(OnParcelCreatedFromInfeedAsync);
         _eventBus.Subscribe<SortingResultReceivedEventArgs>(OnSortingResultReceivedAsync);
 
@@ -298,7 +299,7 @@ public class NarrowBeltLiveView : INarrowBeltLiveView, IDisposable
     {
         lock (_lock)
         {
-            _upstreamRuleEngineSnapshot = new UpstreamRuleEngineSnapshot
+            _upstreamRuleEngineSnapshot = _upstreamRuleEngineSnapshot with
             {
                 Mode = eventArgs.Mode,
                 Status = eventArgs.Status,
@@ -309,6 +310,28 @@ public class NarrowBeltLiveView : INarrowBeltLiveView, IDisposable
 
         _logger.LogInformation("上游规则引擎状态快照已更新: Mode={Mode}, Status={Status}", 
             eventArgs.Mode, eventArgs.Status);
+
+        return Task.CompletedTask;
+    }
+
+    private Task OnUpstreamMetricsAsync(UpstreamMetricsEventArgs eventArgs, CancellationToken cancellationToken)
+    {
+        lock (_lock)
+        {
+            _upstreamRuleEngineSnapshot = _upstreamRuleEngineSnapshot with
+            {
+                TotalRequests = eventArgs.TotalRequests,
+                SuccessfulResponses = eventArgs.SuccessfulResponses,
+                FailedResponses = eventArgs.FailedResponses,
+                AverageLatencyMs = eventArgs.AverageLatencyMs,
+                LastError = eventArgs.LastError,
+                LastErrorAt = eventArgs.LastErrorAt,
+                LastUpdatedAt = eventArgs.Timestamp
+            };
+        }
+
+        _logger.LogDebug("上游规则引擎指标已更新: Total={Total}, Success={Success}, Failed={Failed}, AvgLatency={AvgLatency}ms",
+            eventArgs.TotalRequests, eventArgs.SuccessfulResponses, eventArgs.FailedResponses, eventArgs.AverageLatencyMs);
 
         return Task.CompletedTask;
     }

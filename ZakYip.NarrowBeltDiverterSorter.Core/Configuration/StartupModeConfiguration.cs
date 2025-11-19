@@ -23,7 +23,12 @@ public enum StartupMode
     /// <summary>
     /// 吐件调试模式：在 infeed 基础上增加吐件相关但可关闭上游
     /// </summary>
-    BringupChutes
+    BringupChutes,
+
+    /// <summary>
+    /// 上游调试模式：只验证上游通讯，不启动真实 IO/驱动
+    /// </summary>
+    BringupUpstream
 }
 
 /// <summary>
@@ -59,6 +64,7 @@ public class StartupModeConfiguration
                     "bringup-mainline" => StartupMode.BringupMainline,
                     "bringup-infeed" => StartupMode.BringupInfeed,
                     "bringup-chutes" => StartupMode.BringupChutes,
+                    "bringup-upstream" => StartupMode.BringupUpstream,
                     _ => throw new ArgumentException($"未知的启动模式: {args[i + 1]}")
                 };
                 break;
@@ -71,12 +77,12 @@ public class StartupModeConfiguration
     /// <summary>
     /// 判断是否应该启动主线控制
     /// </summary>
-    public bool ShouldStartMainLineControl() => true; // 所有模式都需要
+    public bool ShouldStartMainLineControl() => Mode != StartupMode.BringupUpstream; // 上游调试模式不需要
 
     /// <summary>
     /// 判断是否应该启动原点传感器监控
     /// </summary>
-    public bool ShouldStartOriginSensorMonitor() => true; // 所有模式都需要
+    public bool ShouldStartOriginSensorMonitor() => Mode != StartupMode.BringupUpstream; // 上游调试模式不需要
 
     /// <summary>
     /// 判断是否应该启动入口传感器监控
@@ -104,6 +110,11 @@ public class StartupModeConfiguration
     public bool ShouldStartParcelRoutingWorker() => Mode == StartupMode.Normal;
 
     /// <summary>
+    /// 判断是否应该启动上游调试工作器
+    /// </summary>
+    public bool ShouldStartUpstreamBringupWorker() => Mode == StartupMode.BringupUpstream;
+
+    /// <summary>
     /// 获取模式描述
     /// </summary>
     public string GetModeDescription() => Mode switch
@@ -112,6 +123,7 @@ public class StartupModeConfiguration
         StartupMode.BringupMainline => "主线调试模式（主驱控制 + 原点监控）",
         StartupMode.BringupInfeed => "入口调试模式（主线 + 原点 + 入口 + 装载协调）",
         StartupMode.BringupChutes => "吐件调试模式（入口基础 + 吐件执行 + 格口IO）",
+        StartupMode.BringupUpstream => "上游调试模式（只验证上游通讯，不启动真实 IO/驱动）",
         _ => "未知模式"
     };
 }
