@@ -33,6 +33,12 @@ public class ObservableSortingRuleEngineClient : ISortingRuleEngineClient
 
     public bool IsConnected => _innerClient.IsConnected;
 
+    public event EventHandler<UpstreamContracts.Models.SortingResultMessage>? SortingResultReceived
+    {
+        add => _innerClient.SortingResultReceived += value;
+        remove => _innerClient.SortingResultReceived -= value;
+    }
+
     public async Task<bool> ConnectAsync(CancellationToken cancellationToken = default)
     {
         PublishStatusChange(UpstreamConnectionStatus.Connecting);

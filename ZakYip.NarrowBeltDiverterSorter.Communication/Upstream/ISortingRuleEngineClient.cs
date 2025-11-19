@@ -53,4 +53,9 @@ public interface ISortingRuleEngineClient : IDisposable
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>是否成功发送</returns>
     Task<bool> SendSortingResultAsync(SortingResultMessage message, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 分拣结果接收事件（从上游规则引擎接收到分拣结果时触发）
+    /// </summary>
+    event EventHandler<SortingResultMessage>? SortingResultReceived;
 }

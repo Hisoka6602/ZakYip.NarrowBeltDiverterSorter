@@ -27,6 +27,9 @@ public class TcpSortingRuleEngineClient : ISortingRuleEngineClient
     public bool IsConnected => false;
 
     /// <inheritdoc/>
+    public event EventHandler<SortingResultMessage>? SortingResultReceived;
+
+    /// <inheritdoc/>
     public Task<bool> ConnectAsync(CancellationToken cancellationToken = default)
     {
         _logger.LogWarning("TCP 客户端尚未实现，无法连接到 {Host}:{Port}", _options.Host, _options.Port);

@@ -21,6 +21,9 @@ public class DisabledSortingRuleEngineClient : ISortingRuleEngineClient
     public bool IsConnected => false;
 
     /// <inheritdoc/>
+    public event EventHandler<SortingResultMessage>? SortingResultReceived;
+
+    /// <inheritdoc/>
     public Task<bool> ConnectAsync(CancellationToken cancellationToken = default)
     {
         _logger.LogDebug("上游规则引擎连接被禁用，跳过连接");
