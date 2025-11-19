@@ -419,17 +419,27 @@ public class SimulationOutputTests
             var parcelLifecycleService = sp.GetRequiredService<IParcelLifecycleService>();
             var cartLifecycleService = sp.GetRequiredService<ICartLifecycleService>();
             
-            monitor.ParcelCreatedFromInfeed += async (sender, args) =>
+            // 订阅 IEventBus 的包裹创建事件（InfeedSensorMonitor 会自动发布到 EventBus）
+            eventBus.Subscribe<ZakYip.NarrowBeltDiverterSorter.Observability.Events.ParcelCreatedFromInfeedEventArgs>(async (busArgs, ct) =>
             {
-                await routingWorker.HandleParcelCreatedAsync(args);
-                loadCoordinator.HandleParcelCreatedFromInfeed(sender, args);
-            };
+                var coreArgs = new ZakYip.NarrowBeltDiverterSorter.Core.Domain.Feeding.ParcelCreatedFromInfeedEventArgs
+                {
+                    ParcelId = new ZakYip.NarrowBeltDiverterSorter.Core.Domain.ParcelId(busArgs.ParcelId),
+                    Barcode = busArgs.Barcode,
+                    InfeedTriggerTime = busArgs.InfeedTriggerTime
+                };
+                await routingWorker.HandleParcelCreatedAsync(coreArgs);
+                loadCoordinator.HandleParcelCreatedFromInfeed(null, coreArgs);
+            });
             
-            loadCoordinator.ParcelLoadedOnCart += (sender, args) =>
+            // 订阅 IEventBus 的包裹装载事件
+            eventBus.Subscribe<ZakYip.NarrowBeltDiverterSorter.Observability.Events.ParcelLoadedOnCartEventArgs>(async (busArgs, ct) =>
             {
-                parcelLifecycleService.BindCartId(args.ParcelId, args.CartId, args.LoadedTime);
-                cartLifecycleService.LoadParcel(args.CartId, args.ParcelId);
-            };
+                var parcelId = new ZakYip.NarrowBeltDiverterSorter.Core.Domain.ParcelId(busArgs.ParcelId);
+                var cartId = new ZakYip.NarrowBeltDiverterSorter.Core.Domain.CartId(busArgs.CartId);
+                parcelLifecycleService.BindCartId(parcelId, cartId, busArgs.LoadedAt);
+                cartLifecycleService.LoadParcel(cartId, parcelId);
+            });
             
             return monitor;
         });

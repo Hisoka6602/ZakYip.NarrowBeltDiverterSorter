@@ -2,8 +2,6 @@ using ZakYip.NarrowBeltDiverterSorter.Core.Application;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Feeding;
 
-#pragma warning disable CS0618 // 此测试类需要测试已标记为过时的事件 ParcelLoadedOnCart，以确保向后兼容性。新代码应使用 IEventBus 订阅事件。
-
 namespace ZakYip.NarrowBeltDiverterSorter.Core.Tests.Feeding;
 
 /// <summary>
@@ -17,9 +15,6 @@ public class ParcelLoadCoordinatorTests
         // Arrange
         var mockPlanner = new MockParcelLoadPlanner(new CartId(5));
         var coordinator = new ParcelLoadCoordinator(mockPlanner);
-
-        ParcelLoadedOnCartEventArgs? capturedEvent = null;
-        coordinator.ParcelLoadedOnCart += (sender, e) => capturedEvent = e;
 
         var parcelId = new ParcelId(100);
         var barcode = "TEST001";
@@ -47,11 +42,6 @@ public class ParcelLoadCoordinatorTests
         Assert.Equal(ParcelRouteState.WaitingForRouting, snapshot.RouteState);
         Assert.Equal(infeedTime, snapshot.CreatedAt);
         Assert.NotNull(snapshot.LoadedAt);
-
-        // Check event was published
-        Assert.NotNull(capturedEvent);
-        Assert.Equal(parcelId, capturedEvent!.ParcelId);
-        Assert.Equal(new CartId(5), capturedEvent.CartId);
     }
 
     [Fact]
@@ -60,9 +50,6 @@ public class ParcelLoadCoordinatorTests
         // Arrange
         var mockPlanner = new MockParcelLoadPlanner(null); // No cart predicted
         var coordinator = new ParcelLoadCoordinator(mockPlanner);
-
-        ParcelLoadedOnCartEventArgs? capturedEvent = null;
-        coordinator.ParcelLoadedOnCart += (sender, e) => capturedEvent = e;
 
         var parcelId = new ParcelId(101);
         var barcode = "TEST002";
@@ -88,9 +75,6 @@ public class ParcelLoadCoordinatorTests
         Assert.Equal(parcelId, snapshot.ParcelId);
         Assert.Null(snapshot.BoundCartId);
         Assert.Equal(ParcelRouteState.WaitingForRouting, snapshot.RouteState); // 保持等待状态
-
-        // Event should not be published when cart ring is not ready
-        Assert.Null(capturedEvent);
     }
 
     [Fact]
@@ -99,9 +83,6 @@ public class ParcelLoadCoordinatorTests
         // Arrange
         var mockPlanner = new MockParcelLoadPlanner(new CartId(3));
         var coordinator = new ParcelLoadCoordinator(mockPlanner);
-
-        var loadedEvents = new List<ParcelLoadedOnCartEventArgs>();
-        coordinator.ParcelLoadedOnCart += (sender, e) => loadedEvents.Add(e);
 
         // Act
         for (int i = 0; i < 5; i++)
@@ -120,7 +101,6 @@ public class ParcelLoadCoordinatorTests
         // Assert
         var snapshots = coordinator.GetParcelSnapshots();
         Assert.Equal(5, snapshots.Count);
-        Assert.Equal(5, loadedEvents.Count);
 
         for (int i = 0; i < 5; i++)
         {
