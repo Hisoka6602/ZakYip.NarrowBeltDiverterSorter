@@ -27,14 +27,6 @@ public class ParcelRoutingRuntime : IParcelRoutingRuntime
     private readonly UpstreamTimeoutChecker _timeoutChecker;
     private CancellationTokenSource? _runningCts;
 
-    /// <summary>
-    /// 包裹路由完成事件（已废弃，请订阅 IEventBus）
-    /// </summary>
-    [Obsolete("请使用 IEventBus 订阅 Observability.Events.ParcelRoutedEventArgs，此事件将在未来版本中移除")]
-#pragma warning disable CS0067 // Event is never used - this is obsolete and only kept for backward compatibility
-    public event EventHandler<ParcelRoutedEventArgs>? ParcelRouted;
-#pragma warning restore CS0067
-
     public ParcelRoutingRuntime(
         ILogger<ParcelRoutingRuntime> logger,
         ISortingRuleEngineClient ruleEngineClient,
