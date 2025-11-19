@@ -56,4 +56,9 @@ public class FakeSystemRunStateService : ISystemRunStateService
             return OperationResult.Failure($"系统当前状态为 {_currentState}，禁止创建包裹");
         return OperationResult.Success();
     }
+
+    public void ForceToFaultState(string reason)
+    {
+        _currentState = SystemRunState.Fault;
+    }
 }
