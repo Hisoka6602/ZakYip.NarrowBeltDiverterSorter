@@ -23,9 +23,15 @@ public interface IHostConfigurationProvider
     Task<InfeedLayoutOptions> GetInfeedLayoutOptionsAsync(CancellationToken ct = default);
     
     /// <summary>
-    /// 获取上游连接配置
+    /// 获取上游连接配置（旧版，将被弃用）
     /// </summary>
+    [Obsolete("使用 GetUpstreamOptionsAsync 代替")]
     Task<UpstreamConnectionOptions> GetUpstreamConnectionOptionsAsync(CancellationToken ct = default);
+    
+    /// <summary>
+    /// 获取上游规则引擎配置
+    /// </summary>
+    Task<UpstreamOptions> GetUpstreamOptionsAsync(CancellationToken ct = default);
     
     /// <summary>
     /// 获取仿真配置
