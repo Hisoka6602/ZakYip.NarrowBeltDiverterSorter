@@ -81,7 +81,7 @@ public class FileEventRecordingManagerTests : IDisposable
     }
 
     [Fact]
-    public async Task GetActiveSession_WithNoActiveSession_ShouldReturnNull()
+    public void GetActiveSession_WithNoActiveSession_ShouldReturnNull()
     {
         // Act
         var activeSession = _manager.GetActiveSession();

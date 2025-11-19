@@ -46,7 +46,7 @@ public class ParcelSortingOrchestrator : IDisposable
     /// <summary>
     /// 处理包裹创建事件
     /// </summary>
-    private async Task OnParcelCreatedAsync(ParcelCreatedFromInfeedEventArgs eventArgs, CancellationToken ct)
+    private Task OnParcelCreatedAsync(ParcelCreatedFromInfeedEventArgs eventArgs, CancellationToken ct)
     {
         try
         {
@@ -72,7 +72,7 @@ public class ParcelSortingOrchestrator : IDisposable
                 RequestTime = eventArgs.InfeedTriggerTime
             };
 
-            // 调用 RuleEngine 请求分拣（异步，不阻塞主线）
+            // 调用 RuleEngine 请求分拣（异步，不阻塞主线）- fire-and-forget
             _ = RequestSortingAsync(sortingRequest, ct);
         }
         catch (Exception ex)
@@ -82,6 +82,8 @@ public class ParcelSortingOrchestrator : IDisposable
                 "处理包裹创建事件时发生异常: ParcelId={ParcelId}",
                 eventArgs.ParcelId);
         }
+
+        return Task.CompletedTask;
     }
 
     /// <summary>
