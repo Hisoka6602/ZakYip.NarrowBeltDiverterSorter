@@ -271,25 +271,33 @@ builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Infrastructure.Con
 #pragma warning restore CS0618 // Type or member is obsolete
 
 // ============================================================================
-// 注册上游客户端
+// 注册上游规则引擎端口
 // ============================================================================
 
-// 注册HttpClient for UpstreamSortingApiClient
-builder.Services.AddHttpClient<IUpstreamSortingApiClient, UpstreamSortingApiClient>((serviceProvider, client) =>
+// 注册工厂和客户端
+builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Communication.Upstream.SortingRuleEngineClientFactory>();
+
+// 注册 ISortingRuleEngineClient
+builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Communication.Upstream.ISortingRuleEngineClient>(serviceProvider =>
 {
-    var repo = serviceProvider.GetRequiredService<IUpstreamConnectionOptionsRepository>();
-    var options = repo.LoadAsync().GetAwaiter().GetResult();
+    var configProvider = serviceProvider.GetRequiredService<ZakYip.NarrowBeltDiverterSorter.Host.Configuration.IHostConfigurationProvider>();
+    var upstreamOptions = configProvider.GetUpstreamOptionsAsync().GetAwaiter().GetResult();
     
-    client.BaseAddress = new Uri(options.BaseUrl);
-    client.Timeout = TimeSpan.FromSeconds(options.RequestTimeoutSeconds);
+    var factory = serviceProvider.GetRequiredService<ZakYip.NarrowBeltDiverterSorter.Communication.Upstream.SortingRuleEngineClientFactory>();
+    var client = factory.CreateClient(upstreamOptions);
     
-    // 如果配置了认证令牌，添加到请求头
-    if (!string.IsNullOrWhiteSpace(options.AuthToken))
+    // 如果不是 Disabled 模式，尝试连接
+    if (upstreamOptions.Mode != ZakYip.NarrowBeltDiverterSorter.Communication.Upstream.UpstreamMode.Disabled)
     {
-        client.DefaultRequestHeaders.Authorization = 
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", options.AuthToken);
+        _ = client.ConnectAsync().GetAwaiter().GetResult();
     }
+    
+    return client;
 });
+
+// 注册 ISortingRuleEnginePort（通过适配器）
+builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Domain.Sorting.ISortingRuleEnginePort, 
+    ZakYip.NarrowBeltDiverterSorter.Communication.Upstream.SortingRuleEnginePortAdapter>();
 
 // ============================================================================
 // 注册现场总线和驱动
