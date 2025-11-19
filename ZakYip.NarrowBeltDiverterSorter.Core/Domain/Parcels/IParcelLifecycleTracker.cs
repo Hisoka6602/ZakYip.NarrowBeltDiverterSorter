@@ -58,4 +58,18 @@ public interface IParcelLifecycleTracker
     /// </summary>
     /// <param name="keepRecentCount">保留最近的记录数量</param>
     void ClearHistory(int keepRecentCount = 100);
+
+    /// <summary>
+    /// 获取当前在途包裹数量（未完成的包裹）
+    /// 用于供包背压控制
+    /// </summary>
+    /// <returns>在途包裹数量</returns>
+    int GetInFlightCount();
+
+    /// <summary>
+    /// 获取当前等待上游决策的包裹数量
+    /// 用于防止上游规则引擎过载
+    /// </summary>
+    /// <returns>等待上游决策的包裹数量</returns>
+    int GetUpstreamPendingCount();
 }

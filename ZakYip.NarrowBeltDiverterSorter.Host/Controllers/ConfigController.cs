@@ -5,6 +5,7 @@ using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Feeding;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.MainLine;
 using ZakYip.NarrowBeltDiverterSorter.Host.Contracts.Configuration;
 using ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
+using DTO = ZakYip.NarrowBeltDiverterSorter.Host.DTOs;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Host.Controllers;
 
@@ -19,6 +20,8 @@ public class ConfigController : ControllerBase
     private readonly IInfeedLayoutOptionsRepository _infeedLayoutRepo;
     private readonly IUpstreamConnectionOptionsRepository _upstreamConnectionRepo;
     private readonly ILongRunLoadTestOptionsRepository _longRunLoadTestRepo;
+    private readonly IFeedingCapacityOptionsRepository? _feedingCapacityRepo;
+    private readonly IFeedingBackpressureController? _backpressureController;
     private readonly ILogger<ConfigController> _logger;
     private readonly ZakYip.NarrowBeltDiverterSorter.Host.Configuration.IHostConfigurationProvider? _hostConfigProvider;
     private readonly ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration.IAppConfigurationStore? _appConfigStore;
@@ -32,7 +35,9 @@ public class ConfigController : ControllerBase
         ILogger<ConfigController> logger,
         ZakYip.NarrowBeltDiverterSorter.Host.Configuration.IHostConfigurationProvider? hostConfigProvider = null,
         ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration.IAppConfigurationStore? appConfigStore = null,
-        ISorterConfigurationProvider? sorterConfigProvider = null)
+        ISorterConfigurationProvider? sorterConfigProvider = null,
+        IFeedingCapacityOptionsRepository? feedingCapacityRepo = null,
+        IFeedingBackpressureController? backpressureController = null)
     {
         _mainLineRepo = mainLineRepo ?? throw new ArgumentNullException(nameof(mainLineRepo));
         _infeedLayoutRepo = infeedLayoutRepo ?? throw new ArgumentNullException(nameof(infeedLayoutRepo));
@@ -42,6 +47,8 @@ public class ConfigController : ControllerBase
         _hostConfigProvider = hostConfigProvider;
         _appConfigStore = appConfigStore;
         _sorterConfigProvider = sorterConfigProvider;
+        _feedingCapacityRepo = feedingCapacityRepo;
+        _backpressureController = backpressureController;
     }
 
     /// <summary>
@@ -764,6 +771,117 @@ public class ConfigController : ControllerBase
         {
             _logger.LogError(ex, "更新 Sorter 配置失败");
             return StatusCode(500, new { error = "更新 Sorter 配置失败", message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// 获取供包容量配置
+    /// </summary>
+    /// <remarks>
+    /// 获取供包背压与在途包裹容量控制配置，包含当前负载统计信息
+    /// </remarks>
+    [HttpGet("feeding/capacity")]
+    [ProducesResponseType(typeof(DTO.FeedingCapacityConfigurationDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetFeedingCapacityConfiguration(CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (_feedingCapacityRepo == null)
+            {
+                return StatusCode(500, new { error = "供包容量配置仓储未初始化" });
+            }
+
+            var config = await _feedingCapacityRepo.LoadAsync(cancellationToken);
+            
+            var dto = new DTO.FeedingCapacityConfigurationDto
+            {
+                MaxInFlightParcels = config.MaxInFlightParcels,
+                MaxUpstreamPendingRequests = config.MaxUpstreamPendingRequests,
+                ThrottleMode = config.ThrottleMode.ToString(),
+                SlowDownMultiplier = config.SlowDownMultiplier,
+                RecoveryThreshold = config.RecoveryThreshold,
+                CurrentInFlightParcels = null,
+                CurrentUpstreamPendingRequests = null,
+                FeedingThrottledCount = null,
+                FeedingPausedCount = null
+            };
+
+            // 如果背压控制器可用，添加实时统计信息
+            if (_backpressureController != null)
+            {
+                var decision = _backpressureController.CheckFeedingAllowed();
+                dto = dto with
+                {
+                    CurrentInFlightParcels = decision.CurrentInFlightCount,
+                    CurrentUpstreamPendingRequests = decision.CurrentUpstreamPendingCount,
+                    FeedingThrottledCount = _backpressureController.GetThrottleCount(),
+                    FeedingPausedCount = _backpressureController.GetPauseCount()
+                };
+            }
+
+            return Ok(dto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "获取供包容量配置失败");
+            return StatusCode(500, new { error = "获取供包容量配置失败", message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// 更新供包容量配置
+    /// </summary>
+    /// <remarks>
+    /// 更新供包背压与在途包裹容量控制配置。配置立即生效，无需重启。
+    /// </remarks>
+    [HttpPut("feeding/capacity")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> UpdateFeedingCapacityConfiguration(
+        [FromBody] DTO.FeedingCapacityConfigurationDto dto,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (_feedingCapacityRepo == null)
+            {
+                return StatusCode(500, new { error = "供包容量配置仓储未初始化" });
+            }
+
+            // 参数验证
+            if (dto.MaxInFlightParcels <= 0)
+                return BadRequest(new { error = "最大在途包裹数必须大于 0" });
+
+            if (dto.MaxUpstreamPendingRequests <= 0)
+                return BadRequest(new { error = "最大上游等待数必须大于 0" });
+
+            if (dto.SlowDownMultiplier <= 1.0)
+                return BadRequest(new { error = "降速倍数必须大于 1.0" });
+
+            // 验证节流模式
+            if (!Enum.TryParse<FeedingThrottleMode>(dto.ThrottleMode, true, out var throttleMode))
+            {
+                return BadRequest(new { error = "节流模式无效，有效值为：None, SlowDown, Pause" });
+            }
+
+            // 构建配置对象
+            var config = new FeedingCapacityOptions
+            {
+                MaxInFlightParcels = dto.MaxInFlightParcels,
+                MaxUpstreamPendingRequests = dto.MaxUpstreamPendingRequests,
+                ThrottleMode = throttleMode,
+                SlowDownMultiplier = dto.SlowDownMultiplier,
+                RecoveryThreshold = dto.RecoveryThreshold
+            };
+
+            await _feedingCapacityRepo.SaveAsync(config, cancellationToken);
+            _logger.LogInformation("供包容量配置已更新");
+            return Ok(new { message = "供包容量配置已更新，新配置立即生效" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "更新供包容量配置失败");
+            return StatusCode(500, new { error = "更新供包容量配置失败", message = ex.Message });
         }
     }
 }

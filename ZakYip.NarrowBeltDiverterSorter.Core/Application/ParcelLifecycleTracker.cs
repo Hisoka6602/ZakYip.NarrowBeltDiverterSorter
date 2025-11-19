@@ -219,4 +219,19 @@ public class ParcelLifecycleTracker : IParcelLifecycleTracker
             or ParcelStatus.Canceled
             or ParcelStatus.Expired;
     }
+
+    /// <inheritdoc/>
+    public int GetInFlightCount()
+    {
+        return _parcels.Count;
+    }
+
+    /// <inheritdoc/>
+    public int GetUpstreamPendingCount()
+    {
+        // 统计状态为 Created 或 WaitingForRouting 的包裹
+        // 这些包裹正在等待上游规则引擎返回路由决策
+        return _parcels.Values
+            .Count(p => p.RouteState == ParcelRouteState.WaitingForRouting);
+    }
 }
