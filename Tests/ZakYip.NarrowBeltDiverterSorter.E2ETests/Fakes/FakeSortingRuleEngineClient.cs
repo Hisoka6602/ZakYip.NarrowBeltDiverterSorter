@@ -25,6 +25,10 @@ public class FakeSortingRuleEngineClient : ISortingRuleEngineClient
 
     public event EventHandler<SortingResultMessage>? SortingResultReceived;
 
+#pragma warning disable CS0067 // Event is never used in this fake implementation
+    public event EventHandler<ChuteAssignmentNotificationEventArgs>? ChuteAssignmentReceived;
+#pragma warning restore CS0067
+
     public Task<bool> ConnectAsync(CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Fake 客户端连接: {IsConnected}", _options.IsConnected);

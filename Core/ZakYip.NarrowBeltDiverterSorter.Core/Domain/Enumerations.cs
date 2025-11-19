@@ -236,6 +236,12 @@ public enum ParcelFailureReason
     UpstreamTimeout = 1,
 
     /// <summary>
+    /// 等待上游分配结果超时
+    /// </summary>
+    [Description("等待上游分配结果超时")]
+    WaitingUpstreamResultTimeout = 10,
+
+    /// <summary>
     /// 未获得任何有效分拣计划
     /// </summary>
     [Description("无分拣计划")]

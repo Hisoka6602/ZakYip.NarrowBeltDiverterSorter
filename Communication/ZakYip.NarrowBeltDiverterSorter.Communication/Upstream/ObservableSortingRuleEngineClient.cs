@@ -48,6 +48,12 @@ public class ObservableSortingRuleEngineClient : ISortingRuleEngineClient
         remove => _innerClient.SortingResultReceived -= value;
     }
 
+    public event EventHandler<UpstreamContracts.Models.ChuteAssignmentNotificationEventArgs>? ChuteAssignmentReceived
+    {
+        add => _innerClient.ChuteAssignmentReceived += value;
+        remove => _innerClient.ChuteAssignmentReceived -= value;
+    }
+
     public async Task<bool> ConnectAsync(CancellationToken cancellationToken = default)
     {
         PublishStatusChange(UpstreamConnectionStatus.Connecting);
