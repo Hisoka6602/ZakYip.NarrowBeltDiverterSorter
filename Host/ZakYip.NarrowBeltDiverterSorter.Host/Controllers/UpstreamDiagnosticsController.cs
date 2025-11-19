@@ -3,6 +3,9 @@ using ZakYip.NarrowBeltDiverterSorter.Communication.Upstream;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Sorting;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Upstream;
 using ZakYip.NarrowBeltDiverterSorter.Observability.LiveView;
+using ZakYip.NarrowBeltDiverterSorter.Host.DTOs.Requests;
+using ZakYip.NarrowBeltDiverterSorter.Host.DTOs.Responses;
+using DTO = ZakYip.NarrowBeltDiverterSorter.Host.DTOs;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Host.Controllers;
 
@@ -102,166 +105,78 @@ public class UpstreamDiagnosticsController : ControllerBase
     /// <response code="400">请求参数无效</response>
     /// <response code="503">上游服务不可用或已禁用</response>
     [HttpPost("test-parcel")]
-    [ProducesResponseType(typeof(TestParcelResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status503ServiceUnavailable)]
+    [ProducesResponseType(typeof(DTO.ApiResult<TestParcelResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(DTO.ApiResult), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(DTO.ApiResult), StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> TestParcel(
         [FromBody] TestParcelRequest request,
         CancellationToken cancellationToken)
     {
+        // 检查上游配置
+        var upstreamOptions = await _configProvider.GetUpstreamOptionsAsync();
+        if (upstreamOptions.Mode == UpstreamMode.Disabled)
+        {
+            return StatusCode(503, DTO.ApiResult.Fail(
+                "当前上游模式为 Disabled，无法发送测试包裹。请在配置中启用 MQTT 或 TCP 模式。",
+                "UpstreamDisabled"
+            ));
+        }
+
+        // 检查连接状态
+        var snapshot = _liveView.GetUpstreamRuleEngineStatus();
+        if (snapshot.Status != UpstreamConnectionStatus.Connected)
+        {
+            return StatusCode(503, DTO.ApiResult.Fail(
+                $"当前上游连接状态: {snapshot.Status}。请确保上游服务（RuleEngine）正在运行并可访问。",
+                "UpstreamNotConnected"
+            ));
+        }
+
+        // 构造测试请求
+        var parcelId = string.IsNullOrWhiteSpace(request.ParcelId) 
+            ? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+            : long.Parse(request.ParcelId);
+
+        var testRequest = new SortingRequestEventArgs
+        {
+            ParcelId = parcelId,
+            CartNumber = 999, // 测试用小车号
+            Barcode = request.Barcode,
+            Weight = 1.0m,
+            Length = 300m,
+            Width = 200m,
+            Height = 150m,
+            RequestTime = DateTimeOffset.UtcNow
+        };
+
+        _logger.LogInformation("发送测试包裹: ParcelId={ParcelId}, Barcode={Barcode}", parcelId, request.Barcode);
+
+        // 发送请求（带超时）
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        cts.CancelAfter(TimeSpan.FromSeconds(10)); // 10秒超时
+
         try
         {
-            // 验证请求
-            if (string.IsNullOrWhiteSpace(request.Barcode))
-            {
-                return BadRequest(new ErrorResponse
-                {
-                    Error = "参数验证失败",
-                    Message = "条码 (Barcode) 不能为空"
-                });
-            }
+            await _ruleEnginePort.RequestSortingAsync(testRequest, cts.Token);
 
-            // 检查上游配置
-            var upstreamOptions = await _configProvider.GetUpstreamOptionsAsync();
-            if (upstreamOptions.Mode == UpstreamMode.Disabled)
+            var response = new TestParcelResponse
             {
-                return StatusCode(503, new ErrorResponse
-                {
-                    Error = "上游服务未启用",
-                    Message = "当前上游模式为 Disabled，无法发送测试包裹。请在配置中启用 MQTT 或 TCP 模式。"
-                });
-            }
-
-            // 检查连接状态
-            var snapshot = _liveView.GetUpstreamRuleEngineStatus();
-            if (snapshot.Status != UpstreamConnectionStatus.Connected)
-            {
-                return StatusCode(503, new ErrorResponse
-                {
-                    Error = "上游服务未连接",
-                    Message = $"当前上游连接状态: {snapshot.Status}。请确保上游服务（RuleEngine）正在运行并可访问。"
-                });
-            }
-
-            // 构造测试请求
-            var parcelId = string.IsNullOrWhiteSpace(request.ParcelId) 
-                ? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
-                : long.Parse(request.ParcelId);
-
-            var testRequest = new SortingRequestEventArgs
-            {
-                ParcelId = parcelId,
-                CartNumber = 999, // 测试用小车号
+                Success = true,
+                Message = "测试包裹发送成功",
+                ParcelId = parcelId.ToString(),
                 Barcode = request.Barcode,
-                Weight = 1.0m,
-                Length = 300m,
-                Width = 200m,
-                Height = 150m,
-                RequestTime = DateTimeOffset.UtcNow
+                SentAt = DateTimeOffset.UtcNow
             };
 
-            _logger.LogInformation("发送测试包裹: ParcelId={ParcelId}, Barcode={Barcode}", parcelId, request.Barcode);
-
-            // 发送请求（带超时）
-            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            cts.CancelAfter(TimeSpan.FromSeconds(10)); // 10秒超时
-
-            try
-            {
-                await _ruleEnginePort.RequestSortingAsync(testRequest, cts.Token);
-
-                return Ok(new TestParcelResponse
-                {
-                    Success = true,
-                    Message = "测试包裹发送成功",
-                    ParcelId = parcelId.ToString(),
-                    Barcode = request.Barcode,
-                    SentAt = DateTimeOffset.UtcNow
-                });
-            }
-            catch (OperationCanceledException) when (cts.Token.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
-            {
-                // 超时
-                return StatusCode(503, new ErrorResponse
-                {
-                    Error = "请求超时",
-                    Message = "上游服务未在 10 秒内响应，可能存在网络或服务问题。"
-                });
-            }
+            return Ok(DTO.ApiResult<TestParcelResponse>.Ok(response));
         }
-        catch (Exception ex)
+        catch (OperationCanceledException) when (cts.Token.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
         {
-            _logger.LogError(ex, "发送测试包裹失败");
-            return StatusCode(500, new ErrorResponse
-            {
-                Error = "发送测试包裹失败",
-                Message = ex.Message
-            });
+            // 超时
+            return StatusCode(503, DTO.ApiResult.Fail(
+                "上游服务未在 10 秒内响应，可能存在网络或服务问题。",
+                "RequestTimeout"
+            ));
         }
     }
-}
-
-/// <summary>
-/// 测试包裹请求
-/// </summary>
-public class TestParcelRequest
-{
-    /// <summary>
-    /// 包裹条码（必填）
-    /// </summary>
-    /// <example>TEST-12345</example>
-    public string Barcode { get; set; } = string.Empty;
-
-    /// <summary>
-    /// 包裹ID（可选，不填自动生成）
-    /// </summary>
-    /// <example>TEST-001</example>
-    public string? ParcelId { get; set; }
-}
-
-/// <summary>
-/// 测试包裹响应
-/// </summary>
-public class TestParcelResponse
-{
-    /// <summary>
-    /// 是否成功
-    /// </summary>
-    public bool Success { get; set; }
-
-    /// <summary>
-    /// 响应消息
-    /// </summary>
-    public string Message { get; set; } = string.Empty;
-
-    /// <summary>
-    /// 包裹ID
-    /// </summary>
-    public string ParcelId { get; set; } = string.Empty;
-
-    /// <summary>
-    /// 包裹条码
-    /// </summary>
-    public string Barcode { get; set; } = string.Empty;
-
-    /// <summary>
-    /// 发送时间
-    /// </summary>
-    public DateTimeOffset SentAt { get; set; }
-}
-
-/// <summary>
-/// 错误响应
-/// </summary>
-public class ErrorResponse
-{
-    /// <summary>
-    /// 错误代码
-    /// </summary>
-    public string Error { get; set; } = string.Empty;
-
-    /// <summary>
-    /// 错误详细信息
-    /// </summary>
-    public string Message { get; set; } = string.Empty;
 }

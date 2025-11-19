@@ -28,6 +28,7 @@ using ZakYip.NarrowBeltDiverterSorter.Infrastructure.LiteDb;
 using ZakYip.NarrowBeltDiverterSorter.Communication.Upstream;
 using ZakYip.NarrowBeltDiverterSorter.Host;
 using ZakYip.NarrowBeltDiverterSorter.Host.Extensions;
+using ZakYip.NarrowBeltDiverterSorter.Host.Middleware;
 using ZakYip.NarrowBeltDiverterSorter.Host.SignalR;
 using ZakYip.NarrowBeltDiverterSorter.Observability.Recording;
 // Note: Simulation types cannot be used due to circular dependency
@@ -49,7 +50,16 @@ builder.Services.AddSingleton(startupConfig);
 // ============================================================================
 // 配置 Web API 支持
 // ============================================================================
-builder.Services.AddControllers();
+builder.Services.AddControllers(options =>
+{
+    // 添加模型验证过滤器
+    options.Filters.Add<ZakYip.NarrowBeltDiverterSorter.Host.Filters.ModelValidationFilter>();
+})
+.ConfigureApiBehaviorOptions(options =>
+{
+    // 禁用默认的 ModelState 验证行为，使用自定义的 ModelValidationFilter
+    options.SuppressModelStateInvalidFilter = true;
+});
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -798,6 +808,10 @@ var app = builder.Build();
 // ============================================================================
 // 配置 HTTP 请求管道
 // ============================================================================
+
+// 全局异常处理中间件（必须在其他中间件之前）
+app.UseGlobalExceptionHandler();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
