@@ -146,4 +146,11 @@ public record class ChuteConfig
     /// 最大打开持续时间
     /// </summary>
     public TimeSpan MaxOpenDuration { get; init; }
+
+    /// <summary>
+    /// 当首车位于原点时，该格口窗口下的小车号（1 基索引）
+    /// 用于计算格口当前窗口的小车号
+    /// 若为 0 或 null，表示尚未配置
+    /// </summary>
+    public int CartNumberWhenHeadAtOrigin { get; init; }
 }
