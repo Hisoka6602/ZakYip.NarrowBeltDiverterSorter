@@ -596,6 +596,12 @@ builder.Services.AddSingleton<ICartRingBuilder, CartRingBuilder>();
 // 注册小车位置跟踪器
 builder.Services.AddSingleton<ICartPositionTracker, CartPositionTracker>();
 
+// 注册格口小车号解析器和计算器
+builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Domain.Sorting.IChuteCartNumberCalculator, 
+    ZakYip.NarrowBeltDiverterSorter.Core.Domain.Sorting.ChuteCartNumberCalculator>();
+builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Abstractions.ICartAtChuteResolver, 
+    ZakYip.NarrowBeltDiverterSorter.Execution.Sorting.CartAtChuteResolver>();
+
 // 注册系统运行状态服务
 builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Domain.SystemState.ISystemRunStateService, 
     ZakYip.NarrowBeltDiverterSorter.Core.Domain.SystemState.SystemRunStateService>();
