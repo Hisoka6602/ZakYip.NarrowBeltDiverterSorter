@@ -1,12 +1,12 @@
 using Microsoft.Extensions.Logging;
-using ZakYip.NarrowBeltDiverterSorter.Communication.Upstream;
-using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
+using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
+using ZakYip.NarrowBeltDiverterSorter.Execution.Upstream;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Feeding;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Parcels;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Runtime;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Upstream;
-using ZakYip.NarrowBeltDiverterSorter.Execution.Upstream;
+using ZakYip.NarrowBeltDiverterSorter.Communication.Upstream;
 using ZakYip.NarrowBeltDiverterSorter.UpstreamContracts.Models;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Execution.Runtime;
@@ -114,6 +114,7 @@ public class ParcelRoutingRuntime : IParcelRoutingRuntime
         ParcelCreatedFromInfeedEventArgs eventArgs,
         CancellationToken cancellationToken = default)
     {
+        await Task.Yield();
         try
         {
             _logger.LogInformation(
