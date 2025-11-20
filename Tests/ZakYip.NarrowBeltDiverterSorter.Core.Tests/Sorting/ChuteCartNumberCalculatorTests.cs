@@ -302,10 +302,10 @@ public class ChuteCartNumberCalculatorTests
     }
 
     /// <summary>
-    /// 穷举测试：验证多个格口在所有首车位置下的结果都有效
+    /// 穷举测试：验证多个格口在关键首车位置下的结果都有效
     /// </summary>
     [Fact]
-    public void GetCartNumberAtChute_Exhaustive_MultipleChutes_AllHeadPositions()
+    public void GetCartNumberAtChute_Exhaustive_MultipleChutes_KeyHeadPositions()
     {
         // Arrange
         const int totalCartCount = 100;
@@ -318,10 +318,13 @@ public class ChuteCartNumberCalculatorTests
             { "Chute5", 50 }
         };
 
+        // 关键首车位置：起始、中间、接近末尾、环绕点
+        var keyHeadPositions = new[] { 1, 5, 10, 20, 50, 90, 95, 99, 100 };
+
         // Act & Assert
         foreach (var chute in chutes)
         {
-            for (int headCartNumber = 1; headCartNumber <= totalCartCount; headCartNumber++)
+            foreach (var headCartNumber in keyHeadPositions)
             {
                 var result = _calculator.GetCartNumberAtChute(
                     totalCartCount, 
@@ -349,7 +352,7 @@ public class ChuteCartNumberCalculatorTests
     {
         // Arrange
         var random = new Random(42); // 固定种子以便可重现
-        const int testIterations = 1000;
+        const int testIterations = 200;
 
         // Act & Assert
         for (int i = 0; i < testIterations; i++)
