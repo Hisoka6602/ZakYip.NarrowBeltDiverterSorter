@@ -233,4 +233,194 @@ public class ChuteCartNumberCalculatorTests
         // Assert
         Assert.Equal(expected, result);
     }
+
+    #region 穷举测试 - 100 辆小车所有首车位置
+
+    /// <summary>
+    /// 穷举测试：100辆小车，格口1（CartNumberWhenHeadAtOrigin=90），遍历所有首车位置
+    /// 验证所有结果都在 [1, 100] 范围内且计算正确
+    /// </summary>
+    [Fact]
+    public void GetCartNumberAtChute_Exhaustive_100Carts_Chute1_AllHeadPositions()
+    {
+        // Arrange
+        const int totalCartCount = 100;
+        const int cartNumberWhenHeadAtOrigin = 90;
+
+        // Act & Assert - 遍历所有可能的首车位置
+        for (int headCartNumber = 1; headCartNumber <= totalCartCount; headCartNumber++)
+        {
+            var result = _calculator.GetCartNumberAtChute(totalCartCount, headCartNumber, cartNumberWhenHeadAtOrigin);
+
+            // 验证结果在有效范围内
+            Assert.InRange(result, 1, totalCartCount);
+
+            // 验证特定已知点
+            if (headCartNumber == 1)
+                Assert.Equal(90, result);
+            else if (headCartNumber == 5)
+                Assert.Equal(94, result);
+            else if (headCartNumber == 11)
+                Assert.Equal(100, result);
+            else if (headCartNumber == 12)
+                Assert.Equal(1, result); // 环绕
+            else if (headCartNumber == 90)
+                Assert.Equal(79, result);
+        }
+    }
+
+    /// <summary>
+    /// 穷举测试：100辆小车，格口3（CartNumberWhenHeadAtOrigin=80），遍历所有首车位置
+    /// </summary>
+    [Fact]
+    public void GetCartNumberAtChute_Exhaustive_100Carts_Chute3_AllHeadPositions()
+    {
+        // Arrange
+        const int totalCartCount = 100;
+        const int cartNumberWhenHeadAtOrigin = 80;
+
+        // Act & Assert
+        for (int headCartNumber = 1; headCartNumber <= totalCartCount; headCartNumber++)
+        {
+            var result = _calculator.GetCartNumberAtChute(totalCartCount, headCartNumber, cartNumberWhenHeadAtOrigin);
+
+            // 验证结果在有效范围内
+            Assert.InRange(result, 1, totalCartCount);
+
+            // 验证特定已知点
+            if (headCartNumber == 1)
+                Assert.Equal(80, result);
+            else if (headCartNumber == 5)
+                Assert.Equal(84, result);
+            else if (headCartNumber == 21)
+                Assert.Equal(100, result);
+            else if (headCartNumber == 22)
+                Assert.Equal(1, result); // 环绕
+            else if (headCartNumber == 80)
+                Assert.Equal(59, result);
+        }
+    }
+
+    /// <summary>
+    /// 穷举测试：验证多个格口在所有首车位置下的结果都有效
+    /// </summary>
+    [Fact]
+    public void GetCartNumberAtChute_Exhaustive_MultipleChutes_AllHeadPositions()
+    {
+        // Arrange
+        const int totalCartCount = 100;
+        var chutes = new Dictionary<string, int>
+        {
+            { "Chute1", 90 },
+            { "Chute2", 85 },
+            { "Chute3", 80 },
+            { "Chute4", 75 },
+            { "Chute5", 50 }
+        };
+
+        // Act & Assert
+        foreach (var chute in chutes)
+        {
+            for (int headCartNumber = 1; headCartNumber <= totalCartCount; headCartNumber++)
+            {
+                var result = _calculator.GetCartNumberAtChute(
+                    totalCartCount, 
+                    headCartNumber, 
+                    chute.Value);
+
+                // 所有结果必须在有效范围内
+                Assert.InRange(result, 1, totalCartCount);
+                
+                // 验证不会出现 0 或越界
+                Assert.NotEqual(0, result);
+            }
+        }
+    }
+
+    #endregion
+
+    #region 随机化属性测试
+
+    /// <summary>
+    /// 随机化测试：生成多组随机参数，验证结果始终在有效范围内
+    /// </summary>
+    [Fact]
+    public void GetCartNumberAtChute_Randomized_AlwaysReturnsValidRange()
+    {
+        // Arrange
+        var random = new Random(42); // 固定种子以便可重现
+        const int testIterations = 1000;
+
+        // Act & Assert
+        for (int i = 0; i < testIterations; i++)
+        {
+            // 随机生成参数
+            int totalCartCount = random.Next(10, 501); // 10-500
+            int headCartNumber = random.Next(1, totalCartCount + 1); // 1 到 totalCartCount
+            int cartNumberWhenHeadAtOrigin = random.Next(1, totalCartCount + 1); // 1 到 totalCartCount
+
+            var result = _calculator.GetCartNumberAtChute(
+                totalCartCount,
+                headCartNumber,
+                cartNumberWhenHeadAtOrigin);
+
+            // 验证结果永远在 [1, totalCartCount] 范围内
+            Assert.InRange(result, 1, totalCartCount);
+            Assert.NotEqual(0, result);
+        }
+    }
+
+    /// <summary>
+    /// 随机化测试：验证相同输入多次调用返回相同结果（无状态泄漏）
+    /// </summary>
+    [Fact]
+    public void GetCartNumberAtChute_Randomized_ConsistentResults()
+    {
+        // Arrange
+        var random = new Random(42);
+        const int testIterations = 100;
+
+        for (int i = 0; i < testIterations; i++)
+        {
+            int totalCartCount = random.Next(10, 201);
+            int headCartNumber = random.Next(1, totalCartCount + 1);
+            int cartNumberWhenHeadAtOrigin = random.Next(1, totalCartCount + 1);
+
+            // Act - 多次调用相同参数
+            var result1 = _calculator.GetCartNumberAtChute(totalCartCount, headCartNumber, cartNumberWhenHeadAtOrigin);
+            var result2 = _calculator.GetCartNumberAtChute(totalCartCount, headCartNumber, cartNumberWhenHeadAtOrigin);
+            var result3 = _calculator.GetCartNumberAtChute(totalCartCount, headCartNumber, cartNumberWhenHeadAtOrigin);
+
+            // Assert - 结果必须完全一致
+            Assert.Equal(result1, result2);
+            Assert.Equal(result2, result3);
+        }
+    }
+
+    /// <summary>
+    /// 边界值测试：测试接近环绕点的各种情况
+    /// </summary>
+    [Theory]
+    [InlineData(100, 99, 99, 97)]  // 接近末尾，不环绕
+    [InlineData(100, 100, 99, 98)] // 最后一车，不环绕
+    [InlineData(100, 99, 2, 100)]  // 接近末尾，环绕到 100
+    [InlineData(100, 100, 2, 1)]   // 最后一车，环绕到 1
+    [InlineData(100, 1, 100, 100)] // 首车，格口在最后
+    [InlineData(100, 2, 100, 1)]   // 首车移动一位，格口环绕到 1
+    [InlineData(50, 50, 1, 50)]    // 首车在最后位置
+    [InlineData(50, 1, 1, 1)]      // 首车和格口都在起始位置
+    public void GetCartNumberAtChute_BoundaryConditions_CalculatesCorrectly(
+        int totalCartCount,
+        int headCartNumber,
+        int cartNumberWhenHeadAtOrigin,
+        int expected)
+    {
+        // Act
+        var result = _calculator.GetCartNumberAtChute(totalCartCount, headCartNumber, cartNumberWhenHeadAtOrigin);
+
+        // Assert
+        Assert.Equal(expected, result);
+    }
+
+    #endregion
 }
