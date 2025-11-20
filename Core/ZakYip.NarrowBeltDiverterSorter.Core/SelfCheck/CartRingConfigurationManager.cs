@@ -10,14 +10,17 @@ namespace ZakYip.NarrowBeltDiverterSorter.Core.SelfCheck;
 public sealed class CartRingConfigurationManager : ICartRingConfigurationManager
 {
     private readonly ICartRingConfigurationProvider _configProvider;
+    private readonly ICartRingHealthService? _healthService;
     private readonly ILogger<CartRingConfigurationManager> _logger;
 
     public CartRingConfigurationManager(
         ICartRingConfigurationProvider configProvider,
-        ILogger<CartRingConfigurationManager> logger)
+        ILogger<CartRingConfigurationManager> logger,
+        ICartRingHealthService? healthService = null)
     {
         _configProvider = configProvider ?? throw new ArgumentNullException(nameof(configProvider));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _healthService = healthService; // 可选依赖
     }
 
     /// <inheritdoc/>
@@ -121,6 +124,9 @@ public sealed class CartRingConfigurationManager : ICartRingConfigurationManager
                 expectedCount,
                 detectedCount);
 
+            // 清除健康状态异常
+            _healthService?.ClearCartRingMismatch();
+
             return new CartRingConfigurationProcessResult
             {
                 ConfigurationUpdated = false,
@@ -135,6 +141,9 @@ public sealed class CartRingConfigurationManager : ICartRingConfigurationManager
             // 校验失败
             var errorMessage = $"小车环校验失败，期望：{expectedCount}，实际：{detectedCount}";
             _logger.LogError(errorMessage);
+
+            // 设置健康状态异常
+            _healthService?.SetCartRingMismatch(expectedCount, detectedCount);
 
             return new CartRingConfigurationProcessResult
             {
