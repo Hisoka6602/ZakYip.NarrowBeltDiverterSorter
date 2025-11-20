@@ -24,6 +24,9 @@ public sealed class ChuteCartMappingSelfCheckService : IChuteCartMappingSelfChec
             .GroupBy(e => e.ChuteId)
             .ToDictionary(g => g.Key, g => g.ToList());
 
+        // 使用 TotalCartCount 如果 > 0，否则使用 CartCount（向后兼容）
+        int cartCount = topology.TotalCartCount > 0 ? topology.TotalCartCount : topology.CartCount;
+
         var checkItems = new List<ChuteCartMappingCheckItem>();
 
         // 为每个格口计算期望的小车编号并验证
@@ -36,7 +39,7 @@ public sealed class ChuteCartMappingSelfCheckService : IChuteCartMappingSelfChec
             // 在主线上的位置（主线长度 = 格口宽度 × 格口数量 / 2）
             // 格口对应的小车编号 = round(格口位置 / 小车节距) % 小车数量
             var expectedCartIndex = (int)Math.Round(chutePositionMm / topology.CartSpacingMm);
-            var expectedCartId = expectedCartIndex % topology.CartCount;
+            var expectedCartId = expectedCartIndex % cartCount;
 
             // 获取该格口的观测事件
             var observedCartIds = new List<int>();
@@ -49,7 +52,7 @@ public sealed class ChuteCartMappingSelfCheckService : IChuteCartMappingSelfChec
             var isPassed = ValidateObservedCartIds(
                 expectedCartId,
                 observedCartIds,
-                topology.CartCount,
+                cartCount,
                 options.CartIdTolerance);
 
             checkItems.Add(new ChuteCartMappingCheckItem
@@ -66,7 +69,7 @@ public sealed class ChuteCartMappingSelfCheckService : IChuteCartMappingSelfChec
         return new ChuteCartMappingSelfCheckResult
         {
             ChuteCount = topology.ChuteCount,
-            CartCount = topology.CartCount,
+            CartCount = cartCount,
             ChuteItems = checkItems,
             IsAllPassed = isAllPassed
         };
