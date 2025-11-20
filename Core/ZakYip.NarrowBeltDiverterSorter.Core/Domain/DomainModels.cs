@@ -21,6 +21,12 @@ public record class ParcelSnapshot
     public CartId? BoundCartId { get; init; }
 
     /// <summary>
+    /// 绑定的小车号（1 基索引）
+    /// 用于记录包裹绑定到的具体小车编号
+    /// </summary>
+    public int? BoundCartNumber { get; init; }
+
+    /// <summary>
     /// 路由状态
     /// </summary>
     public ParcelRouteState RouteState { get; init; }
