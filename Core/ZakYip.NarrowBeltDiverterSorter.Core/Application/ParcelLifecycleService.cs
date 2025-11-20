@@ -46,6 +46,40 @@ public class ParcelLifecycleService : IParcelLifecycleService
     }
 
     /// <inheritdoc/>
+    public ParcelSnapshot CreateParcelWithCartNumber(ParcelId parcelId, string barcode, DateTimeOffset infeedTriggerTime, int cartNumber)
+    {
+        // 验证系统状态：只有运行状态才能创建包裹
+        var validationResult = _systemRunStateService.ValidateCanCreateParcel();
+        if (!validationResult.IsSuccess)
+        {
+            throw new InvalidOperationException(validationResult.ErrorMessage);
+        }
+
+        // 验证小车号
+        if (cartNumber <= 0)
+        {
+            throw new ArgumentException($"小车号必须大于 0，当前值：{cartNumber}", nameof(cartNumber));
+        }
+
+        var parcel = new ParcelSnapshot
+        {
+            ParcelId = parcelId,
+            BoundCartNumber = cartNumber,
+            RouteState = ParcelRouteState.WaitingForRouting,
+            CreatedAt = infeedTriggerTime,
+            Status = ParcelStatus.Created,
+            FailureReason = ParcelFailureReason.None
+        };
+
+        if (!_parcels.TryAdd(parcelId, parcel))
+        {
+            throw new InvalidOperationException($"包裹 {parcelId.Value} 已存在");
+        }
+
+        return parcel;
+    }
+
+    /// <inheritdoc/>
     public void BindChuteId(ParcelId parcelId, ChuteId chuteId)
     {
         _parcels.AddOrUpdate(

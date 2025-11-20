@@ -4,7 +4,7 @@ namespace ZakYip.NarrowBeltDiverterSorter.Core.Domain.Sorting;
 /// 包裹绑定到小车事件参数
 /// 当包裹创建时绑定到特定小车号时触发
 /// </summary>
-public readonly record struct PackageBoundToCartEventArgs
+public record class PackageBoundToCartEventArgs
 {
     /// <summary>
     /// 包裹ID
