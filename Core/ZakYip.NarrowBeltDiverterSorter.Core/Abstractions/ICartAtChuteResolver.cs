@@ -1,3 +1,5 @@
+using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Sorting;
+
 namespace ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 
 /// <summary>
@@ -20,4 +22,13 @@ public interface ICartAtChuteResolver
     /// <returns>当前首车编号，如果当前首车未知则抛出受控异常</returns>
     /// <exception cref="InvalidOperationException">当首车状态未知时抛出</exception>
     int GetCurrentHeadCartNumber();
+
+    /// <summary>
+    /// 捕获指定格口的小车绑定快照
+    /// 一次性读取所有必要的配置和状态，确保时间点一致性
+    /// </summary>
+    /// <param name="chuteId">格口ID</param>
+    /// <returns>包含一致性配置和状态的快照</returns>
+    /// <exception cref="InvalidOperationException">当配置未就绪、首车状态未知或配置不完整时抛出</exception>
+    CartBindingSnapshot CaptureCartBindingSnapshot(long chuteId);
 }
