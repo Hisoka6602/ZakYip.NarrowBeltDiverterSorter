@@ -267,6 +267,6 @@ find Host/*/Controllers -name "*.cs" -exec grep -l "using.*Infrastructure\|LiteD
 
 ## 9. 更新历史
 
-- 2024-XX-XX: 初始版本，定义核心约束规则
+- 2025-11-21: 初始版本，定义核心约束规则
 - 修复了 `ChuteIoConfigurationController` 和 `UpstreamRoutingSettingsController` 的 DI 问题
 - 扩展了 `IChuteTransmitterConfigurationPort` 和 `IUpstreamRoutingConfigProvider` 接口

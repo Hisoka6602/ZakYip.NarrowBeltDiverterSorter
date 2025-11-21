@@ -160,14 +160,12 @@ public class DependencyInjectionValidationTests
         
         var dbPath = Path.Combine(Path.GetTempPath(), $"di-test-{Guid.NewGuid()}.db");
         
-        // 注册 ISorterConfigurationStore，使用 factory pattern
-        services.AddSingleton<ISorterConfigurationStore>(sp =>
-            new LiteDbSorterConfigurationStore(sp.GetRequiredService<ILogger<LiteDbSorterConfigurationStore>>(), dbPath));
-        
-        // 注册 IChuteTransmitterConfigurationPort（使用同一个实例）
-        services.AddSingleton<IChuteTransmitterConfigurationPort>(sp => 
-            sp.GetRequiredService<ISorterConfigurationStore>() as LiteDbSorterConfigurationStore
-                ?? throw new InvalidOperationException("ISorterConfigurationStore must be LiteDbSorterConfigurationStore"));
+        // 直接注册 IChuteTransmitterConfigurationPort，避免依赖具体实现
+        services.AddSingleton<IChuteTransmitterConfigurationPort>(sp =>
+        {
+            var logger = sp.GetRequiredService<ILogger<LiteDbSorterConfigurationStore>>();
+            return new LiteDbSorterConfigurationStore(logger, dbPath);
+        });
         
         // 注册控制器
         services.AddScoped<ChuteIoConfigurationController>();

@@ -39,7 +39,7 @@ public class UpstreamRoutingConfigChangedEventArgs : EventArgs
     public required UpstreamRoutingOptions NewOptions { get; init; }
 
     /// <summary>
-    /// 变更时间（本地时间）
+    /// 变更时间（本地时间，包含时区信息）
     /// </summary>
     public DateTimeOffset ChangedAt { get; init; } = DateTimeOffset.Now;
 }
