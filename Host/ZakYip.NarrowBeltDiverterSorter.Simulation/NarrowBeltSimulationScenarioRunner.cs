@@ -11,6 +11,7 @@ using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Sorting;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Tracking;
 using ZakYip.NarrowBeltDiverterSorter.Simulation.Fakes;
 using ZakYip.NarrowBeltDiverterSorter.Core.Enums;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Configuration;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Simulation;
 

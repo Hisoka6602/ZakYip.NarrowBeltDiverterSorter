@@ -12,9 +12,6 @@ using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Domain;
 using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Observability;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Sorting;
 using ZakYip.NarrowBeltDiverterSorter.Shared.Kernel;
-using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Domain;
-using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Configuration;
-using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Observability;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Execution.Tests.Sorting;
 
