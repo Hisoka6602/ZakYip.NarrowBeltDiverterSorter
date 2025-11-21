@@ -371,6 +371,7 @@ dotnet run
 
 - **[Copilot 强制约束规则](.github/copilot-instructions.md)** - GitHub Copilot 必须遵守的硬性规则
 - **[项目规则集 (ProjectRules.md)](docs/Conventions/ProjectRules.md)** - 完整的项目规则文档，覆盖所有方面
+- **[并发安全与异常处理规范 (ConcurrencyAndExceptionHandling.md)](docs/Conventions/ConcurrencyAndExceptionHandling.md)** - 并发访问控制和异常隔离统一模式
 - **[架构硬性规则 (ARCHITECTURE_RULES.md)](ARCHITECTURE_RULES.md)** - 架构分层与依赖规则
 - **[永久约束规则 (PERMANENT_CONSTRAINTS.md)](PERMANENT_CONSTRAINTS.md)** - DI、时间、异常、并发等约束
 - **[贡献指南 (CONTRIBUTING.md)](CONTRIBUTING.md)** - 编码规范与命名约定
@@ -437,9 +438,10 @@ dotnet run
 
 1. **[Copilot 强制约束规则](.github/copilot-instructions.md)** - GitHub Copilot 必须遵守的硬性规则
 2. **[项目规则集](docs/Conventions/ProjectRules.md)** - 完整的项目规则文档
-3. **[架构硬性规则](ARCHITECTURE_RULES.md)** - 架构分层与依赖规则（**必读**）
-4. **[永久约束规则](PERMANENT_CONSTRAINTS.md)** - 技术约束规则
-5. **[贡献指南](CONTRIBUTING.md)** - 编码规范与命名约定
+3. **[并发安全与异常处理规范](docs/Conventions/ConcurrencyAndExceptionHandling.md)** - 并发控制与异常隔离（**必读**）
+4. **[架构硬性规则](ARCHITECTURE_RULES.md)** - 架构分层与依赖规则（**必读**）
+5. **[永久约束规则](PERMANENT_CONSTRAINTS.md)** - 技术约束规则
+6. **[贡献指南](CONTRIBUTING.md)** - 编码规范与命名约定
 
 ### ✅ 贡献前检查清单
 
