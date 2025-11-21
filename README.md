@@ -6,6 +6,8 @@
 
 - [系统概览](#系统概览-system-overview)
 - [项目结构](#项目结构-project-structure)
+- [系统架构与拓扑](#系统架构与拓扑-system-architecture--topology)
+- [异常处理与稳定性](#异常处理与稳定性-exception-handling--stability)
 - [系统架构](#系统架构-system-architecture)
 - [运行流程](#运行流程-execution-flow)
 - [技术栈](#技术栈-technology-stack)
@@ -380,9 +382,18 @@ dotnet run
 
 存放在 `docs/Architecture/` 目录：
 
+#### 核心架构文档
+- **[SystemTopology.md](docs/Architecture/SystemTopology.md)** - 系统拓扑图，展示上游系统、Host、Execution、Drivers、小车/格口关系
+- **[CoreBusinessFlow.md](docs/Architecture/CoreBusinessFlow.md)** - 核心业务流程图，从启动按钮到落格的完整流程
+- **[ExceptionHandlingFlow.md](docs/Architecture/ExceptionHandlingFlow.md)** - 异常处理流程图，SafetyIsolator 使用和降级策略
+- **[LayeredArchitecture.md](docs/Architecture/LayeredArchitecture.md)** - 分层架构详细说明，各层职责和依赖规则
+
+#### 设计原则与规范
 - **[Layering.md](docs/Architecture/Layering.md)** - 分层架构设计原则与规范
 - **[Dependencies.md](docs/Architecture/Dependencies.md)** - 项目依赖关系与管理
 - **[Contracts.md](docs/Architecture/Contracts.md)** - 契约层设计与接口定义
+
+#### 系统设计文档
 - **[SORTING_SYSTEM.md](docs/Architecture/SORTING_SYSTEM.md)** - 分拣系统架构文档
 - **[NarrowBeltDesign.md](docs/Architecture/NarrowBeltDesign.md)** - 窄带分拣机设计文档
 - **[ARCHITECTURE_BASELINE_SUMMARY.md](docs/Architecture/ARCHITECTURE_BASELINE_SUMMARY.md)** - 架构基线总结
@@ -407,12 +418,38 @@ dotnet run
 
 ### 🧪 仿真与测试文档
 
-存放在 `docs/Simulation/` 目录：
+存放在 `docs/Simulation/` 和 `docs/NarrowBelt/` 目录：
 
-- **[NarrowBelt/](docs/NarrowBelt/)** - 窄带分拣机仿真相关文档
-  - 仿真场景说明
-  - 小车编号与格口计算逻辑
-  - 仿真测试与回归验证
+- **[SimulationTesting.md](docs/Simulation/SimulationTesting.md)** - 仿真测试说明，包含1000包裹全链路测试详细文档
+- **[CartNumberingAndChutes.md](docs/NarrowBelt/CartNumberingAndChutes.md)** - 小车编号与格口绑定系统详细说明
+
+#### 1000包裹全链路仿真测试
+
+本项目包含完整的1000包裹全链路仿真测试，覆盖从API配置启动按钮到包裹成功落格的完整流程。
+
+**测试位置**: `Tests/ZakYip.NarrowBeltDiverterSorter.Simulator.Tests/Simulation/PanelStartToChuteDropSimulation/`
+
+**运行测试**:
+```bash
+# 运行所有仿真测试
+dotnet test Tests/ZakYip.NarrowBeltDiverterSorter.Simulator.Tests
+
+# 仅运行1000包裹测试
+dotnet test Tests/ZakYip.NarrowBeltDiverterSorter.Simulator.Tests \
+  --filter "FullyQualifiedName~Should_CorrectlyIdentifyCarts_AndDropParcels_For1000Packages"
+
+# 使用类别过滤运行仿真测试
+dotnet test --filter "TestCategory=Simulation"
+```
+
+**测试验证点**:
+- ✅ 小车IO识别正确（双IO算法）
+- ✅ 包裹绑定上车号正确
+- ✅ 落格车号与格口匹配正确
+- ✅ 无漏落格、无误触发
+- ✅ 所有1000个包裹成功处理
+
+详细说明请参阅 [仿真测试文档](docs/Simulation/SimulationTesting.md)。
 
 ### 📚 实施总结文档
 
@@ -474,6 +511,80 @@ dotnet run
 使用 [PR 模板](.github/pull_request_template.md) 提交 PR，确保勾选所有适用的检查项。
 
 **我们期待您的贡献！** 🎉
+
+## 系统架构与拓扑 (System Architecture & Topology)
+
+本项目采用严格的分层架构设计，确保各层职责清晰、依赖方向正确。
+
+### 📐 核心架构文档
+
+- **[系统拓扑图](docs/Architecture/SystemTopology.md)** - 完整的系统组件拓扑，包含上游系统、Host、Execution、Drivers、小车/格口关系、数据流向
+- **[核心业务流程](docs/Architecture/CoreBusinessFlow.md)** - 从启动按钮 → 数小车 → 包裹创建 → 绑定 → 落格的完整流程
+- **[分层架构说明](docs/Architecture/LayeredArchitecture.md)** - 各层职责、依赖规则和最佳实践
+
+### 🔄 业务流程概览
+
+系统完整的分拣流程包括以下关键阶段：
+
+1. **启动与初始化**: API 配置电柜面板启动按钮，系统进入 Running 状态
+2. **小车识别**: 通过双 IO 传感器识别首车（0号车）和普通车，维护环形数组
+3. **包裹上料**: 入口传感器触发，创建包裹实体，查询路由规则
+4. **车号绑定**: 根据当前首车位置和格口基准车号，计算目标车号并绑定包裹
+5. **窗口匹配**: 实时追踪小车位置，当目标车号到达格口时触发窗口
+6. **格口触发**: DO 输出触发格口发信器，包裹滑落到目标格口
+7. **落格确认**: 格口传感器确认包裹成功落格
+8. **结果上报**: 通过 Communication 层上报分拣结果到上游 WCS
+
+详细流程请参阅 [核心业务流程文档](docs/Architecture/CoreBusinessFlow.md)。
+
+---
+
+## 异常处理与稳定性 (Exception Handling & Stability)
+
+本系统设计了完善的异常处理机制，确保在任何异常情况下都不会崩溃，并能快速降级和恢复。
+
+### 🛡️ 异常处理策略
+
+- **[异常处理流程](docs/Architecture/ExceptionHandlingFlow.md)** - 完整的异常处理流程图和最佳实践
+
+### 核心机制
+
+#### SafetyIsolator（安全隔离器）
+所有外部调用（上游通信、硬件驱动、配置存储）必须使用 `SafetyIsolator` 包裹：
+
+```csharp
+var success = await _isolator.ExecuteAsync(
+    async () => await _hardware.WriteAsync(data),
+    onError: ex => _logger.LogError(ex, "写入失败"),
+    defaultValue: false
+);
+```
+
+#### ThrottledLogger（节流日志）
+避免日志洪水，相同内容至少间隔 1 秒才再次记录：
+
+```csharp
+_throttledLogger.LogError(ex, "上游连接失败");
+// 相同错误在1秒内不会重复输出
+```
+
+#### 降级模式
+各组件支持自动降级和恢复：
+
+| 组件 | 正常模式 | 降级模式 | 恢复机制 |
+|------|----------|----------|----------|
+| 上游通信 | TCP连接 | 队列缓存 | 无限重试，指数退避 |
+| 主线驱动 | Rema VFD | 固定速度 | 定时Ping检查 |
+| 格口发信器 | 实时触发 | 时间估算 | 自动重试 |
+| 配置存储 | LiteDB | 内存缓存 | 文件锁解除后恢复 |
+
+#### 重试策略
+- ✅ **连接失败**: 无限重试，最大退避 2 秒
+- ❌ **发送失败**: 不重试，仅记录日志
+
+详细说明请参阅 [异常处理流程文档](docs/Architecture/ExceptionHandlingFlow.md)。
+
+---
 
 ## 系统架构 (System Architecture)
 
