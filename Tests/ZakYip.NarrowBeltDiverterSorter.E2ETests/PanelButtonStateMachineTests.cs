@@ -4,6 +4,7 @@ using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Configuration;
 using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Observability;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.SystemState;
 using ZakYip.NarrowBeltDiverterSorter.Core.Application;
+using ZakYip.NarrowBeltDiverterSorter.Core.Configuration;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Panel;
 using ZakYip.NarrowBeltDiverterSorter.Communication;
 using Microsoft.Extensions.Logging;

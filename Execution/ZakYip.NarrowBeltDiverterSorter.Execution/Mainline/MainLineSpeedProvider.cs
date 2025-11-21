@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.MainLine;
@@ -18,10 +19,18 @@ public class MainLineSpeedProvider : IMainLineSpeedProvider
     private DateTime _stableStartTime;
     private bool _wasStable;
     private readonly object _lock = new();
+    private readonly IPanelIoCoordinator? _panelIoCoordinator;
+    private readonly ILogger<MainLineSpeedProvider>? _logger;
+    
+    // 首次稳速状态跟踪
+    private bool _hasEverBeenStable;
+    private bool _firstStableLinkageTriggered;
 
     public MainLineSpeedProvider(
         IMainLineFeedbackPort feedbackPort,
-        IOptions<MainLineControlOptions> options)
+        IOptions<MainLineControlOptions> options,
+        IPanelIoCoordinator? panelIoCoordinator = null,
+        ILogger<MainLineSpeedProvider>? logger = null)
     {
         _feedbackPort = feedbackPort;
         _options = options.Value;
@@ -29,6 +38,10 @@ public class MainLineSpeedProvider : IMainLineSpeedProvider
         _speedSamples = new Queue<decimal>(_smoothingWindowSize);
         _stableStartTime = DateTime.MinValue;
         _wasStable = false;
+        _panelIoCoordinator = panelIoCoordinator;
+        _logger = logger;
+        _hasEverBeenStable = false;
+        _firstStableLinkageTriggered = false;
     }
 
     /// <inheritdoc/>
@@ -69,6 +82,23 @@ public class MainLineSpeedProvider : IMainLineSpeedProvider
                     // 离开稳定状态
                     _wasStable = false;
                     _stableStartTime = DateTime.MinValue;
+                    
+                    // 如果之前已经稳定过，触发"稳速后不稳速"联动 IO
+                    if (_hasEverBeenStable && _panelIoCoordinator != null)
+                    {
+                        // 异步触发但不等待，避免阻塞
+                        _ = Task.Run(async () =>
+                        {
+                            try
+                            {
+                                await _panelIoCoordinator.ExecuteUnstableAfterStableLinkageAsync();
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger?.LogError(ex, "触发稳速后不稳速联动 IO 失败");
+                            }
+                        });
+                    }
                 }
 
                 if (!isCurrentlyStable)
@@ -78,7 +108,32 @@ public class MainLineSpeedProvider : IMainLineSpeedProvider
 
                 // 检查稳定持续时间
                 var stableDuration = DateTime.Now - _stableStartTime;
-                return stableDuration >= _options.StableHold;
+                var isStableEnough = stableDuration >= _options.StableHold;
+                
+                // 如果达到稳定条件且是首次稳定，触发"首次稳速"联动 IO
+                if (isStableEnough && !_hasEverBeenStable)
+                {
+                    _hasEverBeenStable = true;
+                    
+                    if (_panelIoCoordinator != null && !_firstStableLinkageTriggered)
+                    {
+                        _firstStableLinkageTriggered = true;
+                        // 异步触发但不等待，避免阻塞
+                        _ = Task.Run(async () =>
+                        {
+                            try
+                            {
+                                await _panelIoCoordinator.ExecuteFirstStableSpeedLinkageAsync();
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger?.LogError(ex, "触发首次稳速联动 IO 失败");
+                            }
+                        });
+                    }
+                }
+                
+                return isStableEnough;
             }
         }
     }
@@ -153,6 +208,8 @@ public class MainLineSpeedProvider : IMainLineSpeedProvider
             _speedSamples.Clear();
             _stableStartTime = DateTime.MinValue;
             _wasStable = false;
+            _hasEverBeenStable = false;
+            _firstStableLinkageTriggered = false;
         }
     }
 }

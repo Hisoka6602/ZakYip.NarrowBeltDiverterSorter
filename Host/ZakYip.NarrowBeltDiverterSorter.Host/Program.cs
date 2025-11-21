@@ -129,6 +129,7 @@ builder.Services.AddSingleton<IChuteConfigRepository, LiteDbChuteConfigRepositor
 builder.Services.AddSingleton<IUpstreamConnectionOptionsRepository, LiteDbUpstreamConnectionOptionsRepository>();
 builder.Services.AddSingleton<ILongRunLoadTestOptionsRepository, LiteDbLongRunLoadTestOptionsRepository>();
 builder.Services.AddSingleton<IFeedingCapacityOptionsRepository, LiteDbFeedingCapacityOptionsRepository>();
+builder.Services.AddSingleton<IPanelIoLinkageOptionsRepository, LiteDbPanelIoLinkageOptionsRepository>();
 
 // 从统一配置提供器加载主线控制选项
 builder.Services.AddSingleton<IOptions<MainLineControlOptions>>(sp =>
@@ -703,10 +704,12 @@ builder.Services.AddSingleton(sp => ZakYip.NarrowBeltDiverterSorter.Core.Configu
 // 注册面板 IO 联动选项
 builder.Services.AddSingleton(sp => 
 {
-    var options = new ZakYip.NarrowBeltDiverterSorter.Execution.Panel.PanelIoLinkageOptions
+    var options = new ZakYip.NarrowBeltDiverterSorter.Core.Configuration.PanelIoLinkageOptions
     {
         StartFollowOutputChannels = new List<int>(), // 可根据需要配置
-        StopFollowOutputChannels = new List<int>()   // 可根据需要配置
+        StopFollowOutputChannels = new List<int>(),   // 可根据需要配置
+        FirstStableSpeedFollowOutputChannels = new List<int>(), // 首次稳速时联动
+        UnstableAfterStableFollowOutputChannels = new List<int>() // 稳速后不稳速时联动
     };
     return Microsoft.Extensions.Options.Options.Create(options);
 });

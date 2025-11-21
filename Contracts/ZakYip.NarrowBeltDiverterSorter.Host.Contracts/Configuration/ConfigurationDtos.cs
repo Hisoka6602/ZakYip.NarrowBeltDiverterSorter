@@ -790,3 +790,58 @@ public sealed record RemaConnectionConfigurationDto
     /// <example>00:00:00.200</example>
     public string RetryDelay { get; set; } = "00:00:00.200";
 }
+
+/// <summary>
+/// 面板 IO 联动配置 DTO
+/// </summary>
+/// <remarks>
+/// 配置跟随启动/停止/首次稳速/稳速后不稳速的输出通道列表
+/// </remarks>
+/// <example>
+/// {
+///   "startFollowOutputChannels": [1, 2],
+///   "stopFollowOutputChannels": [3, 4],
+///   "firstStableSpeedFollowOutputChannels": [5],
+///   "unstableAfterStableFollowOutputChannels": [6]
+/// }
+/// </example>
+public sealed record PanelIoLinkageConfigurationDto
+{
+    /// <summary>
+    /// 跟随启动的输出通道列表
+    /// </summary>
+    /// <remarks>
+    /// 当系统启动时，这些通道将被设置为ON(1)
+    /// </remarks>
+    /// <example>[1, 2]</example>
+    public List<int> StartFollowOutputChannels { get; set; } = new();
+
+    /// <summary>
+    /// 跟随停止的输出通道列表
+    /// </summary>
+    /// <remarks>
+    /// 当系统停止或急停时，这些通道将被设置为OFF(0)
+    /// </remarks>
+    /// <example>[3, 4]</example>
+    public List<int> StopFollowOutputChannels { get; set; } = new();
+
+    /// <summary>
+    /// 首次稳速时联动的输出通道列表
+    /// </summary>
+    /// <remarks>
+    /// 在一次启动→运行周期中，当线体速度首次进入稳速状态时，这些通道将被设置为ON(1)。
+    /// 只触发一次，直到线体停止/重新启动。
+    /// </remarks>
+    /// <example>[5]</example>
+    public List<int> FirstStableSpeedFollowOutputChannels { get; set; } = new();
+
+    /// <summary>
+    /// 稳速后的每次不稳速时联动的输出通道列表
+    /// </summary>
+    /// <remarks>
+    /// 前提：本次运行中线体已至少有一次进入过稳速状态。
+    /// 每次从稳速状态退化为不稳速状态时，这些通道将被设置为ON(1)。
+    /// </remarks>
+    /// <example>[6]</example>
+    public List<int> UnstableAfterStableFollowOutputChannels { get; set; } = new();
+}
