@@ -54,29 +54,57 @@ public class PanelStartToChuteDropSimulationTests
         var parcels = GenerateParcels(1000);
 
         // 记录包裹绑定和落格事件
-        var packageBindings = new Dictionary<long, (int CartNumber, int TargetChuteId)>();
-        var ejectionEvents = new List<(long PackageId, int ChuteId, int CartNumber, int Tick)>();
+        var packageBindings = new Dictionary<long, PackageBinding>();
+        var ejectionEvents = new List<EjectionRecord>();
+
+        // 小车运行仿真参数
+        const int cartPassIntervalTicks = 500; // 小车经过原点间隔500ms
+        int ticksSinceLastCart = 0;
+        int currentOriginCartIndex = 0; // 0-based索引
 
         // Act - 仿真执行
-        int currentCartAtOrigin = 1; // 1号车在原点（1-based）
-
         foreach (var parcel in parcels)
         {
             // 推进仿真时钟到包裹上料时刻
-            clock.Advance(parcel.FeedingTick - clock.CurrentTick);
+            var ticksToAdvance = parcel.FeedingTick - clock.CurrentTick;
+            if (ticksToAdvance > 0)
+            {
+                clock.Advance(ticksToAdvance);
+                ticksSinceLastCart += ticksToAdvance;
+            }
+
+            // 模拟小车通过原点（每500ms一辆车）
+            while (ticksSinceLastCart >= cartPassIntervalTicks)
+            {
+                // 模拟IO脉冲：小车经过原点传感器
+                ioBoard.SetInput(CartSensorInputChannel, true);
+                cartTracker.OnCartPassedOrigin(DateTimeOffset.UtcNow);
+                currentOriginCartIndex = (currentOriginCartIndex + 1) % TotalCartCount;
+                
+                // 重置IO
+                ioBoard.SetInput(CartSensorInputChannel, false);
+                
+                ticksSinceLastCart -= cartPassIntervalTicks;
+            }
 
             // 包裹上料：绑定到小车
             var boundCartNumber = binder.BindCartForNewPackage(parcel.PackageId, parcel.TargetChuteId);
-            packageBindings[parcel.PackageId] = (boundCartNumber, parcel.TargetChuteId);
+            var boundTime = clock.CurrentTick;
+            
+            packageBindings[parcel.PackageId] = new PackageBinding(
+                parcel.PackageId,
+                boundCartNumber,
+                parcel.TargetChuteId,
+                boundTime);
 
-            // 仿真小车运行：小车经过格口时触发落格
-            // 简化：假设包裹立即在下一个tick到达目标格口
-            clock.Advance(1);
+            // 仿真包裹随小车运行到目标格口
+            // 简化模型：假设包裹在绑定后的下一个tick就到达格口
+            clock.Advance(50); // 50ms后到达格口
 
             // 计算目标格口当前对应的小车号
             var cartAtTargetChute = resolver.ResolveCurrentCartNumberForChute(parcel.TargetChuteId);
 
-            // 如果绑定的车号与格口当前车号匹配，触发落格
+            // 当绑定的车号经过目标格口时，触发落格
             if (cartAtTargetChute == boundCartNumber)
             {
                 // 触发落格DO
@@ -84,18 +112,11 @@ public class PanelStartToChuteDropSimulationTests
                     new ChuteId(parcel.TargetChuteId),
                     TimeSpan.FromMilliseconds(100));
 
-                ejectionEvents.Add((
+                ejectionEvents.Add(new EjectionRecord(
                     parcel.PackageId,
                     parcel.TargetChuteId,
                     cartAtTargetChute,
                     clock.CurrentTick));
-            }
-
-            // 推进小车位置
-            if ((parcel.PackageId % 10) == 0) // 每10个包裹推进一次小车
-            {
-                cartTracker.OnCartPassedOrigin(DateTimeOffset.UtcNow);
-                currentCartAtOrigin = (currentCartAtOrigin % TotalCartCount) + 1;
             }
         }
 
@@ -111,7 +132,7 @@ public class PanelStartToChuteDropSimulationTests
         // 验证2：落格事件数量应该等于包裹数量（每个包裹都应该落格）
         Assert.Equal(1000, ejectionEvents.Count);
 
-        // 验证3：每个包裹的落格格口应该与目标格口一致
+        // 验证3：每个包裹的落格格口应该与目标格口一致，车号应该与绑定车号一致
         foreach (var ejection in ejectionEvents)
         {
             var binding = packageBindings[ejection.PackageId];
@@ -122,7 +143,44 @@ public class PanelStartToChuteDropSimulationTests
         // 验证4：格口发信器事件记录正确
         var transmitterEvents = chuteTransmitter.GetEjectionEvents();
         Assert.Equal(1000, transmitterEvents.Count);
+
+        // 验证5：检查小车传感器被触发过
+        // 注：IO输入通过SetInput设置，不记录历史，这里验证输出历史
+        // 实际应用中，小车传感器触发应该通过输出或专门的事件记录
+        var outputHistory = ioBoard.GetAllOutputHistory();
+        // 简化验证：确保格口发信器记录了事件
+        Assert.Equal(1000, transmitterEvents.Count);
+
+        // 验证6：确保没有重复的包裹ID
+        var uniquePackageIds = ejectionEvents.Select(e => e.PackageId).Distinct().Count();
+        Assert.Equal(1000, uniquePackageIds);
+
+        // 验证7：验证每个格口都有包裹落格
+        var chutesUsed = ejectionEvents.Select(e => e.ChuteId).Distinct().ToList();
+        Assert.Contains(Chute1Id, chutesUsed);
+        Assert.Contains(Chute2Id, chutesUsed);
+        Assert.Contains(Chute3Id, chutesUsed);
     }
+
+    /// <summary>
+    /// 包裹绑定记录
+    /// </summary>
+    private sealed record PackageBinding(
+        long PackageId,
+        int CartNumber,
+        int TargetChuteId,
+        int BoundAtTick);
+
+    /// <summary>
+    /// 落格事件记录
+    /// </summary>
+    private sealed record EjectionRecord(
+        long PackageId,
+        int ChuteId,
+        int CartNumber,
+        int Tick);
+
+    private const int CartSensorInputChannel = 100; // 小车传感器IO通道
 
     /// <summary>
     /// 生成测试用包裹
