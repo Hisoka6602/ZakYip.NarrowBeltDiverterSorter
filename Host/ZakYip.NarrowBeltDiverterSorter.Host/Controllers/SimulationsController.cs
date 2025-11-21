@@ -1,9 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Core.Configuration;
 using ZakYip.NarrowBeltDiverterSorter.Host.Contracts.API;
-using ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
-using ZakYip.NarrowBeltDiverterSorter.Infrastructure.Simulation;
 // Note: INarrowBeltSimulationScenarioRunner and related types cannot be used due to circular dependency
 // between Host and Simulation projects. This will be resolved in a future PR.
 // using ZakYip.NarrowBeltDiverterSorter.Simulation;

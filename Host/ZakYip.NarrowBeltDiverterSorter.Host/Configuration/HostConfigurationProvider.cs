@@ -2,7 +2,6 @@ using ZakYip.NarrowBeltDiverterSorter.Communication.Upstream;
 using ZakYip.NarrowBeltDiverterSorter.Core.Configuration;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Feeding;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.MainLine;
-using ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Host.Configuration;
 

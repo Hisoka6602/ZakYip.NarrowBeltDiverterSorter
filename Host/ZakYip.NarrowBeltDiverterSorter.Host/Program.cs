@@ -107,7 +107,7 @@ builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Shared.Kernel.Safe
 // 注册统一配置中心基础设施
 builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Configuration.IConfigurationDefaultsProvider, 
     ZakYip.NarrowBeltDiverterSorter.Core.Configuration.ConfigurationDefaultsProvider>();
-builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration.IAppConfigurationStore, 
+builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Configuration.IAppConfigurationStore, 
     ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration.LiteDbAppConfigurationStore>();
 builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Host.Configuration.IHostConfigurationProvider, 
     ZakYip.NarrowBeltDiverterSorter.Host.Configuration.HostConfigurationProvider>();
