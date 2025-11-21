@@ -1,5 +1,7 @@
 using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.SystemState;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Domain;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Observability;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;

@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Core.Configuration;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Domain;
 using ZakYip.NarrowBeltDiverterSorter.Core.SelfCheck;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Core.Tests.SelfCheck;

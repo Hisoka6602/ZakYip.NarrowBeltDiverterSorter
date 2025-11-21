@@ -1,6 +1,6 @@
 using System.ComponentModel;
 
-namespace ZakYip.NarrowBeltDiverterSorter.Core.Domain.Feeding;
+namespace ZakYip.NarrowBeltDiverterSorter.Core.Enums.Domain;
 
 /// <summary>
 /// 供包节流模式

@@ -1,4 +1,5 @@
 using ZakYip.NarrowBeltDiverterSorter.Shared.Kernel;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Domain;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Core.Domain.SystemState;
 

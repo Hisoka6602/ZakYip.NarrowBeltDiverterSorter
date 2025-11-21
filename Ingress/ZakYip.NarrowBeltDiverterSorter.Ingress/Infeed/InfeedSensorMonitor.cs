@@ -1,4 +1,6 @@
 using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Domain;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Communication;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Feeding;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Ingress;

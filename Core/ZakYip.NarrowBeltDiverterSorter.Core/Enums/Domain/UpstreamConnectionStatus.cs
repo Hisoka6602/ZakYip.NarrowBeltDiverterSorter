@@ -1,4 +1,4 @@
-namespace ZakYip.NarrowBeltDiverterSorter.Core.Domain.Upstream;
+namespace ZakYip.NarrowBeltDiverterSorter.Core.Enums.Domain;
 
 /// <summary>
 /// 上游规则引擎连接状态

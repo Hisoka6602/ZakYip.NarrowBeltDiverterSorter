@@ -1,3 +1,5 @@
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Observability;
+
 namespace ZakYip.NarrowBeltDiverterSorter.Observability.LiveView;
 
 /// <summary>

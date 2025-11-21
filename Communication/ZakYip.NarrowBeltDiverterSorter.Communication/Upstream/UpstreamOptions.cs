@@ -1,41 +1,6 @@
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Communication;
+
 namespace ZakYip.NarrowBeltDiverterSorter.Communication.Upstream;
-
-/// <summary>
-/// 上游连接模式枚举
-/// </summary>
-public enum UpstreamMode
-{
-    /// <summary>
-    /// 禁用上游连接（单机仿真模式）
-    /// </summary>
-    Disabled,
-
-    /// <summary>
-    /// MQTT 协议连接
-    /// </summary>
-    Mqtt,
-
-    /// <summary>
-    /// TCP 协议连接
-    /// </summary>
-    Tcp
-}
-
-/// <summary>
-/// 上游通讯角色枚举
-/// </summary>
-public enum UpstreamRole
-{
-    /// <summary>
-    /// 客户端模式：主动连接到上游服务器
-    /// </summary>
-    Client,
-
-    /// <summary>
-    /// 服务端模式：作为服务器接收上游连接
-    /// </summary>
-    Server
-}
 
 /// <summary>
 /// 上游连接配置选项

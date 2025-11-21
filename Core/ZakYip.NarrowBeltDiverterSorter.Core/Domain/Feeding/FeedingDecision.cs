@@ -1,25 +1,6 @@
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Domain;
+
 namespace ZakYip.NarrowBeltDiverterSorter.Core.Domain.Feeding;
-
-/// <summary>
-/// 供包决策结果
-/// </summary>
-public enum FeedingDecision
-{
-    /// <summary>
-    /// 允许创建包裹
-    /// </summary>
-    Allow,
-
-    /// <summary>
-    /// 建议延迟创建包裹（降速模式）
-    /// </summary>
-    Delay,
-
-    /// <summary>
-    /// 拒绝创建包裹（暂停模式）
-    /// </summary>
-    Reject
-}
 
 /// <summary>
 /// 供包决策结果详情

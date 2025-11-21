@@ -1,6 +1,6 @@
 using System.ComponentModel;
 
-namespace ZakYip.NarrowBeltDiverterSorter.Core.Domain;
+namespace ZakYip.NarrowBeltDiverterSorter.Core.Enums.Domain;
 
 /// <summary>
 /// 系统运行状态
