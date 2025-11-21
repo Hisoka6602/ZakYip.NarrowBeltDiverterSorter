@@ -1,6 +1,6 @@
+using ZakYip.NarrowBeltDiverterSorter.Core.Configuration;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Sorting;
-using ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Infrastructure;
 

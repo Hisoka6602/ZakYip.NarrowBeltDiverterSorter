@@ -24,6 +24,7 @@ using ZakYip.NarrowBeltDiverterSorter.Ingress.Chute;
 using ZakYip.NarrowBeltDiverterSorter.Core.Configuration;
 using ZakYip.NarrowBeltDiverterSorter.Infrastructure;
 using ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
+using ZakYip.NarrowBeltDiverterSorter.Infrastructure.LiteDb;
 using ZakYip.NarrowBeltDiverterSorter.Communication.Upstream;
 using ZakYip.NarrowBeltDiverterSorter.Host;
 using ZakYip.NarrowBeltDiverterSorter.Host.Extensions;
