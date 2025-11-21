@@ -3,6 +3,7 @@ using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Feeding;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Tracking;
 using ZakYip.NarrowBeltDiverterSorter.Core.Application;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Core.Tests.Feeding;
 

@@ -7,6 +7,8 @@ using ZakYip.NarrowBeltDiverterSorter.Execution.Mainline;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Vendors.Simulated;
 using ZakYip.NarrowBeltDiverterSorter.Simulation;
 using ZakYip.NarrowBeltDiverterSorter.Simulation.Fakes;
+using FakeMainLineDrivePortFromSim = ZakYip.NarrowBeltDiverterSorter.Simulation.Fakes.FakeMainLineDrivePort;
+using FakeMainLineFeedbackPortFromSim = ZakYip.NarrowBeltDiverterSorter.Simulation.Fakes.FakeMainLineFeedbackPort;
 
 namespace ZakYip.NarrowBeltDiverterSorter.E2ETests;
 
@@ -29,8 +31,8 @@ public class MainLineSpeedOscillationTests
         const int tickIntervalMs = 100; // 每个tick间隔100ms
         
         // 创建fake硬件
-        var fakeMainLineDrive = new FakeMainLineDrivePort();
-        var fakeMainLineFeedback = new FakeMainLineFeedbackPort(fakeMainLineDrive);
+        var fakeMainLineDrive = new FakeMainLineDrivePortFromSim();
+        var fakeMainLineFeedback = new FakeMainLineFeedbackPortFromSim(fakeMainLineDrive);
         
         // 创建设定点提供者
         var setpointProvider = new SimulationMainLineSetpoint();
@@ -127,8 +129,8 @@ public class MainLineSpeedOscillationTests
     public async Task FakeMainLineFeedback_ShouldProvide_FirstOrderInertia()
     {
         // Arrange
-        var fakeMainLineDrive = new FakeMainLineDrivePort();
-        var fakeMainLineFeedback = new FakeMainLineFeedbackPort(fakeMainLineDrive);
+        var fakeMainLineDrive = new FakeMainLineDrivePortFromSim();
+        var fakeMainLineFeedback = new FakeMainLineFeedbackPortFromSim(fakeMainLineDrive);
         
         await fakeMainLineDrive.StartAsync();
         await fakeMainLineDrive.SetTargetSpeedAsync(1000.0);
@@ -174,8 +176,8 @@ public class MainLineSpeedOscillationTests
     public async Task MainLine_WhenSetpointDisabled_ShouldDecelerateSmooth()
     {
         // Arrange
-        var fakeMainLineDrive = new FakeMainLineDrivePort();
-        var fakeMainLineFeedback = new FakeMainLineFeedbackPort(fakeMainLineDrive);
+        var fakeMainLineDrive = new FakeMainLineDrivePortFromSim();
+        var fakeMainLineFeedback = new FakeMainLineFeedbackPortFromSim(fakeMainLineDrive);
         var setpointProvider = new SimulationMainLineSetpoint();
         
         var controlOptions = Options.Create(new MainLineControlOptions

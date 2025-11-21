@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Host.Contracts.API;
 

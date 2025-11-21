@@ -9,4 +9,8 @@
     <WarningsAsErrors>CS1591</WarningsAsErrors>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\Core\ZakYip.NarrowBeltDiverterSorter.Core\ZakYip.NarrowBeltDiverterSorter.Core.csproj" />
+  </ItemGroup>
+
 </Project>

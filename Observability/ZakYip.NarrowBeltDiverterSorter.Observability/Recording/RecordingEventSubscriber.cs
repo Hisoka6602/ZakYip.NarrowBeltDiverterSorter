@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Observability.Events;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Observability.Recording;
 

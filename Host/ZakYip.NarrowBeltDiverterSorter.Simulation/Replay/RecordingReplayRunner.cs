@@ -3,6 +3,7 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using ZakYip.NarrowBeltDiverterSorter.Observability;
 using ZakYip.NarrowBeltDiverterSorter.Observability.Recording;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Simulation.Replay;
 

@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums;
 namespace ZakYip.NarrowBeltDiverterSorter.Core.Enums;
 public enum ParcelFailureReason
 {

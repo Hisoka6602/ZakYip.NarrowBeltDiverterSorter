@@ -10,6 +10,7 @@ using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Tracking;
 using ZakYip.NarrowBeltDiverterSorter.Simulation.Fakes;
 using ZakYip.NarrowBeltDiverterSorter.Simulation.Options;
 using ZakYip.NarrowBeltDiverterSorter.UpstreamContracts.Models;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Simulation.Scenarios;
 

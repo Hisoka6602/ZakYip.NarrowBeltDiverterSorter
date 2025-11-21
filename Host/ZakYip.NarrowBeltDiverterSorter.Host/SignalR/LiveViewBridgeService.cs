@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using ZakYip.NarrowBeltDiverterSorter.Observability;
 using ZakYip.NarrowBeltDiverterSorter.Observability.LiveView;
 using ZakYip.NarrowBeltDiverterSorter.Observability.Events;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Host.SignalR;
 

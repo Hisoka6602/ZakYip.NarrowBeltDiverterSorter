@@ -4,6 +4,7 @@ using ZakYip.NarrowBeltDiverterSorter.Core.Domain.MainLine;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Parcels;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Sorting;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Tracking;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Execution.Sorting;
 

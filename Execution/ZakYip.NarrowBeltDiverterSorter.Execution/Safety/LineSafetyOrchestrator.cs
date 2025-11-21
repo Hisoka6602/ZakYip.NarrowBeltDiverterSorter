@@ -6,6 +6,7 @@ using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Mainline;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Vendors.Simulated;
 using ZakYip.NarrowBeltDiverterSorter.Observability;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Execution.Safety;
 
