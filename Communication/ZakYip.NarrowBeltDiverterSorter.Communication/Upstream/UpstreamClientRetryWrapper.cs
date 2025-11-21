@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Communication;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Communication.Upstream;
 

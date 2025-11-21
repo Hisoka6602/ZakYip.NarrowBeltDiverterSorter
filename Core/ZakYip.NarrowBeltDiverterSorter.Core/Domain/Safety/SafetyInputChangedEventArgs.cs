@@ -1,3 +1,5 @@
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Domain;
+
 namespace ZakYip.NarrowBeltDiverterSorter.Core.Domain.Safety;
 
 /// <summary>
@@ -24,30 +26,4 @@ public record class SafetyInputChangedEventArgs
     /// 事件发生时间（本地时间）
     /// </summary>
     public DateTimeOffset OccurredAt { get; init; } = DateTimeOffset.Now;
-}
-
-/// <summary>
-/// 安全输入类型
-/// </summary>
-public enum SafetyInputType
-{
-    /// <summary>
-    /// 急停按钮
-    /// </summary>
-    EmergencyStop,
-
-    /// <summary>
-    /// 安全门
-    /// </summary>
-    SafetyDoor,
-
-    /// <summary>
-    /// 驱动故障信号
-    /// </summary>
-    DriveFault,
-
-    /// <summary>
-    /// 外部联锁
-    /// </summary>
-    Interlock
 }

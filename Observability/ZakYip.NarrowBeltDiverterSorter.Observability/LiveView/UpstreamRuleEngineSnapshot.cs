@@ -1,4 +1,5 @@
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Upstream;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Domain;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Observability.LiveView;
 

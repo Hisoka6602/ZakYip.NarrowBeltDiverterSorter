@@ -1,6 +1,6 @@
 using System.ComponentModel;
 
-namespace ZakYip.NarrowBeltDiverterSorter.Core.Domain.SystemState;
+namespace ZakYip.NarrowBeltDiverterSorter.Core.Enums.Domain;
 
 /// <summary>
 /// 系统故障代码枚举

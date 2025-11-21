@@ -3,6 +3,7 @@ using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Parcels;
 using ZakYip.NarrowBeltDiverterSorter.Core.Tests.Fakes;
 using ZakYip.NarrowBeltDiverterSorter.Core.Enums;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Domain;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Core.Tests.Parcels;
 

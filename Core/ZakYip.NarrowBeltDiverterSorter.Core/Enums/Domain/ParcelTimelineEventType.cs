@@ -1,6 +1,6 @@
 using System.ComponentModel;
 
-namespace ZakYip.NarrowBeltDiverterSorter.Core.Domain.Parcels;
+namespace ZakYip.NarrowBeltDiverterSorter.Core.Enums.Domain;
 
 /// <summary>
 /// 包裹生命周期时间线事件类型

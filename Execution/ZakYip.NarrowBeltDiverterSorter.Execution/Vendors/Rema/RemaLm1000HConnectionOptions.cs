@@ -1,36 +1,6 @@
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Execution;
+
 namespace ZakYip.NarrowBeltDiverterSorter.Execution.Vendors.Rema;
-
-/// <summary>
-/// 串口奇偶校验位
-/// </summary>
-public enum SerialParity
-{
-    /// <summary>无校验</summary>
-    None = 0,
-    /// <summary>奇校验</summary>
-    Odd = 1,
-    /// <summary>偶校验</summary>
-    Even = 2,
-    /// <summary>标记</summary>
-    Mark = 3,
-    /// <summary>空格</summary>
-    Space = 4
-}
-
-/// <summary>
-/// 串口停止位
-/// </summary>
-public enum SerialStopBits
-{
-    /// <summary>无停止位</summary>
-    None = 0,
-    /// <summary>1 个停止位</summary>
-    One = 1,
-    /// <summary>2 个停止位</summary>
-    Two = 2,
-    /// <summary>1.5 个停止位</summary>
-    OnePointFive = 3
-}
 
 /// <summary>
 /// 雷马 LM1000H Modbus RTU 连接配置参数

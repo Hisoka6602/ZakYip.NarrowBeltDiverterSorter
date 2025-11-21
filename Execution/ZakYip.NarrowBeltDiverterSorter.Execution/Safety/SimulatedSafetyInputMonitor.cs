@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Safety;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Domain;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Execution.Safety;
 
@@ -90,7 +91,7 @@ public class SimulatedSafetyInputMonitor : ISafetyInputMonitor
     /// </summary>
     public void SimulateInterlock(bool opened)
     {
-        SetSafetyInput("Interlock1", SafetyInputType.Interlock, !opened);
+        SetSafetyInput("Interlock1", SafetyInputType.ExternalInterlock, !opened);
         _logger.LogInformation("模拟联锁 {Status}", opened ? "断开" : "闭合");
     }
 

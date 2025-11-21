@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Upstream;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Domain;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Core.Application;
 

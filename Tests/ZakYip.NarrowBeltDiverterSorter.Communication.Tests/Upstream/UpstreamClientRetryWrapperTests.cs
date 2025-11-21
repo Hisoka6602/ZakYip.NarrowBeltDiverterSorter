@@ -1,4 +1,6 @@
 using Microsoft.Extensions.Logging;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Domain;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Communication;
 using Microsoft.Extensions.Options;
 using Moq;
 using Xunit;

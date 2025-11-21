@@ -4,6 +4,8 @@ using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Core.Configuration;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.MainLine;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Configuration;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Domain;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Runtime;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.SystemState;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Vendors.Rema;
