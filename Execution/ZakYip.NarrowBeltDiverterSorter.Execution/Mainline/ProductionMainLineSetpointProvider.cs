@@ -4,7 +4,7 @@ using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.MainLine;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.SystemState;
 
-namespace ZakYip.NarrowBeltDiverterSorter.Host;
+namespace ZakYip.NarrowBeltDiverterSorter.Execution.Mainline;
 
 /// <summary>
 /// 生产环境主线设定点提供者

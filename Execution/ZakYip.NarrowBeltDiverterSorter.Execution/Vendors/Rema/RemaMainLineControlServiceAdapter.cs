@@ -1,15 +1,14 @@
 using Microsoft.Extensions.Logging;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.MainLine;
-using ZakYip.NarrowBeltDiverterSorter.Execution.Vendors.Rema;
 
-namespace ZakYip.NarrowBeltDiverterSorter.Host;
+namespace ZakYip.NarrowBeltDiverterSorter.Execution.Vendors.Rema;
 
 /// <summary>
 /// RemaLm1000H 主线控制服务适配器
 /// 将 IMainLineControlService 接口适配到 RemaLm1000HMainLineDrive
 /// RemaLm1000H 驱动内置 PID 控制，不需要外部控制循环
 /// </summary>
-internal sealed class RemaMainLineControlServiceAdapter : IMainLineControlService
+public sealed class RemaMainLineControlServiceAdapter : IMainLineControlService
 {
     private readonly ILogger<RemaMainLineControlServiceAdapter> _logger;
     private readonly RemaLm1000HMainLineDrive _drive;
