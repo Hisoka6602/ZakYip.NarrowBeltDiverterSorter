@@ -159,15 +159,15 @@ public class DependencyInjectionValidationTests
         services.AddLogging(builder => builder.AddConsole().SetMinimumLevel(LogLevel.Warning));
         
         var dbPath = Path.Combine(Path.GetTempPath(), $"di-test-{Guid.NewGuid()}.db");
-        var configStore = new LiteDbSorterConfigurationStore(
-            services.BuildServiceProvider().GetRequiredService<ILogger<LiteDbSorterConfigurationStore>>(), 
-            dbPath);
         
-        // 注册 ISorterConfigurationStore
-        services.AddSingleton<ISorterConfigurationStore>(configStore);
+        // 注册 ISorterConfigurationStore，使用 factory pattern
+        services.AddSingleton<ISorterConfigurationStore>(sp =>
+            new LiteDbSorterConfigurationStore(sp.GetRequiredService<ILogger<LiteDbSorterConfigurationStore>>(), dbPath));
         
         // 注册 IChuteTransmitterConfigurationPort（使用同一个实例）
-        services.AddSingleton<IChuteTransmitterConfigurationPort>(configStore);
+        services.AddSingleton<IChuteTransmitterConfigurationPort>(sp => 
+            sp.GetRequiredService<ISorterConfigurationStore>() as LiteDbSorterConfigurationStore
+                ?? throw new InvalidOperationException("ISorterConfigurationStore must be LiteDbSorterConfigurationStore"));
         
         // 注册控制器
         services.AddScoped<ChuteIoConfigurationController>();
@@ -182,7 +182,6 @@ public class DependencyInjectionValidationTests
         Assert.NotNull(controller);
         
         // 清理
-        configStore.Dispose();
         if (File.Exists(dbPath))
         {
             File.Delete(dbPath);
