@@ -15,6 +15,7 @@ using ZakYip.NarrowBeltDiverterSorter.Execution.Sorting;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Mainline;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Feeding;
 using ZakYip.NarrowBeltDiverterSorter.Core.Application;
+using ZakYip.NarrowBeltDiverterSorter.Host.Controllers.Configuration;
 
 namespace ZakYip.NarrowBeltDiverterSorter.E2ETests;
 
@@ -144,5 +145,84 @@ public class DependencyInjectionValidationTests
         
         // 验证异常消息提到了ICartRingConfigurationProvider
         Assert.Contains("ICartRingConfigurationProvider", exception.InnerException?.Message ?? exception.Message);
+    }
+
+    /// <summary>
+    /// 测试 ChuteIoConfigurationController 能够被正确构造
+    /// 验证修复后的控制器依赖注入配置正确
+    /// </summary>
+    [Fact]
+    public void ChuteIoConfigurationController_Should_BeConstructable()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        services.AddLogging(builder => builder.AddConsole().SetMinimumLevel(LogLevel.Warning));
+        
+        var dbPath = Path.Combine(Path.GetTempPath(), $"di-test-{Guid.NewGuid()}.db");
+        var configStore = new LiteDbSorterConfigurationStore(
+            new LoggerFactory().CreateLogger<LiteDbSorterConfigurationStore>(), 
+            dbPath);
+        
+        // 注册 ISorterConfigurationStore
+        services.AddSingleton<ISorterConfigurationStore>(configStore);
+        
+        // 注册 IChuteTransmitterConfigurationPort（使用同一个实例）
+        services.AddSingleton<IChuteTransmitterConfigurationPort>(configStore);
+        
+        // 注册控制器
+        services.AddScoped<ChuteIoConfigurationController>();
+        
+        // Act & Assert
+        using var serviceProvider = services.BuildServiceProvider(new ServiceProviderOptions
+        {
+            ValidateOnBuild = true
+        });
+        
+        var controller = serviceProvider.GetRequiredService<ChuteIoConfigurationController>();
+        Assert.NotNull(controller);
+        
+        // 清理
+        configStore.Dispose();
+        if (File.Exists(dbPath))
+        {
+            File.Delete(dbPath);
+        }
+    }
+
+    /// <summary>
+    /// 测试 UpstreamRoutingSettingsController 能够被正确构造
+    /// 验证修复后的控制器不再需要具体类型转换
+    /// </summary>
+    [Fact]
+    public void UpstreamRoutingSettingsController_Should_BeConstructable()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        services.AddLogging(builder => builder.AddConsole().SetMinimumLevel(LogLevel.Warning));
+        
+        var dbPath = Path.Combine(Path.GetTempPath(), $"di-test-{Guid.NewGuid()}.db");
+        services.AddSingleton<ISorterConfigurationStore>(sp =>
+            new LiteDbSorterConfigurationStore(sp.GetRequiredService<ILogger<LiteDbSorterConfigurationStore>>(), dbPath));
+        
+        // 注册 IUpstreamRoutingConfigProvider
+        services.AddSingleton<IUpstreamRoutingConfigProvider, LiteDbUpstreamRoutingConfigProvider>();
+        
+        // 注册控制器
+        services.AddScoped<UpstreamRoutingSettingsController>();
+        
+        // Act & Assert
+        using var serviceProvider = services.BuildServiceProvider(new ServiceProviderOptions
+        {
+            ValidateOnBuild = true
+        });
+        
+        var controller = serviceProvider.GetRequiredService<UpstreamRoutingSettingsController>();
+        Assert.NotNull(controller);
+        
+        // 清理
+        if (File.Exists(dbPath))
+        {
+            File.Delete(dbPath);
+        }
     }
 }
