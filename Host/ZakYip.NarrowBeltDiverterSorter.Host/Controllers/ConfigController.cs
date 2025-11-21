@@ -3,6 +3,7 @@ using ZakYip.NarrowBeltDiverterSorter.Communication.Upstream;
 using ZakYip.NarrowBeltDiverterSorter.Core.Configuration;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Feeding;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.MainLine;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Domain;
 using ZakYip.NarrowBeltDiverterSorter.Host.Contracts.Configuration;
 using ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
 using DTO = ZakYip.NarrowBeltDiverterSorter.Host.DTOs;

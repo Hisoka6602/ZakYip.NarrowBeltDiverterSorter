@@ -2,6 +2,8 @@ using ZakYip.NarrowBeltDiverterSorter.Core.Configuration;
 using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Core.Application;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Feeding;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Configuration;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Domain;
 using ZakYip.NarrowBeltDiverterSorter.Observability.Events;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Host;
@@ -66,7 +68,7 @@ public class ParcelLoadCoordinatorWorker : BackgroundService
                 _timelineService.Append(new Core.Domain.Parcels.ParcelTimelineEventArgs
                 {
                     ParcelId = eventArgs.ParcelId,
-                    EventType = Core.Domain.Parcels.ParcelTimelineEventType.LoadedToCart,
+                    EventType = ParcelTimelineEventType.LoadedToCart,
                     OccurredAt = eventArgs.LoadedAt,
                     CartId = eventArgs.CartId,
                     Note = $"包裹装载到小车 {eventArgs.CartId}"
@@ -83,7 +85,7 @@ public class ParcelLoadCoordinatorWorker : BackgroundService
                 _timelineService.Append(new Core.Domain.Parcels.ParcelTimelineEventArgs
                 {
                     ParcelId = eventArgs.ParcelId,
-                    EventType = Core.Domain.Parcels.ParcelTimelineEventType.LoadedToCart,
+                    EventType = ParcelTimelineEventType.LoadedToCart,
                     OccurredAt = eventArgs.LoadedAt,
                     CartId = eventArgs.CartId,
                     Note = $"包裹装载到小车 {eventArgs.CartId}"
