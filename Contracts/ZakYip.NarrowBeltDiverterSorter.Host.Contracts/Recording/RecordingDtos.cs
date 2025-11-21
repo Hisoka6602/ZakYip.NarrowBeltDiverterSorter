@@ -15,7 +15,7 @@ namespace ZakYip.NarrowBeltDiverterSorter.Host.Contracts.Recording;
 ///   "description": "测试1000包裹高负载场景"
 /// }
 /// </example>
-public class StartRecordingRequest
+public record class StartRecordingRequest
 {
     /// <summary>
     /// 会话名称（必填）
@@ -50,7 +50,7 @@ public class StartRecordingRequest
 ///   "eventCount": 15234
 /// }
 /// </example>
-public class RecordingSessionResponse
+public record class RecordingSessionResponse
 {
     /// <summary>
     /// 会话唯一标识符
@@ -140,7 +140,7 @@ public enum ReplayMode
 ///   "fixedIntervalMs": 100
 /// }
 /// </example>
-public class ReplayRequest
+public record class ReplayRequest
 {
     /// <summary>
     /// 回放模式
@@ -186,7 +186,7 @@ public class ReplayRequest
 ///   "message": "回放已开始"
 /// }
 /// </example>
-public class ReplayResponse
+public record class ReplayResponse
 {
     /// <summary>
     /// 会话唯一标识符
