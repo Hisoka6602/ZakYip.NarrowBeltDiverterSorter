@@ -305,17 +305,17 @@ builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Communication.Upst
     // 获取连接地址
     string? connectionAddress = upstreamOptions.Mode switch
     {
-        ZakYip.NarrowBeltDiverterSorter.Communication.Upstream.UpstreamMode.Mqtt => 
+        UpstreamMode.Mqtt => 
             upstreamOptions.Mqtt != null ? $"{upstreamOptions.Mqtt.Broker}:{upstreamOptions.Mqtt.Port}" : null,
-        ZakYip.NarrowBeltDiverterSorter.Communication.Upstream.UpstreamMode.Tcp => 
+        UpstreamMode.Tcp => 
             upstreamOptions.Tcp != null ? $"{upstreamOptions.Tcp.Host}:{upstreamOptions.Tcp.Port}" : null,
         _ => null
     };
     
     // 如果是客户端模式且启用重试，包装为重试客户端
     ZakYip.NarrowBeltDiverterSorter.Communication.Upstream.ISortingRuleEngineClient wrappedClient;
-    if (upstreamOptions.Role == ZakYip.NarrowBeltDiverterSorter.Communication.Upstream.UpstreamRole.Client 
-        && upstreamOptions.Mode != ZakYip.NarrowBeltDiverterSorter.Communication.Upstream.UpstreamMode.Disabled)
+    if (upstreamOptions.Role == UpstreamRole.Client 
+        && upstreamOptions.Mode != UpstreamMode.Disabled)
     {
         var optionsMonitor = serviceProvider.GetRequiredService<IOptionsMonitor<ZakYip.NarrowBeltDiverterSorter.Communication.Upstream.UpstreamOptions>>();
         var retryLogger = serviceProvider.GetRequiredService<ILoggerFactory>()
@@ -342,7 +342,7 @@ builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Communication.Upst
         logger);
     
     // 如果不是 Disabled 模式，尝试连接
-    if (upstreamOptions.Mode != ZakYip.NarrowBeltDiverterSorter.Communication.Upstream.UpstreamMode.Disabled)
+    if (upstreamOptions.Mode != UpstreamMode.Disabled)
     {
         _ = client.ConnectAsync().ConfigureAwait(false).GetAwaiter().GetResult();
     }
@@ -354,7 +354,7 @@ builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Communication.Upst
             var eventArgs = new ZakYip.NarrowBeltDiverterSorter.Core.Domain.Upstream.UpstreamRuleEngineStatusChangedEventArgs
             {
                 Mode = upstreamOptions.Mode.ToString(),
-                Status = ZakYip.NarrowBeltDiverterSorter.Core.Domain.Upstream.UpstreamConnectionStatus.Disabled,
+                Status = UpstreamConnectionStatus.Disabled,
                 ConnectionAddress = null
             };
             _ = eventBus.PublishAsync(eventArgs, CancellationToken.None);

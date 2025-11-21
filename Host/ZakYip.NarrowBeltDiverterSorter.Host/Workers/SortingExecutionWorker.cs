@@ -5,6 +5,8 @@ using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Carts;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Parcels;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Sorting;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Configuration;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Domain;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Mainline;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Vendors.Simulated;
 using ZakYip.NarrowBeltDiverterSorter.UpstreamContracts.Models;
@@ -134,7 +136,7 @@ public class SortingExecutionWorker : BackgroundService
             _timelineService.Append(new Core.Domain.Parcels.ParcelTimelineEventArgs
             {
                 ParcelId = plan.ParcelId.Value,
-                EventType = Core.Domain.Parcels.ParcelTimelineEventType.ApproachingChute,
+                EventType = ParcelTimelineEventType.ApproachingChute,
                 OccurredAt = DateTimeOffset.Now,
                 ChuteId = plan.ChuteId.Value,
                 CartId = plan.CartId.Value,
@@ -180,7 +182,7 @@ public class SortingExecutionWorker : BackgroundService
                     _timelineService.Append(new Core.Domain.Parcels.ParcelTimelineEventArgs
                     {
                         ParcelId = plan.ParcelId.Value,
-                        EventType = Core.Domain.Parcels.ParcelTimelineEventType.DivertFailed,
+                        EventType = ParcelTimelineEventType.DivertFailed,
                         OccurredAt = DateTimeOffset.Now,
                         ChuteId = plan.ChuteId.Value,
                         CartId = plan.CartId.Value,
@@ -214,7 +216,7 @@ public class SortingExecutionWorker : BackgroundService
                 _timelineService.Append(new Core.Domain.Parcels.ParcelTimelineEventArgs
                 {
                     ParcelId = plan.ParcelId.Value,
-                    EventType = Core.Domain.Parcels.ParcelTimelineEventType.DivertedToChute,
+                    EventType = ParcelTimelineEventType.DivertedToChute,
                     OccurredAt = DateTimeOffset.Now,
                     ChuteId = plan.ChuteId.Value,
                     CartId = plan.CartId.Value,
@@ -225,7 +227,7 @@ public class SortingExecutionWorker : BackgroundService
                 _timelineService.Append(new Core.Domain.Parcels.ParcelTimelineEventArgs
                 {
                     ParcelId = plan.ParcelId.Value,
-                    EventType = Core.Domain.Parcels.ParcelTimelineEventType.Completed,
+                    EventType = ParcelTimelineEventType.Completed,
                     OccurredAt = DateTimeOffset.Now,
                     ChuteId = plan.ChuteId.Value,
                     Note = "包裹分拣流程完成"
@@ -266,7 +268,7 @@ public class SortingExecutionWorker : BackgroundService
             _timelineService.Append(new Core.Domain.Parcels.ParcelTimelineEventArgs
             {
                 ParcelId = plan.ParcelId.Value,
-                EventType = Core.Domain.Parcels.ParcelTimelineEventType.DivertFailed,
+                EventType = ParcelTimelineEventType.DivertFailed,
                 OccurredAt = DateTimeOffset.Now,
                 ChuteId = plan.ChuteId.Value,
                 CartId = plan.CartId.Value,

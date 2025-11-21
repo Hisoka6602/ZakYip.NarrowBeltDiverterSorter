@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.SystemState;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Domain;
 using ZakYip.NarrowBeltDiverterSorter.Host.Contracts;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Host.Controllers;
@@ -68,7 +69,7 @@ public class SystemFaultsController : ControllerBase
     public ActionResult<ResetFaultsResponse> ResetFaults()
     {
         // 检查系统状态
-        if (_runStateService.Current != Core.Domain.SystemRunState.Fault)
+        if (_runStateService.Current != SystemRunState.Fault)
         {
             _logger.LogWarning("尝试复位故障，但系统不在故障状态。当前状态: {State}", _runStateService.Current);
             return BadRequest(new FaultErrorResponse

@@ -1,5 +1,6 @@
 using ZakYip.NarrowBeltDiverterSorter.Communication.Upstream;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Sorting;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Communication;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Host;
 
