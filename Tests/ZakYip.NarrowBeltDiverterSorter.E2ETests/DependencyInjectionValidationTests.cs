@@ -160,7 +160,7 @@ public class DependencyInjectionValidationTests
         
         var dbPath = Path.Combine(Path.GetTempPath(), $"di-test-{Guid.NewGuid()}.db");
         var configStore = new LiteDbSorterConfigurationStore(
-            new LoggerFactory().CreateLogger<LiteDbSorterConfigurationStore>(), 
+            services.BuildServiceProvider().GetRequiredService<ILogger<LiteDbSorterConfigurationStore>>(), 
             dbPath);
         
         // 注册 ISorterConfigurationStore

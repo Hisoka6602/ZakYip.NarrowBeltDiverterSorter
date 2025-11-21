@@ -13,7 +13,13 @@
 **允许**: Controller 只能依赖：
 - Application 层的应用服务接口
 - `Core.Abstractions` / `Core.Configuration` 中的领域契约接口
-- `Infrastructure` 命名空间中的**接口**（interface）- 作为过渡方案，但长期应将这些接口迁移到 Core 层
+
+**过渡期特例**: 
+- 在接口尚未迁移到 Core 层之前，允许依赖 `Infrastructure` 命名空间中的**接口**（interface），但：
+  - 必须在代码注释中标记为"待迁移"
+  - 必须有对应的 issue 追踪接口迁移工作
+  - 不允许依赖 Infrastructure 的具体类型
+  - 示例：`IAppConfigurationStore`（标记为待迁移到 Core.Abstractions）
 
 **示例**:
 ```csharp
@@ -73,7 +79,11 @@ private Dictionary<string, int> _data = new();
 
 lock (_lock)
 {
-    _data.Add(key, value);
+    // Dictionary.Add 可能抛出异常
+    if (!_data.ContainsKey(key))
+    {
+        _data.Add(key, value);
+    }
 }
 ```
 
@@ -82,7 +92,7 @@ lock (_lock)
 // ✅ 使用线程安全集合
 private readonly ConcurrentDictionary<string, int> _data = new();
 
-_data.TryAdd(key, value);
+_data.TryAdd(key, value); // 线程安全，不会抛出异常
 ```
 
 **线程安全集合类型**:
