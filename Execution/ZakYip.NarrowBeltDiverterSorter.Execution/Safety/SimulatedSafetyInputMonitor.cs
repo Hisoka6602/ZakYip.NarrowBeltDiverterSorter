@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Safety;
 
@@ -10,7 +11,7 @@ namespace ZakYip.NarrowBeltDiverterSorter.Execution.Safety;
 public class SimulatedSafetyInputMonitor : ISafetyInputMonitor
 {
     private readonly ILogger<SimulatedSafetyInputMonitor> _logger;
-    private readonly Dictionary<string, bool> _safetyInputStates = new();
+    private readonly ConcurrentDictionary<string, bool> _safetyInputStates = new();
     private bool _isMonitoring;
 
     public SimulatedSafetyInputMonitor(ILogger<SimulatedSafetyInputMonitor> logger)

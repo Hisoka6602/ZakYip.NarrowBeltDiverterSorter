@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Safety;
@@ -12,18 +13,20 @@ namespace ZakYip.NarrowBeltDiverterSorter.Execution.Safety;
 /// 线体安全编排器实现
 /// 负责统一管理线体的安全状态和运行状态，协调各子系统的安全响应
 /// </summary>
-public class LineSafetyOrchestrator : ILineSafetyOrchestrator
+public class LineSafetyOrchestrator : ILineSafetyOrchestrator, IDisposable
 {
     private readonly IMainLineDrive _mainLineDrive;
     private readonly IEventBus _eventBus;
     private readonly ILogger<LineSafetyOrchestrator> _logger;
-    private readonly object _stateLock = new();
+    private readonly SemaphoreSlim _stateLock = new(1, 1);
     
-    private LineRunState _currentLineRunState = LineRunState.Idle;
-    private SafetyState _currentSafetyState = SafetyState.Safe;
+    // 使用 volatile 确保跨线程可见性
+    private volatile LineRunState _currentLineRunState = LineRunState.Idle;
+    private volatile SafetyState _currentSafetyState = SafetyState.Safe;
     
-    // 安全输入状态追踪
-    private readonly Dictionary<string, bool> _safetyInputStates = new();
+    // 安全输入状态追踪 - 使用线程安全集合
+    private readonly ConcurrentDictionary<string, bool> _safetyInputStates = new();
+    private bool _disposed;
 
     public LineSafetyOrchestrator(
         IMainLineDrive mainLineDrive,
@@ -35,31 +38,14 @@ public class LineSafetyOrchestrator : ILineSafetyOrchestrator
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    public LineRunState CurrentLineRunState
-    {
-        get
-        {
-            lock (_stateLock)
-            {
-                return _currentLineRunState;
-            }
-        }
-    }
+    public LineRunState CurrentLineRunState => _currentLineRunState;
 
-    public SafetyState CurrentSafetyState
-    {
-        get
-        {
-            lock (_stateLock)
-            {
-                return _currentSafetyState;
-            }
-        }
-    }
+    public SafetyState CurrentSafetyState => _currentSafetyState;
 
     public async Task<bool> RequestStartAsync(CancellationToken cancellationToken = default)
     {
-        lock (_stateLock)
+        await _stateLock.WaitAsync(cancellationToken);
+        try
         {
             // 只有在 Idle 或 Recovering 状态才能启动
             if (_currentLineRunState != LineRunState.Idle && _currentLineRunState != LineRunState.Recovering)
@@ -78,6 +64,10 @@ public class LineSafetyOrchestrator : ILineSafetyOrchestrator
             // 转换到 Starting 状态
             TransitionToState(LineRunState.Starting, "开始启动流程");
         }
+        finally
+        {
+            _stateLock.Release();
+        }
 
         try
         {
@@ -87,17 +77,27 @@ public class LineSafetyOrchestrator : ILineSafetyOrchestrator
             
             if (!initResult)
             {
-                lock (_stateLock)
+                await _stateLock.WaitAsync(cancellationToken);
+                try
                 {
                     TransitionToState(LineRunState.Faulted, "主线驱动初始化失败");
+                }
+                finally
+                {
+                    _stateLock.Release();
                 }
                 return false;
             }
 
-            lock (_stateLock)
+            await _stateLock.WaitAsync(cancellationToken);
+            try
             {
                 // 转换到 Running 状态
                 TransitionToState(LineRunState.Running, "启动完成");
+            }
+            finally
+            {
+                _stateLock.Release();
             }
 
             _logger.LogInformation("线体已成功启动");
@@ -106,9 +106,14 @@ public class LineSafetyOrchestrator : ILineSafetyOrchestrator
         catch (Exception ex)
         {
             _logger.LogError(ex, "启动过程中发生异常");
-            lock (_stateLock)
+            await _stateLock.WaitAsync(CancellationToken.None);
+            try
             {
                 TransitionToState(LineRunState.Faulted, $"启动异常: {ex.Message}");
+            }
+            finally
+            {
+                _stateLock.Release();
             }
             return false;
         }
@@ -116,7 +121,8 @@ public class LineSafetyOrchestrator : ILineSafetyOrchestrator
 
     public async Task<bool> RequestStopAsync(CancellationToken cancellationToken = default)
     {
-        lock (_stateLock)
+        await _stateLock.WaitAsync(cancellationToken);
+        try
         {
             // 只有在 Running 或 Paused 状态才能正常停机
             if (_currentLineRunState != LineRunState.Running && _currentLineRunState != LineRunState.Paused)
@@ -128,6 +134,10 @@ public class LineSafetyOrchestrator : ILineSafetyOrchestrator
             // 转换到 Stopping 状态
             TransitionToState(LineRunState.Stopping, "开始停机流程");
         }
+        finally
+        {
+            _stateLock.Release();
+        }
 
         try
         {
@@ -137,17 +147,27 @@ public class LineSafetyOrchestrator : ILineSafetyOrchestrator
             
             if (!shutdownResult)
             {
-                lock (_stateLock)
+                await _stateLock.WaitAsync(cancellationToken);
+                try
                 {
                     TransitionToState(LineRunState.Faulted, "主线驱动关闭失败");
+                }
+                finally
+                {
+                    _stateLock.Release();
                 }
                 return false;
             }
 
-            lock (_stateLock)
+            await _stateLock.WaitAsync(cancellationToken);
+            try
             {
                 // 转换到 Idle 状态
                 TransitionToState(LineRunState.Idle, "停机完成");
+            }
+            finally
+            {
+                _stateLock.Release();
             }
 
             _logger.LogInformation("线体已成功停止");
@@ -156,73 +176,89 @@ public class LineSafetyOrchestrator : ILineSafetyOrchestrator
         catch (Exception ex)
         {
             _logger.LogError(ex, "停机过程中发生异常");
-            lock (_stateLock)
+            await _stateLock.WaitAsync(CancellationToken.None);
+            try
             {
                 TransitionToState(LineRunState.Faulted, $"停机异常: {ex.Message}");
+            }
+            finally
+            {
+                _stateLock.Release();
             }
             return false;
         }
     }
 
-    public Task<bool> RequestPauseAsync(CancellationToken cancellationToken = default)
+    public async Task<bool> RequestPauseAsync(CancellationToken cancellationToken = default)
     {
-        lock (_stateLock)
+        await _stateLock.WaitAsync(cancellationToken);
+        try
         {
             // 只有在 Running 状态才能暂停
             if (_currentLineRunState != LineRunState.Running)
             {
                 _logger.LogWarning("无法暂停: 当前状态 {CurrentState} 不允许暂停", _currentLineRunState);
-                return Task.FromResult(false);
+                return false;
             }
 
             // 转换到 Paused 状态
             TransitionToState(LineRunState.Paused, "业务暂停");
             _logger.LogInformation("线体已暂停");
-            return Task.FromResult(true);
+            return true;
+        }
+        finally
+        {
+            _stateLock.Release();
         }
     }
 
-    public Task<bool> RequestResumeAsync(CancellationToken cancellationToken = default)
+    public async Task<bool> RequestResumeAsync(CancellationToken cancellationToken = default)
     {
-        lock (_stateLock)
+        await _stateLock.WaitAsync(cancellationToken);
+        try
         {
             // 只有在 Paused 状态才能恢复
             if (_currentLineRunState != LineRunState.Paused)
             {
                 _logger.LogWarning("无法恢复: 当前状态 {CurrentState} 不允许恢复", _currentLineRunState);
-                return Task.FromResult(false);
+                return false;
             }
 
             // 检查安全状态
             if (_currentSafetyState != SafetyState.Safe)
             {
                 _logger.LogWarning("无法恢复: 安全状态 {SafetyState} 不满足恢复条件", _currentSafetyState);
-                return Task.FromResult(false);
+                return false;
             }
 
             // 转换到 Running 状态
             TransitionToState(LineRunState.Running, "从暂停恢复");
             _logger.LogInformation("线体已从暂停恢复");
-            return Task.FromResult(true);
+            return true;
+        }
+        finally
+        {
+            _stateLock.Release();
         }
     }
 
-    public Task<bool> AcknowledgeFaultAsync(CancellationToken cancellationToken = default)
+    public async Task<bool> AcknowledgeFaultAsync(CancellationToken cancellationToken = default)
     {
-        lock (_stateLock)
+        await _stateLock.WaitAsync(cancellationToken);
+        try
         {
             // 只有在 Faulted 或 SafetyStopped 状态才能确认故障
             if (_currentLineRunState != LineRunState.Faulted && _currentLineRunState != LineRunState.SafetyStopped)
             {
                 _logger.LogWarning("无法确认故障: 当前状态 {CurrentState} 不是故障状态", _currentLineRunState);
-                return Task.FromResult(false);
+                return false;
             }
 
             // 检查安全状态是否已恢复
             if (_currentSafetyState != SafetyState.Safe)
             {
                 _logger.LogWarning("无法确认故障: 安全状态 {SafetyState} 未恢复", _currentSafetyState);
-                return Task.FromResult(false);
+                return false;
             }
 
             // 转换到 Recovering 状态
@@ -231,23 +267,28 @@ public class LineSafetyOrchestrator : ILineSafetyOrchestrator
             
             // 从 Recovering 直接进入 Idle，允许重新启动
             TransitionToState(LineRunState.Idle, "恢复完成");
-            return Task.FromResult(true);
+            return true;
+        }
+        finally
+        {
+            _stateLock.Release();
         }
     }
 
-    public void ReportSafetyInput(SafetyInputChangedEventArgs eventArgs)
+    public async void ReportSafetyInput(SafetyInputChangedEventArgs eventArgs)
     {
-        lock (_stateLock)
+        // 更新安全输入状态 - ConcurrentDictionary 已线程安全
+        _safetyInputStates[eventArgs.Source] = eventArgs.IsActive;
+
+        _logger.LogInformation(
+            "安全输入变化: {Source} ({InputType}) = {IsActive}",
+            eventArgs.Source,
+            eventArgs.InputType,
+            eventArgs.IsActive ? "安全" : "不安全");
+
+        await _stateLock.WaitAsync();
+        try
         {
-            // 更新安全输入状态
-            _safetyInputStates[eventArgs.Source] = eventArgs.IsActive;
-
-            _logger.LogInformation(
-                "安全输入变化: {Source} ({InputType}) = {IsActive}",
-                eventArgs.Source,
-                eventArgs.InputType,
-                eventArgs.IsActive ? "安全" : "不安全");
-
             // 计算新的安全状态
             var newSafetyState = CalculateSafetyState();
 
@@ -308,6 +349,10 @@ public class LineSafetyOrchestrator : ILineSafetyOrchestrator
                     });
                 }
             }
+        }
+        finally
+        {
+            _stateLock.Release();
         }
     }
 
@@ -375,5 +420,14 @@ public class LineSafetyOrchestrator : ILineSafetyOrchestrator
             OccurredAt = eventArgs.OccurredAt
         };
         _ = _eventBus.PublishAsync(observabilityEvent);
+    }
+
+    public void Dispose()
+    {
+        if (_disposed)
+            return;
+
+        _stateLock?.Dispose();
+        _disposed = true;
     }
 }

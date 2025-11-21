@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Microsoft.Extensions.Logging;
 using ZakYip.NarrowBeltDiverterSorter.Communication;
 using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
@@ -15,7 +16,7 @@ public class ChuteTransmitterDriver : IChuteTransmitterPort
     private readonly IFieldBusClient _fieldBusClient;
     private readonly ChuteMappingConfiguration _mappingConfiguration;
     private readonly ILogger<ChuteTransmitterDriver> _logger;
-    private readonly List<ChuteTransmitterBinding> _bindings = new();
+    private ImmutableList<ChuteTransmitterBinding> _bindings = ImmutableList<ChuteTransmitterBinding>.Empty;
 
     /// <summary>
     /// 创建格口发信器驱动实例
@@ -38,13 +39,18 @@ public class ChuteTransmitterDriver : IChuteTransmitterPort
     /// </summary>
     public void RegisterBindings(IEnumerable<ChuteTransmitterBinding> bindings)
     {
-        _bindings.Clear();
-        _bindings.AddRange(bindings);
-        _logger.LogInformation("已注册 {Count} 条格口发信器绑定配置", _bindings.Count);
+        // 使用不可变集合，通过原子替换实现线程安全
+        var newBindings = bindings?.ToImmutableList() ?? ImmutableList<ChuteTransmitterBinding>.Empty;
+        _bindings = newBindings;
+        _logger.LogInformation("已注册 {Count} 条格口发信器绑定配置", newBindings.Count);
     }
 
     /// <inheritdoc/>
-    public IReadOnlyList<ChuteTransmitterBinding> GetRegisteredBindings() => _bindings;
+    public IReadOnlyList<ChuteTransmitterBinding> GetRegisteredBindings()
+    {
+        // 不可变集合本身就是线程安全的，可直接返回
+        return _bindings;
+    }
 
     /// <inheritdoc/>
     public async Task OpenWindowAsync(ChuteId chuteId, TimeSpan openDuration, CancellationToken cancellationToken = default)
