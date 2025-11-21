@@ -13,7 +13,7 @@ namespace ZakYip.NarrowBeltDiverterSorter.Execution.Safety;
 /// 线体安全编排器实现
 /// 负责统一管理线体的安全状态和运行状态，协调各子系统的安全响应
 /// </summary>
-public class LineSafetyOrchestrator : ILineSafetyOrchestrator
+public class LineSafetyOrchestrator : ILineSafetyOrchestrator, IDisposable
 {
     private readonly IMainLineDrive _mainLineDrive;
     private readonly IEventBus _eventBus;
@@ -26,6 +26,7 @@ public class LineSafetyOrchestrator : ILineSafetyOrchestrator
     
     // 安全输入状态追踪 - 使用线程安全集合
     private readonly ConcurrentDictionary<string, bool> _safetyInputStates = new();
+    private bool _disposed;
 
     public LineSafetyOrchestrator(
         IMainLineDrive mainLineDrive,
@@ -274,7 +275,7 @@ public class LineSafetyOrchestrator : ILineSafetyOrchestrator
         }
     }
 
-    public void ReportSafetyInput(SafetyInputChangedEventArgs eventArgs)
+    public async void ReportSafetyInput(SafetyInputChangedEventArgs eventArgs)
     {
         // 更新安全输入状态 - ConcurrentDictionary 已线程安全
         _safetyInputStates[eventArgs.Source] = eventArgs.IsActive;
@@ -285,65 +286,73 @@ public class LineSafetyOrchestrator : ILineSafetyOrchestrator
             eventArgs.InputType,
             eventArgs.IsActive ? "安全" : "不安全");
 
-        // 计算新的安全状态
-        var newSafetyState = CalculateSafetyState();
-
-        // 如果安全状态变化，更新并通知
-        if (newSafetyState != _currentSafetyState)
+        await _stateLock.WaitAsync();
+        try
         {
-            var oldSafetyState = _currentSafetyState;
-            _currentSafetyState = newSafetyState;
+            // 计算新的安全状态
+            var newSafetyState = CalculateSafetyState();
 
-            var safetyEventArgs = new SafetyStateChangedEventArgs
+            // 如果安全状态变化，更新并通知
+            if (newSafetyState != _currentSafetyState)
             {
-                State = newSafetyState,
-                Source = eventArgs.Source,
-                Message = $"安全状态从 {oldSafetyState} 变更为 {newSafetyState}",
-                OccurredAt = eventArgs.OccurredAt
-            };
+                var oldSafetyState = _currentSafetyState;
+                _currentSafetyState = newSafetyState;
 
-            _logger.LogWarning(
-                "安全状态变化: {OldState} -> {NewState}, 源: {Source}",
-                oldSafetyState,
-                newSafetyState,
-                eventArgs.Source);
-
-            // 同时发布到事件总线 (Observability层事件)
-            var observabilitySafetyEvent = new Observability.Events.SafetyStateChangedEventArgs
-            {
-                State = newSafetyState.ToString(),
-                Source = eventArgs.Source,
-                Message = safetyEventArgs.Message,
-                OccurredAt = safetyEventArgs.OccurredAt
-            };
-            _ = _eventBus.PublishAsync(observabilitySafetyEvent);
-
-            // 如果安全状态变为不安全，且线体正在运行，触发安全停机
-            if (newSafetyState != SafetyState.Safe && 
-                (_currentLineRunState == LineRunState.Running || 
-                 _currentLineRunState == LineRunState.Paused ||
-                 _currentLineRunState == LineRunState.Starting))
-            {
-                var lineStateToTransition = newSafetyState == SafetyState.DriveFault 
-                    ? LineRunState.Faulted 
-                    : LineRunState.SafetyStopped;
-
-                TransitionToState(lineStateToTransition, $"因安全原因停机: {newSafetyState}");
-
-                // 异步执行紧急停机
-                _ = Task.Run(async () =>
+                var safetyEventArgs = new SafetyStateChangedEventArgs
                 {
-                    try
+                    State = newSafetyState,
+                    Source = eventArgs.Source,
+                    Message = $"安全状态从 {oldSafetyState} 变更为 {newSafetyState}",
+                    OccurredAt = eventArgs.OccurredAt
+                };
+
+                _logger.LogWarning(
+                    "安全状态变化: {OldState} -> {NewState}, 源: {Source}",
+                    oldSafetyState,
+                    newSafetyState,
+                    eventArgs.Source);
+
+                // 同时发布到事件总线 (Observability层事件)
+                var observabilitySafetyEvent = new Observability.Events.SafetyStateChangedEventArgs
+                {
+                    State = newSafetyState.ToString(),
+                    Source = eventArgs.Source,
+                    Message = safetyEventArgs.Message,
+                    OccurredAt = safetyEventArgs.OccurredAt
+                };
+                _ = _eventBus.PublishAsync(observabilitySafetyEvent);
+
+                // 如果安全状态变为不安全，且线体正在运行，触发安全停机
+                if (newSafetyState != SafetyState.Safe && 
+                    (_currentLineRunState == LineRunState.Running || 
+                     _currentLineRunState == LineRunState.Paused ||
+                     _currentLineRunState == LineRunState.Starting))
+                {
+                    var lineStateToTransition = newSafetyState == SafetyState.DriveFault 
+                        ? LineRunState.Faulted 
+                        : LineRunState.SafetyStopped;
+
+                    TransitionToState(lineStateToTransition, $"因安全原因停机: {newSafetyState}");
+
+                    // 异步执行紧急停机
+                    _ = Task.Run(async () =>
                     {
-                        _logger.LogWarning("执行紧急停机...");
-                        await _mainLineDrive.ShutdownAsync(CancellationToken.None);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "紧急停机过程中发生异常");
-                    }
-                });
+                        try
+                        {
+                            _logger.LogWarning("执行紧急停机...");
+                            await _mainLineDrive.ShutdownAsync(CancellationToken.None);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "紧急停机过程中发生异常");
+                        }
+                    });
+                }
             }
+        }
+        finally
+        {
+            _stateLock.Release();
         }
     }
 
@@ -411,5 +420,14 @@ public class LineSafetyOrchestrator : ILineSafetyOrchestrator
             OccurredAt = eventArgs.OccurredAt
         };
         _ = _eventBus.PublishAsync(observabilityEvent);
+    }
+
+    public void Dispose()
+    {
+        if (_disposed)
+            return;
+
+        _stateLock?.Dispose();
+        _disposed = true;
     }
 }

@@ -19,10 +19,10 @@ public class SimulatedSafetyInputMonitor : ISafetyInputMonitor
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         
         // 初始化默认安全输入状态（全部为安全状态）
-        _safetyInputStates.TryAdd("EmergencyStop1", true);
-        _safetyInputStates.TryAdd("SafetyDoor1", true);
-        _safetyInputStates.TryAdd("DriveFault1", true);
-        _safetyInputStates.TryAdd("Interlock1", true);
+        _safetyInputStates["EmergencyStop1"] = true;
+        _safetyInputStates["SafetyDoor1"] = true;
+        _safetyInputStates["DriveFault1"] = true;
+        _safetyInputStates["Interlock1"] = true;
     }
 
     public Task StartMonitoringAsync(CancellationToken cancellationToken = default)

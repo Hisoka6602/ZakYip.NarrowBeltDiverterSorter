@@ -43,7 +43,7 @@ public class ChuteIoMonitor : IIoMonitor
         // 初始化所有格口的状态为false
         foreach (var chuteId in _configuration.MonitoredChuteIds)
         {
-            _previousStates.TryAdd(chuteId, false);
+            _previousStates[chuteId] = false;
         }
     }
 
