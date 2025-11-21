@@ -31,3 +31,6 @@ jobs:
       
     - name: 运行测试
       run: dotnet test ZakYip.NarrowBeltDiverterSorter.sln -c Release --no-build --verbosity normal
+      
+    - name: 运行仿真测试（显式验证）
+      run: dotnet test Tests/ZakYip.NarrowBeltDiverterSorter.Simulator.Tests --no-build -c Release --verbosity normal

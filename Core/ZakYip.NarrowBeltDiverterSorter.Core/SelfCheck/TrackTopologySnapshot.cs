@@ -7,9 +7,17 @@ namespace ZakYip.NarrowBeltDiverterSorter.Core.SelfCheck;
 public sealed record TrackTopologySnapshot
 {
     /// <summary>
-    /// 配置的小车数量
+    /// 配置的小车数量（用于保持向后兼容）
     /// </summary>
     public required int CartCount { get; init; }
+
+    /// <summary>
+    /// 小车环上的总小车数量
+    /// &lt;= 0: 自动学习模式（尚未锁定，系统会自动检测并更新此值）
+    /// &gt; 0: 强制校验模式（已锁定，仅进行校验）
+    /// 优先使用此字段，如果为 0 则回退到 CartCount
+    /// </summary>
+    public int TotalCartCount { get; init; }
 
     /// <summary>
     /// 配置的小车节距（mm）

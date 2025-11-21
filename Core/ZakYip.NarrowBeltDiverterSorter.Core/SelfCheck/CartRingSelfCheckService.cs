@@ -42,8 +42,13 @@ public class CartRingSelfCheckService : ICartRingSelfCheckService
         // 计算平均节距
         decimal measuredPitchMm = CalculateAveragePitch(passEvents);
 
+        // 使用 TotalCartCount 如果 > 0，否则使用 CartCount（向后兼容）
+        int expectedCartCount = topologySnapshot.TotalCartCount > 0 
+            ? topologySnapshot.TotalCartCount 
+            : topologySnapshot.CartCount;
+
         // 判断小车数量是否匹配
-        bool isCartCountMatched = measuredCartCount == topologySnapshot.CartCount;
+        bool isCartCountMatched = measuredCartCount == expectedCartCount;
 
         // 判断节距是否在容忍范围内
         bool isPitchWithinTolerance = IsPitchWithinTolerance(
@@ -52,7 +57,7 @@ public class CartRingSelfCheckService : ICartRingSelfCheckService
 
         return new CartRingSelfCheckResult
         {
-            ExpectedCartCount = topologySnapshot.CartCount,
+            ExpectedCartCount = expectedCartCount,
             MeasuredCartCount = measuredCartCount,
             ExpectedPitchMm = topologySnapshot.CartSpacingMm,
             MeasuredPitchMm = measuredPitchMm,
@@ -66,9 +71,14 @@ public class CartRingSelfCheckService : ICartRingSelfCheckService
     /// </summary>
     private CartRingSelfCheckResult CreateEmptyResult(TrackTopologySnapshot topologySnapshot)
     {
+        // 使用 TotalCartCount 如果 > 0，否则使用 CartCount（向后兼容）
+        int expectedCartCount = topologySnapshot.TotalCartCount > 0 
+            ? topologySnapshot.TotalCartCount 
+            : topologySnapshot.CartCount;
+
         return new CartRingSelfCheckResult
         {
-            ExpectedCartCount = topologySnapshot.CartCount,
+            ExpectedCartCount = expectedCartCount,
             MeasuredCartCount = 0,
             ExpectedPitchMm = topologySnapshot.CartSpacingMm,
             MeasuredPitchMm = 0m,

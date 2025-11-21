@@ -318,6 +318,12 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
     builder.Services.AddSingleton<IMainLineStabilityProvider, MainLineStabilityProvider>();
     builder.Services.AddSingleton<ICartPositionTracker, CartPositionTracker>();
     
+    // 注册格口小车号解析器和计算器
+    builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Domain.Sorting.IChuteCartNumberCalculator, 
+        ZakYip.NarrowBeltDiverterSorter.Core.Domain.Sorting.ChuteCartNumberCalculator>();
+    builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Abstractions.ICartAtChuteResolver, 
+        ZakYip.NarrowBeltDiverterSorter.Execution.Sorting.CartAtChuteResolver>();
+    
     // 注册轨道拓扑
     builder.Services.AddSingleton<ITrackTopology>(sp =>
     {
@@ -828,6 +834,12 @@ static async Task RunTraditionalSimulationAsync()
     builder.Services.AddSingleton<IMainLineSpeedProvider, MainLineSpeedProvider>();
     builder.Services.AddSingleton<IMainLineStabilityProvider, MainLineStabilityProvider>();
     builder.Services.AddSingleton<ICartPositionTracker, CartPositionTracker>();
+    
+    // 注册格口小车号解析器和计算器
+    builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Domain.Sorting.IChuteCartNumberCalculator, 
+        ZakYip.NarrowBeltDiverterSorter.Core.Domain.Sorting.ChuteCartNumberCalculator>();
+    builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Abstractions.ICartAtChuteResolver, 
+        ZakYip.NarrowBeltDiverterSorter.Execution.Sorting.CartAtChuteResolver>();
     
     // 注册轨道拓扑
     builder.Services.AddSingleton<ITrackTopology>(sp =>
@@ -1375,6 +1387,12 @@ static async Task RunLongRunLoadTestScenarioAsync(string? outputPath, bool reset
     builder.Services.AddSingleton<IMainLineSpeedProvider, MainLineSpeedProvider>();
     builder.Services.AddSingleton<IMainLineStabilityProvider, MainLineStabilityProvider>();
     builder.Services.AddSingleton<ICartPositionTracker, CartPositionTracker>();
+    
+    // 注册格口小车号解析器和计算器
+    builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Domain.Sorting.IChuteCartNumberCalculator, 
+        ZakYip.NarrowBeltDiverterSorter.Core.Domain.Sorting.ChuteCartNumberCalculator>();
+    builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Abstractions.ICartAtChuteResolver, 
+        ZakYip.NarrowBeltDiverterSorter.Execution.Sorting.CartAtChuteResolver>();
     
     // 注册轨道拓扑
     builder.Services.AddSingleton<ITrackTopology>(sp =>

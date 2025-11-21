@@ -16,6 +16,16 @@ public interface IParcelLifecycleService
     ParcelSnapshot CreateParcel(ParcelId parcelId, string barcode, DateTimeOffset infeedTriggerTime);
 
     /// <summary>
+    /// 创建新包裹并绑定小车号（入口事件触发时）
+    /// </summary>
+    /// <param name="parcelId">包裹ID</param>
+    /// <param name="barcode">条码</param>
+    /// <param name="infeedTriggerTime">入口触发时间</param>
+    /// <param name="cartNumber">小车号（1 基索引）</param>
+    /// <returns>创建的包裹快照</returns>
+    ParcelSnapshot CreateParcelWithCartNumber(ParcelId parcelId, string barcode, DateTimeOffset infeedTriggerTime, int cartNumber);
+
+    /// <summary>
     /// 绑定格口ID（上游路由结果）
     /// </summary>
     /// <param name="parcelId">包裹ID</param>
