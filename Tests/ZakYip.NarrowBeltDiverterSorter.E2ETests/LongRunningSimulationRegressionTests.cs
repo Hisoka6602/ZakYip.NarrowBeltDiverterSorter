@@ -28,7 +28,7 @@ public class LongRunningSimulationRegressionTests
         // Arrange
         const int targetParcelCount = 1000;
         var statisticsService = new InMemorySimulationStatisticsService();
-        var runId = $"lr-test-{DateTimeOffset.UtcNow:yyyyMMddHHmmss}";
+        var runId = $"lr-test-{DateTimeOffset.Now:yyyyMMddHHmmss}";
 
         // Act - 模拟 1000 个包裹的处理
         statisticsService.StartRun(runId);
@@ -70,7 +70,7 @@ public class LongRunningSimulationRegressionTests
         const int targetParcelCount = 1000;
         const int timeoutCount = 400;
         var statisticsService = new InMemorySimulationStatisticsService();
-        var runId = $"lr-test-timeout-{DateTimeOffset.UtcNow:yyyyMMddHHmmss}";
+        var runId = $"lr-test-timeout-{DateTimeOffset.Now:yyyyMMddHHmmss}";
 
         // Act - 模拟 1000 个包裹，其中 400 个超时
         statisticsService.StartRun(runId);
@@ -119,7 +119,7 @@ public class LongRunningSimulationRegressionTests
         const int targetParcelCount = 1000;
         const int missortCount = 50;
         var statisticsService = new InMemorySimulationStatisticsService();
-        var runId = $"lr-test-missort-{DateTimeOffset.UtcNow:yyyyMMddHHmmss}";
+        var runId = $"lr-test-missort-{DateTimeOffset.Now:yyyyMMddHHmmss}";
 
         // Act - 模拟 1000 个包裹，其中 50 个错分
         statisticsService.StartRun(runId);
@@ -171,7 +171,7 @@ public class LongRunningSimulationRegressionTests
         const int timeoutCount = 100;
         const int missortCount = 50;
         var statisticsService = new InMemorySimulationStatisticsService();
-        var runId = $"lr-test-mixed-{DateTimeOffset.UtcNow:yyyyMMddHHmmss}";
+        var runId = $"lr-test-mixed-{DateTimeOffset.Now:yyyyMMddHHmmss}";
 
         // Act - 模拟混合场景
         statisticsService.StartRun(runId);

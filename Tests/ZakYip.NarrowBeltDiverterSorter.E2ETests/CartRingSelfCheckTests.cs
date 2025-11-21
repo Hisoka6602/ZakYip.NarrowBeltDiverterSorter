@@ -40,7 +40,7 @@ public class CartRingSelfCheckTests
         };
 
         // 模拟完整的2圈数据（20辆小车 × 2圈 = 40个事件）
-        var baseTime = DateTimeOffset.UtcNow;
+        var baseTime = DateTimeOffset.Now;
         var events = new List<CartPassEventArgs>();
         
         for (int ring = 0; ring < 2; ring++)
@@ -102,7 +102,7 @@ public class CartRingSelfCheckTests
         };
 
         // 模拟20辆小车通过
-        var baseTime = DateTimeOffset.UtcNow;
+        var baseTime = DateTimeOffset.Now;
         var events = new List<CartPassEventArgs>();
         for (int i = 0; i < 20; i++)
         {
@@ -150,7 +150,7 @@ public class CartRingSelfCheckTests
         };
 
         // 模拟实际节距是550mm（超出5%容差）
-        var baseTime = DateTimeOffset.UtcNow;
+        var baseTime = DateTimeOffset.Now;
         var events = new List<CartPassEventArgs>();
         for (int i = 0; i < 20; i++)
         {

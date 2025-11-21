@@ -103,9 +103,9 @@ public class ChuteCartMappingSelfCheckScenario
     private async Task WaitForMainLineStableAsync(CancellationToken cancellationToken)
     {
         var timeout = TimeSpan.FromSeconds(10);
-        var startTime = DateTime.UtcNow;
+        var startTime = DateTime.Now;
 
-        while (DateTime.UtcNow - startTime < timeout)
+        while (DateTime.Now - startTime < timeout)
         {
             var currentSpeed = _speedProvider.CurrentMmps;
             if (currentSpeed >= (decimal)_config.MainLineSpeedMmPerSec * 0.95m)
@@ -188,7 +188,7 @@ public class ChuteCartMappingSelfCheckScenario
                 {
                     ChuteId = chuteId,
                     CartId = cartId,
-                    TriggeredAt = DateTimeOffset.UtcNow,
+                    TriggeredAt = DateTimeOffset.Now,
                     LineSpeedMmps = (decimal)currentSpeed
                 };
 

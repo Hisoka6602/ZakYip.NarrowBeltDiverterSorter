@@ -29,7 +29,7 @@ public class MockUpstreamCommandGateway : IUpstreamCommandGateway
             ChuteId = _alwaysSucceed ? _defaultChuteId : 0,
             IsSuccess = _alwaysSucceed,
             ErrorMessage = _alwaysSucceed ? null : "Mock failure",
-            ResponseTime = DateTimeOffset.UtcNow
+            ResponseTime = DateTimeOffset.Now
         };
 
         return Task.FromResult(response);

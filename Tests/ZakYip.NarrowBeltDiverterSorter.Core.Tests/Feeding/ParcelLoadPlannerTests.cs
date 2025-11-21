@@ -43,7 +43,7 @@ public class ParcelLoadPlannerTests
             options);
 
         // 包裹在t=0时到达入口传感器
-        var infeedTime1 = DateTimeOffset.UtcNow;
+        var infeedTime1 = DateTimeOffset.Now;
         // 包裹需要2秒到达主线（2000mm / 1000mm/s = 2s）
         // 此时小车0应该在落车点
         mockCartRingBuilder.SetCartAtDropPointAtTime(new CartId(0), infeedTime1.AddSeconds(2));
@@ -96,7 +96,7 @@ public class ParcelLoadPlannerTests
             mockInfeedConveyor,
             options);
 
-        var infeedTime = DateTimeOffset.UtcNow;
+        var infeedTime = DateTimeOffset.Now;
         // 理论上应该是小车0，应用2个小车的偏移后应该是小车2
         // 但我们需要在没有偏移的情况下告诉mock小车0在落车点
         mockCartRingBuilder.SetCartAtDropPointAtTime(new CartId(0), infeedTime.AddSeconds(2));
@@ -131,7 +131,7 @@ public class ParcelLoadPlannerTests
             options);
 
         // Act
-        var predictedCart = await planner.PredictLoadedCartAsync(DateTimeOffset.UtcNow, CancellationToken.None);
+        var predictedCart = await planner.PredictLoadedCartAsync(DateTimeOffset.Now, CancellationToken.None);
 
         // Assert
         Assert.Null(predictedCart);
@@ -251,7 +251,7 @@ internal class MockCartRingBuilder : ICartRingBuilder
                 ZeroCartId = new CartId(0),
                 ZeroIndex = new CartIndex(0),
                 CartIds = cartIds,
-                BuiltAt = DateTimeOffset.UtcNow
+                BuiltAt = DateTimeOffset.Now
             };
         }
     }

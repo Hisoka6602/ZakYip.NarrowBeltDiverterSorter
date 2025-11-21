@@ -98,7 +98,7 @@ public class SortingResultHandler : IDisposable
                 {
                     ParcelId = result.ParcelId,
                     EventType = ParcelTimelineEventType.PlanCreated,
-                    OccurredAt = DateTimeOffset.UtcNow,
+                    OccurredAt = DateTimeOffset.Now,
                     ChuteId = result.ChuteNumber,
                     Note = $"分拣计划已创建，目标格口={result.ChuteNumber}"
                 });
@@ -148,7 +148,7 @@ public class SortingResultHandler : IDisposable
                 {
                     ParcelId = result.ParcelId,
                     EventType = ParcelTimelineEventType.Aborted,
-                    OccurredAt = DateTimeOffset.UtcNow,
+                    OccurredAt = DateTimeOffset.Now,
                     Note = $"上游分拣失败: {result.FailureReason}"
                 });
 

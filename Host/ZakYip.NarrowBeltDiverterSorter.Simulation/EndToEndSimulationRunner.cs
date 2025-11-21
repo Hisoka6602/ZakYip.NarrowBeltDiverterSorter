@@ -87,7 +87,7 @@ public class EndToEndSimulationRunner
     /// </summary>
     public async Task<SimulationReport> RunAsync(int parcelCount, CancellationToken cancellationToken = default)
     {
-        var startTime = DateTime.UtcNow;
+        var startTime = DateTime.Now;
         var stopwatch = Stopwatch.StartNew();
 
         _logger.LogInformation("开始端到端仿真，包裹数量: {ParcelCount}", parcelCount);
@@ -98,9 +98,9 @@ public class EndToEndSimulationRunner
 
         // 步骤 2: 等待小车环自然构建完成（通过 CartMovementSimulator + OriginSensorMonitor）
         _logger.LogInformation("步骤 2/4: 等待小车环构建完成");
-        var cartRingStartTime = DateTime.UtcNow;
+        var cartRingStartTime = DateTime.Now;
         await WaitForCartRingReadyAsync(cancellationToken);
-        var cartRingWarmupDuration = (DateTime.UtcNow - cartRingStartTime).TotalSeconds;
+        var cartRingWarmupDuration = (DateTime.Now - cartRingStartTime).TotalSeconds;
 
         var cartRingSnapshot = _cartRingBuilder.CurrentSnapshot;
         if (cartRingSnapshot == null)
@@ -118,12 +118,12 @@ public class EndToEndSimulationRunner
         for (int i = 0; i < cartRingSnapshot.RingLength.Value; i++)
         {
             var cartId = cartRingSnapshot.CartIds[i];
-            _cartLifecycleService.InitializeCart(cartId, new CartIndex(i), DateTimeOffset.UtcNow);
+            _cartLifecycleService.InitializeCart(cartId, new CartIndex(i), DateTimeOffset.Now);
         }
         
         // 手动初始化 CartPositionTracker - 在仿真环境中，我们知道零点车已经在原点位置
         // 这样可以避免等待下一个零点车通过原点（可能需要等待整个环的时间）
-        _cartPositionTracker.OnCartPassedOrigin(DateTimeOffset.UtcNow);
+        _cartPositionTracker.OnCartPassedOrigin(DateTimeOffset.Now);
         _logger.LogInformation("[CartRing] 小车位置跟踪器已初始化");
 
 
@@ -183,9 +183,9 @@ public class EndToEndSimulationRunner
     private async Task WaitForMainLineStableAsync(CancellationToken cancellationToken)
     {
         const int maxWaitSeconds = 10;
-        var timeout = DateTime.UtcNow.AddSeconds(maxWaitSeconds);
+        var timeout = DateTime.Now.AddSeconds(maxWaitSeconds);
 
-        while (DateTime.UtcNow < timeout && !cancellationToken.IsCancellationRequested)
+        while (DateTime.Now < timeout && !cancellationToken.IsCancellationRequested)
         {
             if (_mainLineControl.IsRunning && _speedProvider.IsSpeedStable)
             {
@@ -205,12 +205,12 @@ public class EndToEndSimulationRunner
     private async Task WaitForCartRingReadyAsync(CancellationToken cancellationToken)
     {
         const int maxWaitSeconds = 90; // 增加到90秒，因为60辆小车需要更长时间完成一圈
-        var timeout = DateTime.UtcNow.AddSeconds(maxWaitSeconds);
-        var lastLogTime = DateTime.UtcNow;
+        var timeout = DateTime.Now.AddSeconds(maxWaitSeconds);
+        var lastLogTime = DateTime.Now;
 
         _logger.LogInformation("等待小车环构建...");
 
-        while (DateTime.UtcNow < timeout && !cancellationToken.IsCancellationRequested)
+        while (DateTime.Now < timeout && !cancellationToken.IsCancellationRequested)
         {
             // 检查小车环是否已构建完成并就绪
             var snapshot = _cartRingBuilder.CurrentSnapshot;
@@ -224,13 +224,13 @@ public class EndToEndSimulationRunner
             }
 
             // 每5秒输出一次等待日志
-            if ((DateTime.UtcNow - lastLogTime).TotalSeconds >= 5)
+            if ((DateTime.Now - lastLogTime).TotalSeconds >= 5)
             {
                 _logger.LogDebug(
                     "等待小车环就绪... (快照: {HasSnapshot}, 跟踪器就绪: {IsRingReady})",
                     snapshot != null,
                     _cartPositionTracker.IsRingReady);
-                lastLogTime = DateTime.UtcNow;
+                lastLogTime = DateTime.Now;
             }
 
             await Task.Delay(100, cancellationToken);
@@ -249,34 +249,34 @@ public class EndToEndSimulationRunner
         const int maxWaitSeconds = 300; // 最多等待5分钟作为兜底保护
         const double minCompletionRatio = 1.0; // 必须100%的包裹完成（正常落格或强排）
 
-        var endTime = DateTime.UtcNow.AddSeconds(maxWaitSeconds);
-        var lastStatusCheckTime = DateTime.UtcNow;
-        var lastSpeedSampleTime = DateTime.UtcNow;
+        var endTime = DateTime.Now.AddSeconds(maxWaitSeconds);
+        var lastStatusCheckTime = DateTime.Now;
+        var lastSpeedSampleTime = DateTime.Now;
         
         _logger.LogInformation("开始等待包裹处理完成，目标包裹数: {ExpectedCount}", expectedParcelCount);
 
-        while (DateTime.UtcNow < endTime && !cancellationToken.IsCancellationRequested)
+        while (DateTime.Now < endTime && !cancellationToken.IsCancellationRequested)
         {
             // 定期采样主线速度
-            if ((DateTime.UtcNow - lastSpeedSampleTime).TotalMilliseconds >= samplingIntervalMs)
+            if ((DateTime.Now - lastSpeedSampleTime).TotalMilliseconds >= samplingIntervalMs)
             {
-                lastSpeedSampleTime = DateTime.UtcNow;
+                lastSpeedSampleTime = DateTime.Now;
                 
                 var currentSpeed = _speedProvider.CurrentMmps;
                 if (currentSpeed > 0) // 忽略明显非法值
                 {
                     _speedSamples.Add(new SpeedSample
                     {
-                        Timestamp = DateTimeOffset.UtcNow,
+                        Timestamp = DateTimeOffset.Now,
                         SpeedMmps = currentSpeed
                     });
                 }
             }
 
             // 定期检查仿真进度
-            if ((DateTime.UtcNow - lastStatusCheckTime).TotalMilliseconds >= statusCheckIntervalMs)
+            if ((DateTime.Now - lastStatusCheckTime).TotalMilliseconds >= statusCheckIntervalMs)
             {
-                lastStatusCheckTime = DateTime.UtcNow;
+                lastStatusCheckTime = DateTime.Now;
 
                 // 从仓储/服务读取仿真进度
                 var progress = GetSimulationProgress();
@@ -465,7 +465,7 @@ public class EndToEndSimulationRunner
             MissortRate = missortRate,
             UnprocessedRate = unprocessedRate,
             StartTime = startTime,
-            EndTime = DateTime.UtcNow,
+            EndTime = DateTime.Now,
             DurationSeconds = duration.TotalSeconds
         };
     }

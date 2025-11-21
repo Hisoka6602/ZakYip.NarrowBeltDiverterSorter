@@ -302,12 +302,12 @@ public class CartAtChuteResolverTests
         _mockChuteConfigProvider.Setup(x => x.GetConfig(new ChuteId(chuteId)))
             .Returns(chuteConfig);
 
-        var beforeCapture = DateTimeOffset.UtcNow;
+        var beforeCapture = DateTimeOffset.Now;
 
         // Act
         var snapshot = _resolver.CaptureCartBindingSnapshot(chuteId);
 
-        var afterCapture = DateTimeOffset.UtcNow;
+        var afterCapture = DateTimeOffset.Now;
 
         // Assert
         Assert.NotNull(snapshot);

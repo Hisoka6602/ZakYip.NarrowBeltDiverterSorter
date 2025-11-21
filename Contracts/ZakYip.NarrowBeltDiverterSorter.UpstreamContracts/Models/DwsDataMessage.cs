@@ -49,5 +49,5 @@ public record class DwsDataMessage
     /// <summary>
     /// 测量时间
     /// </summary>
-    public DateTimeOffset MeasuredTime { get; init; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset MeasuredTime { get; init; } = DateTimeOffset.Now;
 }

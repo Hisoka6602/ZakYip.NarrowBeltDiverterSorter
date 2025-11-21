@@ -148,7 +148,7 @@ public sealed class ProductionMainLineDrive : IMainLineDrive
             // 等待速度降到阈值以下
             var shutdownThreshold = 50m;
             var maxWaitTime = TimeSpan.FromSeconds(30);
-            var startTime = DateTime.UtcNow;
+            var startTime = DateTime.Now;
             
             _logger.LogInformation("等待主线速度降到 {Threshold} mm/s 以下（最多等待 {MaxWait} 秒）",
                 shutdownThreshold, maxWaitTime.TotalSeconds);
@@ -163,7 +163,7 @@ public sealed class ProductionMainLineDrive : IMainLineDrive
                     break;
                 }
                 
-                var elapsed = DateTime.UtcNow - startTime;
+                var elapsed = DateTime.Now - startTime;
                 if (elapsed >= maxWaitTime)
                 {
                     _logger.LogWarning(

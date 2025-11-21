@@ -19,7 +19,7 @@ public class ParcelCreationStateValidationTests
         
         var parcelId = new ParcelId(1234567890123);
         var barcode = "TEST001";
-        var infeedTime = DateTimeOffset.UtcNow;
+        var infeedTime = DateTimeOffset.Now;
 
         // Act
         var parcel = service.CreateParcel(parcelId, barcode, infeedTime);
@@ -39,7 +39,7 @@ public class ParcelCreationStateValidationTests
         
         var parcelId = new ParcelId(1234567890123);
         var barcode = "TEST001";
-        var infeedTime = DateTimeOffset.UtcNow;
+        var infeedTime = DateTimeOffset.Now;
 
         // Act & Assert
         var exception = Assert.Throws<InvalidOperationException>(() =>
@@ -61,7 +61,7 @@ public class ParcelCreationStateValidationTests
         
         var parcelId = new ParcelId(1234567890123);
         var barcode = "TEST001";
-        var infeedTime = DateTimeOffset.UtcNow;
+        var infeedTime = DateTimeOffset.Now;
 
         // Act & Assert
         var exception = Assert.Throws<InvalidOperationException>(() =>
@@ -82,7 +82,7 @@ public class ParcelCreationStateValidationTests
         
         var parcelId = new ParcelId(1234567890123);
         var barcode = "TEST001";
-        var infeedTime = DateTimeOffset.UtcNow;
+        var infeedTime = DateTimeOffset.Now;
 
         // Act & Assert
         var exception = Assert.Throws<InvalidOperationException>(() =>
@@ -102,7 +102,7 @@ public class ParcelCreationStateValidationTests
         var parcelId1 = new ParcelId(1000000000001);
         var parcelId2 = new ParcelId(1000000000002);
         var barcode = "TEST";
-        var infeedTime = DateTimeOffset.UtcNow;
+        var infeedTime = DateTimeOffset.Now;
 
         // Act & Assert: Stopped state (initial) - should fail
         Assert.Equal(SystemRunState.Stopped, systemRunStateService.Current);

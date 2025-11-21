@@ -92,7 +92,7 @@ public class LiveViewBridgeService : BackgroundService
     {
         lock (_throttleLock)
         {
-            var now = DateTime.UtcNow;
+            var now = DateTime.Now;
             var elapsed = (now - lastPushTime).TotalMilliseconds;
             
             if (elapsed >= intervalMs)
@@ -235,7 +235,7 @@ public class LiveViewBridgeService : BackgroundService
                 VolumeCubicMm = eventArgs.VolumeCubicMm,
                 TargetChuteId = eventArgs.TargetChuteId,
                 ActualChuteId = eventArgs.ActualChuteId,
-                CreatedAt = DateTimeOffset.UtcNow, // 没有创建时间
+                CreatedAt = DateTimeOffset.Now, // 没有创建时间
                 DivertedAt = eventArgs.DivertedAt
             };
 

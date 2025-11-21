@@ -131,7 +131,7 @@ public class FileEventRecordingManagerTests : IDisposable
         var testEvent = new TestEvent { Message = "Test message", Value = 42 };
 
         // Act
-        await _manager.RecordAsync("TestEvent", testEvent, DateTimeOffset.UtcNow);
+        await _manager.RecordAsync("TestEvent", testEvent, DateTimeOffset.Now);
         await _manager.StopSessionAsync(session.SessionId);
 
         // Assert
@@ -150,7 +150,7 @@ public class FileEventRecordingManagerTests : IDisposable
         var testEvent = new TestEvent { Message = "Test message", Value = 42 };
 
         // Act & Assert - should not throw
-        await _manager.RecordAsync("TestEvent", testEvent, DateTimeOffset.UtcNow);
+        await _manager.RecordAsync("TestEvent", testEvent, DateTimeOffset.Now);
     }
 
     [Fact]
@@ -163,7 +163,7 @@ public class FileEventRecordingManagerTests : IDisposable
         for (int i = 0; i < 10; i++)
         {
             var testEvent = new TestEvent { Message = $"Event {i}", Value = i };
-            await _manager.RecordAsync("TestEvent", testEvent, DateTimeOffset.UtcNow);
+            await _manager.RecordAsync("TestEvent", testEvent, DateTimeOffset.Now);
         }
         
         await _manager.StopSessionAsync(session.SessionId);

@@ -179,7 +179,7 @@ public class SimulationsController : ControllerBase
 
         try
         {
-            var runId = $"nb-{DateTime.UtcNow:yyyyMMdd-HHmmss}-{Guid.NewGuid():N}";
+            var runId = $"nb-{DateTime.Now:yyyyMMdd-HHmmss}-{Guid.NewGuid():N}";
             
             _logger.LogInformation("开始执行窄带仿真场景，RunId: {RunId}", runId);
 

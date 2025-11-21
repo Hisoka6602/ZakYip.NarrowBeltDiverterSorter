@@ -32,7 +32,7 @@ public class NarrowBeltLiveViewTests
             ActualMmps = 100.5m,
             TargetMmps = 120.0m,
             Status = LineSpeedStatus.Starting,
-            OccurredAt = DateTimeOffset.UtcNow
+            OccurredAt = DateTimeOffset.Now
         };
 
         // Act
@@ -57,7 +57,7 @@ public class NarrowBeltLiveViewTests
             WeightKg = 2.5m,
             VolumeCubicMm = 1000000m,
             TargetChuteId = 10,
-            CreatedAt = DateTimeOffset.UtcNow
+            CreatedAt = DateTimeOffset.Now
         };
 
         // Act
@@ -89,7 +89,7 @@ public class NarrowBeltLiveViewTests
             WeightKg = 2.5m,
             VolumeCubicMm = 1000000m,
             TargetChuteId = 10,
-            CreatedAt = DateTimeOffset.UtcNow
+            CreatedAt = DateTimeOffset.Now
         };
         await _eventBus.PublishAsync(createEvent);
         await Task.Delay(100);
@@ -102,7 +102,7 @@ public class NarrowBeltLiveViewTests
             VolumeCubicMm = 1000000m,
             TargetChuteId = 10,
             ActualChuteId = 10,
-            DivertedAt = DateTimeOffset.UtcNow
+            DivertedAt = DateTimeOffset.Now
         };
 
         // Act
@@ -127,7 +127,7 @@ public class NarrowBeltLiveViewTests
         var eventArgs = new OriginCartChangedEventArgs
         {
             CartId = 5,
-            OccurredAt = DateTimeOffset.UtcNow
+            OccurredAt = DateTimeOffset.Now
         };
 
         // Act
@@ -147,7 +147,7 @@ public class NarrowBeltLiveViewTests
         {
             ChuteId = 10,
             CartId = 5,
-            OccurredAt = DateTimeOffset.UtcNow
+            OccurredAt = DateTimeOffset.Now
         };
 
         // Act
@@ -171,7 +171,7 @@ public class NarrowBeltLiveViewTests
         {
             Status = DeviceStatus.Running,
             Message = "系统正常运行",
-            OccurredAt = DateTimeOffset.UtcNow
+            OccurredAt = DateTimeOffset.Now
         };
 
         // Act
@@ -204,7 +204,7 @@ public class NarrowBeltLiveViewTests
         {
             CartPositions = cartPositions,
             ChuteToCartMapping = chuteMapping,
-            OccurredAt = DateTimeOffset.UtcNow
+            OccurredAt = DateTimeOffset.Now
         };
 
         // Act

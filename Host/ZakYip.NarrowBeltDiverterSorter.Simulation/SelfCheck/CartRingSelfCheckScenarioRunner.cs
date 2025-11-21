@@ -108,9 +108,9 @@ public class CartRingSelfCheckScenarioRunner
     private async Task WaitForMainLineStableAsync(CancellationToken cancellationToken)
     {
         const int maxWaitSeconds = 10;
-        var timeout = DateTime.UtcNow.AddSeconds(maxWaitSeconds);
+        var timeout = DateTime.Now.AddSeconds(maxWaitSeconds);
 
-        while (DateTime.UtcNow < timeout && !cancellationToken.IsCancellationRequested)
+        while (DateTime.Now < timeout && !cancellationToken.IsCancellationRequested)
         {
             if (_mainLineControl.IsRunning && _speedProvider.IsSpeedStable)
             {
@@ -132,9 +132,9 @@ public class CartRingSelfCheckScenarioRunner
     private async Task WaitForCartRingReadyAsync(CancellationToken cancellationToken)
     {
         const int maxWaitSeconds = 90;
-        var timeout = DateTime.UtcNow.AddSeconds(maxWaitSeconds);
+        var timeout = DateTime.Now.AddSeconds(maxWaitSeconds);
 
-        while (DateTime.UtcNow < timeout && !cancellationToken.IsCancellationRequested)
+        while (DateTime.Now < timeout && !cancellationToken.IsCancellationRequested)
         {
             var snapshot = _cartRingBuilder.CurrentSnapshot;
             if (snapshot != null && _cartPositionTracker.IsRingReady)

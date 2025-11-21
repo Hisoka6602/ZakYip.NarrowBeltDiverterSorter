@@ -17,7 +17,7 @@ public class ParcelTimelineServiceTests
         {
             ParcelId = 1,
             EventType = ParcelTimelineEventType.Created,
-            OccurredAt = DateTimeOffset.UtcNow,
+            OccurredAt = DateTimeOffset.Now,
             Barcode = "TEST001",
             Note = "Test event"
         };
@@ -39,7 +39,7 @@ public class ParcelTimelineServiceTests
         // Arrange
         var logger = NullLogger<ParcelTimelineService>.Instance;
         var service = new ParcelTimelineService(logger, capacity: 100);
-        var now = DateTimeOffset.UtcNow;
+        var now = DateTimeOffset.Now;
 
         service.Append(new ParcelTimelineEventArgs
         {
@@ -81,7 +81,7 @@ public class ParcelTimelineServiceTests
         // Arrange
         var logger = NullLogger<ParcelTimelineService>.Instance;
         var service = new ParcelTimelineService(logger, capacity: 100);
-        var now = DateTimeOffset.UtcNow;
+        var now = DateTimeOffset.Now;
 
         service.Append(new ParcelTimelineEventArgs
         {
@@ -113,7 +113,7 @@ public class ParcelTimelineServiceTests
         // Arrange
         var logger = NullLogger<ParcelTimelineService>.Instance;
         var service = new ParcelTimelineService(logger, capacity: 100);
-        var now = DateTimeOffset.UtcNow;
+        var now = DateTimeOffset.Now;
 
         for (int i = 1; i <= 5; i++)
         {
@@ -143,7 +143,7 @@ public class ParcelTimelineServiceTests
         // Arrange
         var logger = NullLogger<ParcelTimelineService>.Instance;
         var service = new ParcelTimelineService(logger, capacity: 3);
-        var now = DateTimeOffset.UtcNow;
+        var now = DateTimeOffset.Now;
 
         // Act - Add 5 events (capacity is 3)
         for (int i = 1; i <= 5; i++)

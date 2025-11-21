@@ -134,7 +134,7 @@ public class ChuteIoMonitor : IIoMonitor
                     // 检测状态变化
                     if (currentState != previousState)
                     {
-                        var timestamp = DateTimeOffset.UtcNow;
+                        var timestamp = DateTimeOffset.Now;
                         _logger.LogInformation(
                             "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff}] 格口 {ChuteId} IO状态变化: {PreviousState} -> {CurrentState}",
                             timestamp,

@@ -43,9 +43,9 @@ public class ParcelLifecycleTrackerTests
         var parcel2 = new ParcelId(2);
         var parcel3 = new ParcelId(3);
 
-        lifecycleService.CreateParcel(parcel1, "P1", DateTimeOffset.UtcNow);
-        lifecycleService.CreateParcel(parcel2, "P2", DateTimeOffset.UtcNow);
-        lifecycleService.CreateParcel(parcel3, "P3", DateTimeOffset.UtcNow);
+        lifecycleService.CreateParcel(parcel1, "P1", DateTimeOffset.Now);
+        lifecycleService.CreateParcel(parcel2, "P2", DateTimeOffset.Now);
+        lifecycleService.CreateParcel(parcel3, "P3", DateTimeOffset.Now);
 
         // Act
         tracker.UpdateStatus(parcel1, ParcelStatus.OnMainline);
@@ -72,7 +72,7 @@ public class ParcelLifecycleTrackerTests
         for (int i = 1; i <= 5; i++)
         {
             var parcelId = new ParcelId(i);
-            lifecycleService.CreateParcel(parcelId, $"P{i}", DateTimeOffset.UtcNow);
+            lifecycleService.CreateParcel(parcelId, $"P{i}", DateTimeOffset.Now);
 
             if (i <= 2)
             {
@@ -108,9 +108,9 @@ public class ParcelLifecycleTrackerTests
         var parcel2 = new ParcelId(2);
         var parcel3 = new ParcelId(3);
 
-        lifecycleService.CreateParcel(parcel1, "P1", DateTimeOffset.UtcNow);
-        lifecycleService.CreateParcel(parcel2, "P2", DateTimeOffset.UtcNow);
-        lifecycleService.CreateParcel(parcel3, "P3", DateTimeOffset.UtcNow);
+        lifecycleService.CreateParcel(parcel1, "P1", DateTimeOffset.Now);
+        lifecycleService.CreateParcel(parcel2, "P2", DateTimeOffset.Now);
+        lifecycleService.CreateParcel(parcel3, "P3", DateTimeOffset.Now);
 
         // Act
         tracker.UpdateStatus(parcel1, ParcelStatus.Failed, ParcelFailureReason.UpstreamTimeout);
@@ -137,7 +137,7 @@ public class ParcelLifecycleTrackerTests
         for (int i = 1; i <= 10; i++)
         {
             var parcelId = new ParcelId(i);
-            lifecycleService.CreateParcel(parcelId, $"P{i}", DateTimeOffset.UtcNow);
+            lifecycleService.CreateParcel(parcelId, $"P{i}", DateTimeOffset.Now);
             tracker.UpdateStatus(parcelId, ParcelStatus.DivertedToTarget);
         }
 
@@ -162,7 +162,7 @@ public class ParcelLifecycleTrackerTests
         for (int i = 1; i <= 5; i++)
         {
             var parcelId = new ParcelId(i);
-            lifecycleService.CreateParcel(parcelId, $"P{i}", DateTimeOffset.UtcNow);
+            lifecycleService.CreateParcel(parcelId, $"P{i}", DateTimeOffset.Now);
 
             if (i <= 3)
             {
@@ -192,7 +192,7 @@ public class ParcelLifecycleTrackerTests
         var tracker = new ParcelLifecycleTracker(lifecycleService);
         var parcelId = new ParcelId(123);
 
-        lifecycleService.CreateParcel(parcelId, "TEST", DateTimeOffset.UtcNow);
+        lifecycleService.CreateParcel(parcelId, "TEST", DateTimeOffset.Now);
 
         // Act
         tracker.UpdateStatus(parcelId, ParcelStatus.DivertedToTarget);

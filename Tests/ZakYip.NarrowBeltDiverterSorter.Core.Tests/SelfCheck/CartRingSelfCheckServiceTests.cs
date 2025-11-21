@@ -30,7 +30,7 @@ public class CartRingSelfCheckServiceTests
         };
 
         // 模拟20辆小车通过，速度1000mm/s，节距500mm
-        var baseTime = DateTimeOffset.UtcNow;
+        var baseTime = DateTimeOffset.Now;
         var events = new List<CartPassEventArgs>();
         for (int i = 0; i < 20; i++)
         {
@@ -75,7 +75,7 @@ public class CartRingSelfCheckServiceTests
         };
 
         // 模拟只有18辆小车通过（配置是20辆）
-        var baseTime = DateTimeOffset.UtcNow;
+        var baseTime = DateTimeOffset.Now;
         var events = new List<CartPassEventArgs>();
         for (int i = 0; i < 18; i++)
         {
@@ -118,7 +118,7 @@ public class CartRingSelfCheckServiceTests
         };
 
         // 模拟20辆小车，但实际节距是550mm（超出5%容差）
-        var baseTime = DateTimeOffset.UtcNow;
+        var baseTime = DateTimeOffset.Now;
         var events = new List<CartPassEventArgs>();
         for (int i = 0; i < 20; i++)
         {
@@ -165,7 +165,7 @@ public class CartRingSelfCheckServiceTests
         };
 
         // 模拟速度轻微变化的场景（更接近实际）
-        var baseTime = DateTimeOffset.UtcNow;
+        var baseTime = DateTimeOffset.Now;
         var events = new List<CartPassEventArgs>();
         var speeds = new[] { 950m, 980m, 1000m, 1020m, 1000m, 990m, 1010m, 1000m, 970m, 1000m };
         
@@ -245,7 +245,7 @@ public class CartRingSelfCheckServiceTests
         };
 
         // 模拟多圈数据，包含重复的小车ID
-        var baseTime = DateTimeOffset.UtcNow;
+        var baseTime = DateTimeOffset.Now;
         var events = new List<CartPassEventArgs>();
         
         // 第一圈

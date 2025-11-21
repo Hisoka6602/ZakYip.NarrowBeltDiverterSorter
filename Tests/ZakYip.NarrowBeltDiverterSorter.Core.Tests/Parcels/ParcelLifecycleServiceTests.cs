@@ -24,7 +24,7 @@ public class ParcelLifecycleServiceTests
         var service = CreateServiceInRunningState();
         var parcelId = new ParcelId(1234567890123);
         var barcode = "TEST001";
-        var infeedTime = DateTimeOffset.UtcNow;
+        var infeedTime = DateTimeOffset.Now;
 
         // Act
         var parcel = service.CreateParcel(parcelId, barcode, infeedTime);
@@ -45,7 +45,7 @@ public class ParcelLifecycleServiceTests
         var service = CreateServiceInRunningState();
         var parcelId = new ParcelId(1234567890123);
         var barcode = "TEST001";
-        var infeedTime = DateTimeOffset.UtcNow;
+        var infeedTime = DateTimeOffset.Now;
 
         service.CreateParcel(parcelId, barcode, infeedTime);
 
@@ -62,7 +62,7 @@ public class ParcelLifecycleServiceTests
         var parcelId = new ParcelId(1234567890123);
         var chuteId = new ChuteId(5);
 
-        service.CreateParcel(parcelId, "TEST001", DateTimeOffset.UtcNow);
+        service.CreateParcel(parcelId, "TEST001", DateTimeOffset.Now);
 
         // Act
         service.BindChuteId(parcelId, chuteId);
@@ -95,9 +95,9 @@ public class ParcelLifecycleServiceTests
         var parcelId = new ParcelId(1234567890123);
         var chuteId = new ChuteId(5);
         var cartId = new CartId(10);
-        var loadedTime = DateTimeOffset.UtcNow;
+        var loadedTime = DateTimeOffset.Now;
 
-        service.CreateParcel(parcelId, "TEST001", DateTimeOffset.UtcNow);
+        service.CreateParcel(parcelId, "TEST001", DateTimeOffset.Now);
         service.BindChuteId(parcelId, chuteId);
 
         // Act
@@ -119,9 +119,9 @@ public class ParcelLifecycleServiceTests
         var parcelId = new ParcelId(1234567890123);
         var chuteId = new ChuteId(5);
         var cartId = new CartId(10);
-        var loadedTime = DateTimeOffset.UtcNow;
+        var loadedTime = DateTimeOffset.Now;
 
-        service.CreateParcel(parcelId, "TEST001", DateTimeOffset.UtcNow);
+        service.CreateParcel(parcelId, "TEST001", DateTimeOffset.Now);
         service.BindChuteId(parcelId, chuteId);
         service.BindCartId(parcelId, cartId, loadedTime);
 
@@ -141,7 +141,7 @@ public class ParcelLifecycleServiceTests
         var service = CreateServiceInRunningState();
         var parcelId = new ParcelId(1234567890123);
 
-        service.CreateParcel(parcelId, "TEST001", DateTimeOffset.UtcNow);
+        service.CreateParcel(parcelId, "TEST001", DateTimeOffset.Now);
 
         // Act
         service.UpdateRouteState(parcelId, ParcelRouteState.Failed);
@@ -160,11 +160,11 @@ public class ParcelLifecycleServiceTests
         var parcelId = new ParcelId(1234567890123);
         var chuteId = new ChuteId(5);
         var cartId = new CartId(10);
-        var sortedTime = DateTimeOffset.UtcNow;
+        var sortedTime = DateTimeOffset.Now;
 
-        service.CreateParcel(parcelId, "TEST001", DateTimeOffset.UtcNow);
+        service.CreateParcel(parcelId, "TEST001", DateTimeOffset.Now);
         service.BindChuteId(parcelId, chuteId);
-        service.BindCartId(parcelId, cartId, DateTimeOffset.UtcNow);
+        service.BindCartId(parcelId, cartId, DateTimeOffset.Now);
 
         // Act
         service.MarkSorted(parcelId, sortedTime);
@@ -197,7 +197,7 @@ public class ParcelLifecycleServiceTests
         var service = CreateServiceInRunningState();
         var parcelId = new ParcelId(1234567890123);
         var barcode = "TEST001";
-        var infeedTime = DateTimeOffset.UtcNow;
+        var infeedTime = DateTimeOffset.Now;
 
         service.CreateParcel(parcelId, barcode, infeedTime);
 

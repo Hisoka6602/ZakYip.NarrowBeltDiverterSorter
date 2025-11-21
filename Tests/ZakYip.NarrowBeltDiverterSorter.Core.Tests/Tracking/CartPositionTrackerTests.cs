@@ -14,7 +14,7 @@ public class CartPositionTrackerTests
         var tracker = new CartPositionTracker(builder);
         
         // Build a cart ring
-        var timestamp = DateTimeOffset.UtcNow;
+        var timestamp = DateTimeOffset.Now;
         
         // First zero cart pass - start counting
         builder.OnOriginSensorTriggered(true, true, timestamp);
@@ -47,7 +47,7 @@ public class CartPositionTrackerTests
         var (builder, tracker) = CreateTrackerWithRing(10);
 
         // Act
-        tracker.OnCartPassedOrigin(DateTimeOffset.UtcNow);
+        tracker.OnCartPassedOrigin(DateTimeOffset.Now);
 
         // Assert
         Assert.True(tracker.IsInitialized);
@@ -62,9 +62,9 @@ public class CartPositionTrackerTests
         var (builder, tracker) = CreateTrackerWithRing(10);
 
         // Act
-        tracker.OnCartPassedOrigin(DateTimeOffset.UtcNow);
-        tracker.OnCartPassedOrigin(DateTimeOffset.UtcNow);
-        tracker.OnCartPassedOrigin(DateTimeOffset.UtcNow);
+        tracker.OnCartPassedOrigin(DateTimeOffset.Now);
+        tracker.OnCartPassedOrigin(DateTimeOffset.Now);
+        tracker.OnCartPassedOrigin(DateTimeOffset.Now);
 
         // Assert
         Assert.NotNull(tracker.CurrentOriginCartIndex);
@@ -76,8 +76,8 @@ public class CartPositionTrackerTests
     {
         // Arrange
         var (builder, tracker) = CreateTrackerWithRing(10);
-        tracker.OnCartPassedOrigin(DateTimeOffset.UtcNow);
-        tracker.OnCartPassedOrigin(DateTimeOffset.UtcNow);
+        tracker.OnCartPassedOrigin(DateTimeOffset.Now);
+        tracker.OnCartPassedOrigin(DateTimeOffset.Now);
         var ringLength = new RingLength(10);
 
         // Act
@@ -93,7 +93,7 @@ public class CartPositionTrackerTests
     {
         // Arrange
         var (builder, tracker) = CreateTrackerWithRing(10);
-        tracker.OnCartPassedOrigin(DateTimeOffset.UtcNow); // Cart 0
+        tracker.OnCartPassedOrigin(DateTimeOffset.Now); // Cart 0
         var ringLength = new RingLength(10);
 
         // Act
@@ -109,15 +109,15 @@ public class CartPositionTrackerTests
     {
         // Arrange
         var (builder, tracker) = CreateTrackerWithRing(10);
-        tracker.OnCartPassedOrigin(DateTimeOffset.UtcNow); // Cart 0
-        tracker.OnCartPassedOrigin(DateTimeOffset.UtcNow); // Cart 1
-        tracker.OnCartPassedOrigin(DateTimeOffset.UtcNow); // Cart 2
-        tracker.OnCartPassedOrigin(DateTimeOffset.UtcNow); // Cart 3
-        tracker.OnCartPassedOrigin(DateTimeOffset.UtcNow); // Cart 4
-        tracker.OnCartPassedOrigin(DateTimeOffset.UtcNow); // Cart 5
-        tracker.OnCartPassedOrigin(DateTimeOffset.UtcNow); // Cart 6
-        tracker.OnCartPassedOrigin(DateTimeOffset.UtcNow); // Cart 7
-        tracker.OnCartPassedOrigin(DateTimeOffset.UtcNow); // Cart 8
+        tracker.OnCartPassedOrigin(DateTimeOffset.Now); // Cart 0
+        tracker.OnCartPassedOrigin(DateTimeOffset.Now); // Cart 1
+        tracker.OnCartPassedOrigin(DateTimeOffset.Now); // Cart 2
+        tracker.OnCartPassedOrigin(DateTimeOffset.Now); // Cart 3
+        tracker.OnCartPassedOrigin(DateTimeOffset.Now); // Cart 4
+        tracker.OnCartPassedOrigin(DateTimeOffset.Now); // Cart 5
+        tracker.OnCartPassedOrigin(DateTimeOffset.Now); // Cart 6
+        tracker.OnCartPassedOrigin(DateTimeOffset.Now); // Cart 7
+        tracker.OnCartPassedOrigin(DateTimeOffset.Now); // Cart 8
         var ringLength = new RingLength(10);
 
         // Act - offset 5 from cart 8 should be (8 + 5) % 10 = 3
@@ -151,7 +151,7 @@ public class CartPositionTrackerTests
         var tracker = new CartPositionTracker(builder);
 
         // Act
-        tracker.OnCartPassedOrigin(DateTimeOffset.UtcNow);
+        tracker.OnCartPassedOrigin(DateTimeOffset.Now);
 
         // Assert
         Assert.False(tracker.IsInitialized);
@@ -175,7 +175,7 @@ public class CartPositionTrackerTests
         var (builder, tracker) = CreateTrackerWithRing(10);
 
         // Act
-        tracker.OnCartPassedOrigin(DateTimeOffset.UtcNow);
+        tracker.OnCartPassedOrigin(DateTimeOffset.Now);
 
         // Assert
         Assert.True(tracker.IsRingReady);
@@ -190,7 +190,7 @@ public class CartPositionTrackerTests
         var tracker = new CartPositionTracker(builder);
 
         // Act
-        tracker.OnCartPassedOrigin(DateTimeOffset.UtcNow);
+        tracker.OnCartPassedOrigin(DateTimeOffset.Now);
 
         // Assert
         Assert.False(tracker.IsRingReady);

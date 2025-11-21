@@ -78,7 +78,7 @@ public class PanelStartToChuteDropSimulationTests
             {
                 // 模拟IO脉冲：小车经过原点传感器
                 ioBoard.SetInput(CartSensorInputChannel, true);
-                cartTracker.OnCartPassedOrigin(DateTimeOffset.UtcNow);
+                cartTracker.OnCartPassedOrigin(DateTimeOffset.Now);
                 currentOriginCartIndex = (currentOriginCartIndex + 1) % TotalCartCount;
                 
                 // 重置IO

@@ -105,9 +105,9 @@ public class SimulationOrchestrator : BackgroundService
 
             // 6. 等待小车环构建完成
             Console.WriteLine("[仿真启动] 步骤 6/7: 等待小车环构建完成...");
-            var warmupStart = DateTimeOffset.UtcNow;
+            var warmupStart = DateTimeOffset.Now;
             await WaitForCartRingReadyAsync(stoppingToken);
-            var warmupDuration = (DateTimeOffset.UtcNow - warmupStart).TotalSeconds;
+            var warmupDuration = (DateTimeOffset.Now - warmupStart).TotalSeconds;
             
             var snapshot = _cartRingBuilder.CurrentSnapshot;
             if (snapshot != null)
@@ -198,9 +198,9 @@ public class SimulationOrchestrator : BackgroundService
     private async Task WaitForMainLineStableAsync(CancellationToken cancellationToken)
     {
         const int maxWaitSeconds = 10;
-        var timeout = DateTimeOffset.UtcNow.AddSeconds(maxWaitSeconds);
+        var timeout = DateTimeOffset.Now.AddSeconds(maxWaitSeconds);
 
-        while (DateTimeOffset.UtcNow < timeout && !cancellationToken.IsCancellationRequested)
+        while (DateTimeOffset.Now < timeout && !cancellationToken.IsCancellationRequested)
         {
             if (_mainLineControl.IsRunning && _mainLineDrive.IsSpeedStable)
             {
@@ -219,10 +219,10 @@ public class SimulationOrchestrator : BackgroundService
     private async Task WaitForCartRingReadyAsync(CancellationToken cancellationToken)
     {
         const int maxWaitSeconds = 30;
-        var timeout = DateTimeOffset.UtcNow.AddSeconds(maxWaitSeconds);
-        var lastLogTime = DateTimeOffset.UtcNow;
+        var timeout = DateTimeOffset.Now.AddSeconds(maxWaitSeconds);
+        var lastLogTime = DateTimeOffset.Now;
 
-        while (DateTimeOffset.UtcNow < timeout && !cancellationToken.IsCancellationRequested)
+        while (DateTimeOffset.Now < timeout && !cancellationToken.IsCancellationRequested)
         {
             // 检查小车环是否已构建完成
             var snapshot = _cartRingBuilder.CurrentSnapshot;
@@ -232,13 +232,13 @@ public class SimulationOrchestrator : BackgroundService
             }
 
             // 每5秒输出一次等待日志
-            if ((DateTimeOffset.UtcNow - lastLogTime).TotalSeconds >= 5)
+            if ((DateTimeOffset.Now - lastLogTime).TotalSeconds >= 5)
             {
                 _logger.LogDebug(
                     "等待小车环就绪... (快照: {HasSnapshot}, 跟踪器初始化: {IsInitialized})",
                     snapshot != null,
                     _cartPositionTracker.IsInitialized);
-                lastLogTime = DateTimeOffset.UtcNow;
+                lastLogTime = DateTimeOffset.Now;
             }
 
             await Task.Delay(200, cancellationToken);

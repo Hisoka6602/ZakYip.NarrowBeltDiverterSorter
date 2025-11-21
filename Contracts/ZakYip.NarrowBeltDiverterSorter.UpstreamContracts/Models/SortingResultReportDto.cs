@@ -29,5 +29,5 @@ public record SortingResultReportDto
     /// <summary>
     /// 上报时间
     /// </summary>
-    public DateTimeOffset ReportTime { get; init; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset ReportTime { get; init; } = DateTimeOffset.Now;
 }

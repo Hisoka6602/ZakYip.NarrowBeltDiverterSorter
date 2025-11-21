@@ -24,7 +24,7 @@ public class SortingModeTests
         var request = new ParcelRoutingRequestDto
         {
             ParcelId = 1,
-            RequestTime = DateTimeOffset.UtcNow
+            RequestTime = DateTimeOffset.Now
         };
 
         // Act
@@ -54,7 +54,7 @@ public class SortingModeTests
             var request = new ParcelRoutingRequestDto
             {
                 ParcelId = i,
-                RequestTime = DateTimeOffset.UtcNow
+                RequestTime = DateTimeOffset.Now
             };
             var response = await client.RequestChuteAsync(request);
 
@@ -82,7 +82,7 @@ public class SortingModeTests
             var request = new ParcelRoutingRequestDto
             {
                 ParcelId = i,
-                RequestTime = DateTimeOffset.UtcNow
+                RequestTime = DateTimeOffset.Now
             };
             var response = await client.RequestChuteAsync(request);
             chuteIds.Add(response.ChuteId);
@@ -111,7 +111,7 @@ public class SortingModeTests
             var request = new ParcelRoutingRequestDto
             {
                 ParcelId = i,
-                RequestTime = DateTimeOffset.UtcNow
+                RequestTime = DateTimeOffset.Now
             };
             var response = await client.RequestChuteAsync(request);
             chuteIds.Add(response.ChuteId);
@@ -137,7 +137,7 @@ public class SortingModeTests
         var request = new ParcelRoutingRequestDto
         {
             ParcelId = 1,
-            RequestTime = DateTimeOffset.UtcNow
+            RequestTime = DateTimeOffset.Now
         };
 
         // Act

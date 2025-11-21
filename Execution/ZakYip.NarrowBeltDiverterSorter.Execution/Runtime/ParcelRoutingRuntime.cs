@@ -134,7 +134,7 @@ public class ParcelRoutingRuntime : IParcelRoutingRuntime
                 ParcelFailureReason.None,
                 "包裹从入口传感器创建");
 
-            var requestedAt = DateTimeOffset.UtcNow;
+            var requestedAt = DateTimeOffset.Now;
             var config = _configProvider.GetCurrentOptions();
             var deadline = requestedAt.Add(config.UpstreamResultTtl);
 

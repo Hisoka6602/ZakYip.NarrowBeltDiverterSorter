@@ -63,7 +63,7 @@ public class SystemFaultService : ISystemFaultService
         var eventArgs = new SystemFaultEventArgs
         {
             FaultCode = faultCode,
-            OccurredAt = DateTimeOffset.UtcNow,
+            OccurredAt = DateTimeOffset.Now, // 使用本地时间
             Message = message,
             Exception = exception
         };

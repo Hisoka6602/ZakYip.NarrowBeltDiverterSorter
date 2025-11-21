@@ -85,7 +85,7 @@ public class LongRunHighLoadSortingScenario
     /// </summary>
     public async Task<SimulationReport> RunAsync(CancellationToken cancellationToken = default)
     {
-        var startTime = DateTime.UtcNow;
+        var startTime = DateTime.Now;
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
         _logger.LogInformation("开始长时间高负载分拣稳定性仿真，目标包裹数: {TargetCount}", _options.TargetParcelCount);
@@ -96,9 +96,9 @@ public class LongRunHighLoadSortingScenario
 
         // 步骤 2: 等待小车环就绪
         _logger.LogInformation("步骤 2/4: 等待小车环构建完成");
-        var cartRingStartTime = DateTime.UtcNow;
+        var cartRingStartTime = DateTime.Now;
         await WaitForCartRingReadyAsync(cancellationToken);
-        var cartRingWarmupDuration = (DateTime.UtcNow - cartRingStartTime).TotalSeconds;
+        var cartRingWarmupDuration = (DateTime.Now - cartRingStartTime).TotalSeconds;
 
         var cartRingSnapshot = _cartRingBuilder.CurrentSnapshot;
         if (cartRingSnapshot == null)
@@ -116,11 +116,11 @@ public class LongRunHighLoadSortingScenario
         for (int i = 0; i < cartRingSnapshot.RingLength.Value; i++)
         {
             var cartId = cartRingSnapshot.CartIds[i];
-            _cartLifecycleService.InitializeCart(cartId, new CartIndex(i), DateTimeOffset.UtcNow);
+            _cartLifecycleService.InitializeCart(cartId, new CartIndex(i), DateTimeOffset.Now);
         }
 
         // 手动初始化 CartPositionTracker
-        _cartPositionTracker.OnCartPassedOrigin(DateTimeOffset.UtcNow);
+        _cartPositionTracker.OnCartPassedOrigin(DateTimeOffset.Now);
         _logger.LogInformation("[CartRing] 小车位置跟踪器已初始化");
 
         // 步骤 3: 生成包裹并等待完成
@@ -179,9 +179,9 @@ public class LongRunHighLoadSortingScenario
     private async Task WaitForMainLineStableAsync(CancellationToken cancellationToken)
     {
         const int maxWaitSeconds = 10;
-        var timeout = DateTime.UtcNow.AddSeconds(maxWaitSeconds);
+        var timeout = DateTime.Now.AddSeconds(maxWaitSeconds);
 
-        while (DateTime.UtcNow < timeout && !cancellationToken.IsCancellationRequested)
+        while (DateTime.Now < timeout && !cancellationToken.IsCancellationRequested)
         {
             if (_mainLineControl.IsRunning && _speedProvider.IsSpeedStable)
             {
@@ -198,12 +198,12 @@ public class LongRunHighLoadSortingScenario
     private async Task WaitForCartRingReadyAsync(CancellationToken cancellationToken)
     {
         const int maxWaitSeconds = 90;
-        var timeout = DateTime.UtcNow.AddSeconds(maxWaitSeconds);
-        var lastLogTime = DateTime.UtcNow;
+        var timeout = DateTime.Now.AddSeconds(maxWaitSeconds);
+        var lastLogTime = DateTime.Now;
 
         _logger.LogInformation("等待小车环构建...");
 
-        while (DateTime.UtcNow < timeout && !cancellationToken.IsCancellationRequested)
+        while (DateTime.Now < timeout && !cancellationToken.IsCancellationRequested)
         {
             var snapshot = _cartRingBuilder.CurrentSnapshot;
             if (snapshot != null && _cartPositionTracker.IsRingReady)
@@ -215,13 +215,13 @@ public class LongRunHighLoadSortingScenario
                 return;
             }
 
-            if ((DateTime.UtcNow - lastLogTime).TotalSeconds >= 5)
+            if ((DateTime.Now - lastLogTime).TotalSeconds >= 5)
             {
                 _logger.LogDebug(
                     "等待小车环就绪... (快照: {HasSnapshot}, 跟踪器就绪: {IsRingReady})",
                     snapshot != null,
                     _cartPositionTracker.IsRingReady);
-                lastLogTime = DateTime.UtcNow;
+                lastLogTime = DateTime.Now;
             }
 
             await Task.Delay(100, cancellationToken);
@@ -234,7 +234,7 @@ public class LongRunHighLoadSortingScenario
     {
         var intervalMs = _options.ParcelCreationIntervalMs;
         const int maxWaitSeconds = 600; // 最多等待10分钟
-        var endTime = DateTime.UtcNow.AddSeconds(maxWaitSeconds);
+        var endTime = DateTime.Now.AddSeconds(maxWaitSeconds);
 
         _generatedCount = 0;
 
@@ -296,9 +296,9 @@ public class LongRunHighLoadSortingScenario
     private async Task WaitForAllParcelsCompletedAsync(DateTime endTime, CancellationToken cancellationToken)
     {
         const int checkIntervalMs = 500;
-        var lastLogTime = DateTime.UtcNow;
+        var lastLogTime = DateTime.Now;
 
-        while (DateTime.UtcNow < endTime && !cancellationToken.IsCancellationRequested)
+        while (DateTime.Now < endTime && !cancellationToken.IsCancellationRequested)
         {
             var allParcels = _parcelLifecycleService.GetAll();
             var terminatedStates = new[]
@@ -310,7 +310,7 @@ public class LongRunHighLoadSortingScenario
 
             var completedCount = allParcels.Count(p => terminatedStates.Contains(p.RouteState));
 
-            if ((DateTime.UtcNow - lastLogTime).TotalSeconds >= 2)
+            if ((DateTime.Now - lastLogTime).TotalSeconds >= 2)
             {
                 _logger.LogDebug(
                     "仿真进度 - 已生成: {GeneratedCount}/{TargetCount}, 已完成: {CompletedCount} ({CompletionPercentage:F1}%)",
@@ -318,7 +318,7 @@ public class LongRunHighLoadSortingScenario
                     _options.TargetParcelCount,
                     completedCount,
                     completedCount * 100.0 / _options.TargetParcelCount);
-                lastLogTime = DateTime.UtcNow;
+                lastLogTime = DateTime.Now;
             }
 
             // 判定完成条件：所有包裹都已生成且全部进入终态
@@ -368,7 +368,7 @@ public class LongRunHighLoadSortingScenario
             MissortRate = missortRate,
             UnprocessedRate = unprocessedRate,
             StartTime = startTime,
-            EndTime = DateTime.UtcNow,
+            EndTime = DateTime.Now,
             DurationSeconds = duration.TotalSeconds
         };
     }

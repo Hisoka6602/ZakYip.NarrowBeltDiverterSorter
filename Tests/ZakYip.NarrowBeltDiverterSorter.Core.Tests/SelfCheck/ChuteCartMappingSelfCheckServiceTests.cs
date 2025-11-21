@@ -48,7 +48,7 @@ public class ChuteCartMappingSelfCheckServiceTests
                 {
                     ChuteId = chuteId,
                     CartId = expectedCartId,
-                    TriggeredAt = DateTimeOffset.UtcNow.AddSeconds(loop * 10 + chuteId),
+                    TriggeredAt = DateTimeOffset.Now.AddSeconds(loop * 10 + chuteId),
                     LineSpeedMmps = 1000m
                 });
             }
@@ -105,7 +105,7 @@ public class ChuteCartMappingSelfCheckServiceTests
                 {
                     ChuteId = chuteId,
                     CartId = wrongCartId,  // 错误的小车编号
-                    TriggeredAt = DateTimeOffset.UtcNow.AddSeconds(loop * 10 + chuteId),
+                    TriggeredAt = DateTimeOffset.Now.AddSeconds(loop * 10 + chuteId),
                     LineSpeedMmps = 1000m
                 });
             }
@@ -160,7 +160,7 @@ public class ChuteCartMappingSelfCheckServiceTests
                 {
                     ChuteId = chuteId,
                     CartId = cartIdWithOffset,
-                    TriggeredAt = DateTimeOffset.UtcNow.AddSeconds(loop * 10 + chuteId),
+                    TriggeredAt = DateTimeOffset.Now.AddSeconds(loop * 10 + chuteId),
                     LineSpeedMmps = 1000m
                 });
             }

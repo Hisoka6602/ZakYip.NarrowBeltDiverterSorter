@@ -15,7 +15,7 @@ public class CartLifecycleServiceTests
         var service = new CartLifecycleService();
         var cartId = new CartId(1);
         var cartIndex = new CartIndex(0);
-        var initialTime = DateTimeOffset.UtcNow;
+        var initialTime = DateTimeOffset.Now;
 
         // Act
         service.InitializeCart(cartId, cartIndex, initialTime);
@@ -38,7 +38,7 @@ public class CartLifecycleServiceTests
         var cartId = new CartId(1);
         var cartIndex = new CartIndex(0);
         var parcelId = new ParcelId(100);
-        service.InitializeCart(cartId, cartIndex, DateTimeOffset.UtcNow);
+        service.InitializeCart(cartId, cartIndex, DateTimeOffset.Now);
 
         // Act
         service.LoadParcel(cartId, parcelId);
@@ -58,9 +58,9 @@ public class CartLifecycleServiceTests
         var cartId = new CartId(1);
         var cartIndex = new CartIndex(0);
         var parcelId = new ParcelId(100);
-        var resetTime = DateTimeOffset.UtcNow.AddSeconds(10);
+        var resetTime = DateTimeOffset.Now.AddSeconds(10);
         
-        service.InitializeCart(cartId, cartIndex, DateTimeOffset.UtcNow);
+        service.InitializeCart(cartId, cartIndex, DateTimeOffset.Now);
         service.LoadParcel(cartId, parcelId);
 
         // Act
@@ -79,7 +79,7 @@ public class CartLifecycleServiceTests
     {
         // Arrange
         var service = new CartLifecycleService();
-        var initialTime = DateTimeOffset.UtcNow;
+        var initialTime = DateTimeOffset.Now;
         
         service.InitializeCart(new CartId(1), new CartIndex(0), initialTime);
         service.InitializeCart(new CartId(2), new CartIndex(1), initialTime);

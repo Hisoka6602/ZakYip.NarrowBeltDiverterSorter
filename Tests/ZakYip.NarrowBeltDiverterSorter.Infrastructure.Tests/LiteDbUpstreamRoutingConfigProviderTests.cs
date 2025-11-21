@@ -110,7 +110,7 @@ public class LiteDbUpstreamRoutingConfigProviderTests : IDisposable
         Assert.NotNull(eventArgs);
         Assert.Equal(TimeSpan.FromSeconds(90), eventArgs.NewOptions.UpstreamResultTtl);
         Assert.Equal(6666, eventArgs.NewOptions.ErrorChuteId);
-        Assert.True(eventArgs.ChangedAt <= DateTimeOffset.UtcNow);
+        Assert.True(eventArgs.ChangedAt <= DateTimeOffset.Now);
     }
 
     [Fact]

@@ -29,5 +29,5 @@ public record ParcelRoutingResponseDto
     /// <summary>
     /// 响应时间
     /// </summary>
-    public DateTimeOffset ResponseTime { get; init; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset ResponseTime { get; init; } = DateTimeOffset.Now;
 }

@@ -46,7 +46,7 @@ public class ConfigHotReloadIntegrationTests : IDisposable
 
         // 模拟创建第一个包裹（使用初始 TTL）
         var parcelId1 = new ParcelId(1001);
-        var requestedAt1 = DateTimeOffset.UtcNow;
+        var requestedAt1 = DateTimeOffset.Now;
         var deadline1 = requestedAt1.Add(initialOptions.UpstreamResultTtl);
         _requestTracker.RecordRequest(parcelId1, requestedAt1, deadline1);
 
@@ -68,7 +68,7 @@ public class ConfigHotReloadIntegrationTests : IDisposable
 
         // 模拟创建第二个包裹（应该使用新的 TTL）
         var parcelId2 = new ParcelId(1002);
-        var requestedAt2 = DateTimeOffset.UtcNow;
+        var requestedAt2 = DateTimeOffset.Now;
         var deadline2 = requestedAt2.Add(updatedOptions.UpstreamResultTtl);
         _requestTracker.RecordRequest(parcelId2, requestedAt2, deadline2);
 
@@ -153,7 +153,7 @@ public class ConfigHotReloadIntegrationTests : IDisposable
 
         // 创建包裹（使用短 TTL）
         var parcelId = new ParcelId(2001);
-        var requestedAt = DateTimeOffset.UtcNow;
+        var requestedAt = DateTimeOffset.Now;
         var deadline = requestedAt.Add(options.UpstreamResultTtl);
         _requestTracker.RecordRequest(parcelId, requestedAt, deadline);
 
@@ -161,7 +161,7 @@ public class ConfigHotReloadIntegrationTests : IDisposable
         await Task.Delay(TimeSpan.FromSeconds(1.5));
 
         // 检查超时
-        var currentTime = DateTimeOffset.UtcNow;
+        var currentTime = DateTimeOffset.Now;
         var timedOutRequests = _requestTracker.GetTimedOutRequests(currentTime);
 
         // Assert - 验证包裹确实超时了
@@ -185,7 +185,7 @@ public class ConfigHotReloadIntegrationTests : IDisposable
 
         // 创建包裹（使用长 TTL）
         var parcelId = new ParcelId(3001);
-        var requestedAt = DateTimeOffset.UtcNow;
+        var requestedAt = DateTimeOffset.Now;
         var deadline = requestedAt.Add(options.UpstreamResultTtl);
         _requestTracker.RecordRequest(parcelId, requestedAt, deadline);
 
@@ -193,7 +193,7 @@ public class ConfigHotReloadIntegrationTests : IDisposable
         await Task.Delay(TimeSpan.FromSeconds(1));
 
         // 检查超时
-        var currentTime = DateTimeOffset.UtcNow;
+        var currentTime = DateTimeOffset.Now;
         var timedOutRequests = _requestTracker.GetTimedOutRequests(currentTime);
 
         // Assert - 验证包裹没有超时

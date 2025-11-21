@@ -60,7 +60,7 @@ public class NarrowBeltSimulationScenarioRunner : INarrowBeltSimulationScenarioR
         TargetChuteAssignmentProfile assignmentProfile,
         CancellationToken cancellationToken = default)
     {
-        var startTime = DateTime.UtcNow;
+        var startTime = DateTime.Now;
         var stopwatch = Stopwatch.StartNew();
 
         // 初始化随机数生成器
@@ -76,15 +76,15 @@ public class NarrowBeltSimulationScenarioRunner : INarrowBeltSimulationScenarioR
 
         // 步骤 1: 等待主线控制启动并稳定
         _logger.LogInformation("步骤 1/4: 等待主线控制启动并稳定");
-        var mainLineWaitStart = DateTime.UtcNow;
+        var mainLineWaitStart = DateTime.Now;
         await WaitForMainLineStableAsync(cancellationToken);
-        var mainLineWaitDuration = (DateTime.UtcNow - mainLineWaitStart).TotalSeconds;
+        var mainLineWaitDuration = (DateTime.Now - mainLineWaitStart).TotalSeconds;
 
         // 步骤 2: 等待小车环就绪
         _logger.LogInformation("步骤 2/4: 等待小车环构建完成");
-        var cartRingWaitStart = DateTime.UtcNow;
+        var cartRingWaitStart = DateTime.Now;
         await WaitForCartRingReadyAsync(cancellationToken);
-        var cartRingWaitDuration = (DateTime.UtcNow - cartRingWaitStart).TotalSeconds;
+        var cartRingWaitDuration = (DateTime.Now - cartRingWaitStart).TotalSeconds;
 
         // 步骤 3: 生成并处理包裹
         _logger.LogInformation("步骤 3/4: 开始生成和处理包裹");
@@ -124,9 +124,9 @@ public class NarrowBeltSimulationScenarioRunner : INarrowBeltSimulationScenarioR
     private async Task WaitForMainLineStableAsync(CancellationToken cancellationToken)
     {
         const int maxWaitSeconds = 10;
-        var timeout = DateTime.UtcNow.AddSeconds(maxWaitSeconds);
+        var timeout = DateTime.Now.AddSeconds(maxWaitSeconds);
 
-        while (DateTime.UtcNow < timeout && !cancellationToken.IsCancellationRequested)
+        while (DateTime.Now < timeout && !cancellationToken.IsCancellationRequested)
         {
             if (_mainLineControl.IsRunning && _speedProvider.IsSpeedStable)
             {
@@ -143,9 +143,9 @@ public class NarrowBeltSimulationScenarioRunner : INarrowBeltSimulationScenarioR
     private async Task WaitForCartRingReadyAsync(CancellationToken cancellationToken)
     {
         const int maxWaitSeconds = 90;
-        var timeout = DateTime.UtcNow.AddSeconds(maxWaitSeconds);
+        var timeout = DateTime.Now.AddSeconds(maxWaitSeconds);
 
-        while (DateTime.UtcNow < timeout && !cancellationToken.IsCancellationRequested)
+        while (DateTime.Now < timeout && !cancellationToken.IsCancellationRequested)
         {
             var snapshot = _cartRingBuilder.CurrentSnapshot;
             if (snapshot != null && _cartPositionTracker.IsRingReady)
@@ -172,7 +172,7 @@ public class NarrowBeltSimulationScenarioRunner : INarrowBeltSimulationScenarioR
         var intervalMs = simulationOptions.TimeBetweenParcelsMs;
         var ttlSeconds = simulationOptions.ParcelTtlSeconds;
         var maxWaitSeconds = ttlSeconds + 60; // TTL + 额外缓冲时间
-        var endTime = DateTime.UtcNow.AddSeconds(maxWaitSeconds);
+        var endTime = DateTime.Now.AddSeconds(maxWaitSeconds);
 
         _generatedCount = 0;
 
@@ -264,9 +264,9 @@ public class NarrowBeltSimulationScenarioRunner : INarrowBeltSimulationScenarioR
     private async Task WaitForAllParcelsCompletedAsync(int targetCount, DateTime endTime, CancellationToken cancellationToken)
     {
         const int checkIntervalMs = 500;
-        var lastLogTime = DateTime.UtcNow;
+        var lastLogTime = DateTime.Now;
 
-        while (DateTime.UtcNow < endTime && !cancellationToken.IsCancellationRequested)
+        while (DateTime.Now < endTime && !cancellationToken.IsCancellationRequested)
         {
             var allParcels = _parcelLifecycleService.GetAll();
             var terminatedStates = new[]
@@ -278,7 +278,7 @@ public class NarrowBeltSimulationScenarioRunner : INarrowBeltSimulationScenarioR
 
             var completedCount = allParcels.Count(p => terminatedStates.Contains(p.RouteState));
 
-            if ((DateTime.UtcNow - lastLogTime).TotalSeconds >= 2)
+            if ((DateTime.Now - lastLogTime).TotalSeconds >= 2)
             {
                 _logger.LogDebug(
                     "仿真进度 - 已生成: {GeneratedCount}/{TargetCount}, 已完成: {CompletedCount} ({CompletionPercentage:F1}%)",
@@ -286,7 +286,7 @@ public class NarrowBeltSimulationScenarioRunner : INarrowBeltSimulationScenarioR
                     targetCount,
                     completedCount,
                     completedCount * 100.0 / targetCount);
-                lastLogTime = DateTime.UtcNow;
+                lastLogTime = DateTime.Now;
             }
 
             // 判定完成条件：所有包裹都已生成且全部进入终态
@@ -336,7 +336,7 @@ public class NarrowBeltSimulationScenarioRunner : INarrowBeltSimulationScenarioR
             MissortRate = missortRate,
             UnprocessedRate = unprocessedRate,
             StartTime = startTime,
-            EndTime = DateTime.UtcNow,
+            EndTime = DateTime.Now,
             DurationSeconds = duration.TotalSeconds
         };
     }

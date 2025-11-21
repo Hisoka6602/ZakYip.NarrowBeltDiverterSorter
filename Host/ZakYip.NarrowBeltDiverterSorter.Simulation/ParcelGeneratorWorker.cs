@@ -39,12 +39,12 @@ public class ParcelGeneratorWorker : BackgroundService
 
         // Wait for both cart ring and main line speed to be stable
         const int maxWaitSeconds = 60;
-        var timeout = DateTimeOffset.UtcNow.AddSeconds(maxWaitSeconds);
+        var timeout = DateTimeOffset.Now.AddSeconds(maxWaitSeconds);
         
         bool cartRingReady = false;
         bool speedStable = false;
         
-        while (!stoppingToken.IsCancellationRequested && DateTimeOffset.UtcNow < timeout)
+        while (!stoppingToken.IsCancellationRequested && DateTimeOffset.Now < timeout)
         {
             // Check cart ring readiness
             if (!cartRingReady && _cartPositionTracker.IsRingReady)

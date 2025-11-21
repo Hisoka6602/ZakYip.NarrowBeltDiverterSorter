@@ -69,7 +69,7 @@ public sealed class CartAtChuteResolver : ICartAtChuteResolver
     /// <inheritdoc/>
     public CartBindingSnapshot CaptureCartBindingSnapshot(long chuteId)
     {
-        var capturedAt = DateTimeOffset.UtcNow;
+        var capturedAt = DateTimeOffset.Now;
 
         // 1. 检查小车总数是否已配置
         var cartRingConfig = _cartRingConfigProvider.Current;

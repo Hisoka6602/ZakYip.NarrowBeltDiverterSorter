@@ -78,7 +78,7 @@ public class SortingExecutionWorker : BackgroundService
                     continue;
                 }
                 
-                var now = DateTimeOffset.UtcNow;
+                var now = DateTimeOffset.Now;
 
                 // Plan ejects
                 var ejectPlans = _sortingPlanner.PlanEjects(now, planningHorizon);
@@ -134,7 +134,7 @@ public class SortingExecutionWorker : BackgroundService
             {
                 ParcelId = plan.ParcelId.Value,
                 EventType = Core.Domain.Parcels.ParcelTimelineEventType.ApproachingChute,
-                OccurredAt = DateTimeOffset.UtcNow,
+                OccurredAt = DateTimeOffset.Now,
                 ChuteId = plan.ChuteId.Value,
                 CartId = plan.CartId.Value,
                 Note = $"小车 {plan.CartId.Value} 接近格口 {plan.ChuteId.Value}"
@@ -161,7 +161,7 @@ public class SortingExecutionWorker : BackgroundService
             if (plan.IsForceEject)
             {
                 // Force eject: clear cart and update parcel state
-                _cartLifecycleService.UnloadCart(plan.CartId, DateTimeOffset.UtcNow);
+                _cartLifecycleService.UnloadCart(plan.CartId, DateTimeOffset.Now);
                 
                 var parcel = _parcelLifecycleService.Get(plan.ParcelId);
                 if (parcel != null)
@@ -180,7 +180,7 @@ public class SortingExecutionWorker : BackgroundService
                     {
                         ParcelId = plan.ParcelId.Value,
                         EventType = Core.Domain.Parcels.ParcelTimelineEventType.DivertFailed,
-                        OccurredAt = DateTimeOffset.UtcNow,
+                        OccurredAt = DateTimeOffset.Now,
                         ChuteId = plan.ChuteId.Value,
                         CartId = plan.CartId.Value,
                         Note = "包裹被强制排出"
@@ -205,8 +205,8 @@ public class SortingExecutionWorker : BackgroundService
             else
             {
                 // Normal eject: mark parcel as sorted
-                _cartLifecycleService.UnloadCart(plan.CartId, DateTimeOffset.UtcNow);
-                _parcelLifecycleService.MarkSorted(plan.ParcelId, DateTimeOffset.UtcNow);
+                _cartLifecycleService.UnloadCart(plan.CartId, DateTimeOffset.Now);
+                _parcelLifecycleService.MarkSorted(plan.ParcelId, DateTimeOffset.Now);
                 _parcelLifecycleService.UnbindCartId(plan.ParcelId);
 
                 // 记录落格成功时间线事件
@@ -214,7 +214,7 @@ public class SortingExecutionWorker : BackgroundService
                 {
                     ParcelId = plan.ParcelId.Value,
                     EventType = Core.Domain.Parcels.ParcelTimelineEventType.DivertedToChute,
-                    OccurredAt = DateTimeOffset.UtcNow,
+                    OccurredAt = DateTimeOffset.Now,
                     ChuteId = plan.ChuteId.Value,
                     CartId = plan.CartId.Value,
                     Note = $"包裹成功落入目标格口 {plan.ChuteId.Value}"
@@ -225,7 +225,7 @@ public class SortingExecutionWorker : BackgroundService
                 {
                     ParcelId = plan.ParcelId.Value,
                     EventType = Core.Domain.Parcels.ParcelTimelineEventType.Completed,
-                    OccurredAt = DateTimeOffset.UtcNow,
+                    OccurredAt = DateTimeOffset.Now,
                     ChuteId = plan.ChuteId.Value,
                     Note = "包裹分拣流程完成"
                 });
@@ -266,7 +266,7 @@ public class SortingExecutionWorker : BackgroundService
             {
                 ParcelId = plan.ParcelId.Value,
                 EventType = Core.Domain.Parcels.ParcelTimelineEventType.DivertFailed,
-                OccurredAt = DateTimeOffset.UtcNow,
+                OccurredAt = DateTimeOffset.Now,
                 ChuteId = plan.ChuteId.Value,
                 CartId = plan.CartId.Value,
                 Note = $"吐件失败: {ex.Message}"
@@ -310,7 +310,7 @@ public class SortingExecutionWorker : BackgroundService
                 ChuteId = (int)chuteId.Value,
                 IsSuccess = isSuccess,
                 FailureReason = failureReason,
-                ReportTime = DateTimeOffset.UtcNow
+                ReportTime = DateTimeOffset.Now
             };
 
             await _upstreamApiClient.ReportSortingResultAsync(report, cancellationToken);
