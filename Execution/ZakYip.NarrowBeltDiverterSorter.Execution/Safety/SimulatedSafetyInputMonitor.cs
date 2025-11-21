@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Safety;
 
@@ -10,7 +11,7 @@ namespace ZakYip.NarrowBeltDiverterSorter.Execution.Safety;
 public class SimulatedSafetyInputMonitor : ISafetyInputMonitor
 {
     private readonly ILogger<SimulatedSafetyInputMonitor> _logger;
-    private readonly Dictionary<string, bool> _safetyInputStates = new();
+    private readonly ConcurrentDictionary<string, bool> _safetyInputStates = new();
     private bool _isMonitoring;
 
     public SimulatedSafetyInputMonitor(ILogger<SimulatedSafetyInputMonitor> logger)
@@ -18,10 +19,10 @@ public class SimulatedSafetyInputMonitor : ISafetyInputMonitor
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         
         // 初始化默认安全输入状态（全部为安全状态）
-        _safetyInputStates["EmergencyStop1"] = true;
-        _safetyInputStates["SafetyDoor1"] = true;
-        _safetyInputStates["DriveFault1"] = true;
-        _safetyInputStates["Interlock1"] = true;
+        _safetyInputStates.TryAdd("EmergencyStop1", true);
+        _safetyInputStates.TryAdd("SafetyDoor1", true);
+        _safetyInputStates.TryAdd("DriveFault1", true);
+        _safetyInputStates.TryAdd("Interlock1", true);
     }
 
     public Task StartMonitoringAsync(CancellationToken cancellationToken = default)

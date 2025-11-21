@@ -15,7 +15,8 @@ public class ChuteTransmitterDriver : IChuteTransmitterPort
     private readonly IFieldBusClient _fieldBusClient;
     private readonly ChuteMappingConfiguration _mappingConfiguration;
     private readonly ILogger<ChuteTransmitterDriver> _logger;
-    private readonly List<ChuteTransmitterBinding> _bindings = new();
+    private readonly object _bindingsLock = new();
+    private List<ChuteTransmitterBinding> _bindings = new();
 
     /// <summary>
     /// 创建格口发信器驱动实例
@@ -38,13 +39,22 @@ public class ChuteTransmitterDriver : IChuteTransmitterPort
     /// </summary>
     public void RegisterBindings(IEnumerable<ChuteTransmitterBinding> bindings)
     {
-        _bindings.Clear();
-        _bindings.AddRange(bindings);
-        _logger.LogInformation("已注册 {Count} 条格口发信器绑定配置", _bindings.Count);
+        lock (_bindingsLock)
+        {
+            _bindings.Clear();
+            _bindings.AddRange(bindings);
+            _logger.LogInformation("已注册 {Count} 条格口发信器绑定配置", _bindings.Count);
+        }
     }
 
     /// <inheritdoc/>
-    public IReadOnlyList<ChuteTransmitterBinding> GetRegisteredBindings() => _bindings;
+    public IReadOnlyList<ChuteTransmitterBinding> GetRegisteredBindings()
+    {
+        lock (_bindingsLock)
+        {
+            return _bindings.ToList();
+        }
+    }
 
     /// <inheritdoc/>
     public async Task OpenWindowAsync(ChuteId chuteId, TimeSpan openDuration, CancellationToken cancellationToken = default)

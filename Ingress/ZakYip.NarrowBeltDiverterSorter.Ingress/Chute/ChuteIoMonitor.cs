@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;
 using ZakYip.NarrowBeltDiverterSorter.Communication;
 using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
@@ -17,7 +18,7 @@ public class ChuteIoMonitor : IIoMonitor
     private readonly ChuteIoMonitorConfiguration _configuration;
     private readonly IEventBus _eventBus;
     private readonly ILogger<ChuteIoMonitor> _logger;
-    private readonly Dictionary<long, bool> _previousStates = new();
+    private readonly ConcurrentDictionary<long, bool> _previousStates = new();
     private CancellationTokenSource? _cancellationTokenSource;
     private Task? _monitoringTask;
 
@@ -42,7 +43,7 @@ public class ChuteIoMonitor : IIoMonitor
         // 初始化所有格口的状态为false
         foreach (var chuteId in _configuration.MonitoredChuteIds)
         {
-            _previousStates[chuteId] = false;
+            _previousStates.TryAdd(chuteId, false);
         }
     }
 
@@ -128,7 +129,7 @@ public class ChuteIoMonitor : IIoMonitor
                     }
 
                     var currentState = states[0];
-                    var previousState = _previousStates[chuteId];
+                    var previousState = _previousStates.GetOrAdd(chuteId, false);
 
                     // 检测状态变化
                     if (currentState != previousState)
