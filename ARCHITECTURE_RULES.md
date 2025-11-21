@@ -5,6 +5,7 @@
 ## 目录
 
 - [Host 层规则](#host-层规则)
+- [依赖注入规则](#依赖注入规则)
 - [时间使用规则](#时间使用规则)
 - [异常处理规则](#异常处理规则)
 - [线程安全规则](#线程安全规则)
@@ -61,6 +62,82 @@ public class Program
         });
     }
 }
+```
+
+---
+
+## 依赖注入规则
+
+### 规则 1.5: 构造函数依赖必须在DI容器中注册
+
+**要求：** 任何已经注册到依赖注入容器的服务类型，当其实现类的构造函数新增任何依赖时，都必须同步在 DI 容器中注册对应的依赖服务。
+
+**原因：** 
+1. 防止应用在启动阶段因无法解析依赖而崩溃
+2. 确保所有服务依赖关系完整且可验证
+3. 避免"Some services are not able to be constructed"错误
+
+**强约束：**
+- 对于 `Core.Abstractions` 和 `Core.Configuration` 命名空间下的接口，它们都是通过 DI 提供的服务契约
+- 一旦在某个实现类中被作为构造函数参数使用，就必须有明确的实现，并被注册到 DI 容器
+- 不允许"写了构造函数依赖，但希望默认构造、可选依赖、或者后面再补"的情况
+- 已经被注册为 Singleton 的服务，其构造函数中新增的依赖，生命周期必须是可被 Singleton 安全依赖的类型（例如 Singleton/Transient）
+
+**正确示例：**
+
+```csharp
+// ✅ 在 Host/Program.cs 中正确注册所有依赖
+
+// 1. 注册小车环配置提供器（ICartAtChuteResolver 的依赖）
+builder.Services.AddSingleton<ICartRingConfigurationProvider, CartRingConfigurationProvider>();
+
+// 2. 注册格口配置提供器（ICartAtChuteResolver 的另一个依赖）
+builder.Services.AddSingleton<IChuteConfigProvider, RepositoryBackedChuteConfigProvider>();
+
+// 3. 注册小车位置跟踪器（ICartAtChuteResolver 的依赖）
+builder.Services.AddSingleton<ICartPositionTracker, CartPositionTracker>();
+
+// 4. 注册格口小车号计算器（ICartAtChuteResolver 的依赖）
+builder.Services.AddSingleton<IChuteCartNumberCalculator, ChuteCartNumberCalculator>();
+
+// 5. 最后注册 ICartAtChuteResolver（所有依赖已就绪）
+builder.Services.AddSingleton<ICartAtChuteResolver, CartAtChuteResolver>();
+```
+
+**错误示例：**
+
+```csharp
+// ❌ 错误：注册服务但遗漏其依赖
+
+// 注册 ICartAtChuteResolver，但没有注册它依赖的 ICartRingConfigurationProvider
+builder.Services.AddSingleton<ICartAtChuteResolver, CartAtChuteResolver>();
+// 结果：启动时抛出 "Unable to resolve service for type 'ICartRingConfigurationProvider' 
+//       while attempting to activate 'CartAtChuteResolver'"
+```
+
+**自检清单：**
+
+修改实现类构造函数并新增构造参数时，必须：
+1. 检查该实现类是否已经通过 DI 注册为某个接口的实现
+2. 确认新增依赖在 DI 容器中已经有注册
+3. 如果没有注册，则本次改动必须同时增加对应的 DI 注册
+4. 确保 Host 可以正常启动，不出现"Some services are not able to be constructed"错误
+5. 运行依赖注入验证测试（见 `E2ETests/DependencyInjectionValidationTests.cs`）
+
+**验证方法：**
+
+1. 运行 DI 验证测试：
+```bash
+dotnet test --filter "FullyQualifiedName~DependencyInjectionValidationTests"
+```
+
+2. 启用 DI 构建时验证（在测试中）：
+```csharp
+var serviceProvider = services.BuildServiceProvider(new ServiceProviderOptions
+{
+    ValidateOnBuild = true,  // 启用构建时验证
+    ValidateScopes = true    // 启用作用域验证
+});
 ```
 
 ---
