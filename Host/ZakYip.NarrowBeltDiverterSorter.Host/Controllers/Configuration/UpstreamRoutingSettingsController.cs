@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Core.Configuration;
 using ZakYip.NarrowBeltDiverterSorter.Host.Contracts.Configuration;
-using ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Host.Controllers.Configuration;
 
@@ -16,7 +15,7 @@ namespace ZakYip.NarrowBeltDiverterSorter.Host.Controllers.Configuration;
 [Route("api/settings/upstream-routing")]
 public class UpstreamRoutingSettingsController : ControllerBase
 {
-    private readonly LiteDbUpstreamRoutingConfigProvider _configProvider;
+    private readonly IUpstreamRoutingConfigProvider _configProvider;
     private readonly ILogger<UpstreamRoutingSettingsController> _logger;
 
     /// <summary>
@@ -28,9 +27,7 @@ public class UpstreamRoutingSettingsController : ControllerBase
         IUpstreamRoutingConfigProvider configProvider,
         ILogger<UpstreamRoutingSettingsController> logger)
     {
-        // 需要强制转换为具体类型以访问 UpdateOptionsAsync 方法
-        _configProvider = (configProvider as LiteDbUpstreamRoutingConfigProvider) 
-            ?? throw new ArgumentException("配置提供器必须是 LiteDbUpstreamRoutingConfigProvider 类型", nameof(configProvider));
+        _configProvider = configProvider ?? throw new ArgumentNullException(nameof(configProvider));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
