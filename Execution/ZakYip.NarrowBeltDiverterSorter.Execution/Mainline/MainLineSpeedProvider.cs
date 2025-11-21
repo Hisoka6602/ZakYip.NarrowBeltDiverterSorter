@@ -86,7 +86,7 @@ public class MainLineSpeedProvider : IMainLineSpeedProvider
                     // 如果之前已经稳定过，触发"稳速后不稳速"联动 IO
                     if (_hasEverBeenStable && _panelIoCoordinator != null)
                     {
-                        // 异步触发但不等待，避免阻塞
+                        // 异步触发但不等待，避免阻塞。异常已在联动方法内部处理
                         _ = Task.Run(async () =>
                         {
                             try
@@ -95,7 +95,8 @@ public class MainLineSpeedProvider : IMainLineSpeedProvider
                             }
                             catch (Exception ex)
                             {
-                                _logger?.LogError(ex, "触发稳速后不稳速联动 IO 失败");
+                                // 双重保险：即使联动方法本身的异常处理失败，也在此捕获
+                                _logger?.LogError(ex, "触发稳速后不稳速联动 IO 时发生未处理异常");
                             }
                         });
                     }
@@ -118,7 +119,7 @@ public class MainLineSpeedProvider : IMainLineSpeedProvider
                     if (_panelIoCoordinator != null && !_firstStableLinkageTriggered)
                     {
                         _firstStableLinkageTriggered = true;
-                        // 异步触发但不等待，避免阻塞
+                        // 异步触发但不等待，避免阻塞。异常已在联动方法内部处理
                         _ = Task.Run(async () =>
                         {
                             try
@@ -127,7 +128,8 @@ public class MainLineSpeedProvider : IMainLineSpeedProvider
                             }
                             catch (Exception ex)
                             {
-                                _logger?.LogError(ex, "触发首次稳速联动 IO 失败");
+                                // 双重保险：即使联动方法本身的异常处理失败，也在此捕获
+                                _logger?.LogError(ex, "触发首次稳速联动 IO 时发生未处理异常");
                             }
                         });
                     }
