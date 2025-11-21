@@ -292,10 +292,10 @@ dotnet run
    - 并发安全（线程安全集合）
    - C# 语言特性（required + init、record、readonly struct）
 
-2. **[项目规则集 (ProjectRules.md)](docs/Conventions/ProjectRules.md)**  
+2. **[项目规则集](docs/Conventions/项目规则集.md)**  
    完整的项目规则文档（15 个主要章节），提供详细的正确/错误示例和验证方法
 
-3. **[架构硬性规则 (ARCHITECTURE_RULES.md)](ARCHITECTURE_RULES.md)**  
+3. **[架构硬性规则](docs/Conventions/架构硬性规则.md)**  
    架构分层与依赖规则：
    - Host 层禁止实现业务逻辑
    - DI 注册完整性要求
@@ -304,7 +304,7 @@ dotnet run
    - 线程安全规则（线程安全集合）
    - 语言特性规则（record、required + init、EventArgs 命名）
 
-4. **[永久约束规则 (PERMANENT_CONSTRAINTS.md)](PERMANENT_CONSTRAINTS.md)**  
+4. **[永久约束规则](docs/Conventions/永久约束规则.md)**  
    永久性技术约束：
    - Host 控制器依赖限制（禁止直接依赖 Infrastructure 具体类型）
    - 线程安全规则（必须使用线程安全集合）
@@ -372,10 +372,10 @@ dotnet run
 ### 📋 项目规范与约束文档
 
 - **[Copilot 强制约束规则](.github/copilot-instructions.md)** - GitHub Copilot 必须遵守的硬性规则
-- **[项目规则集 (ProjectRules.md)](docs/Conventions/ProjectRules.md)** - 完整的项目规则文档，覆盖所有方面
-- **[并发安全与异常处理规范 (ConcurrencyAndExceptionHandling.md)](docs/Conventions/ConcurrencyAndExceptionHandling.md)** - 并发访问控制和异常隔离统一模式
-- **[架构硬性规则 (ARCHITECTURE_RULES.md)](ARCHITECTURE_RULES.md)** - 架构分层与依赖规则
-- **[永久约束规则 (PERMANENT_CONSTRAINTS.md)](PERMANENT_CONSTRAINTS.md)** - DI、时间、异常、并发等约束
+- **[项目规则集](docs/Conventions/项目规则集.md)** - 完整的项目规则文档，覆盖所有方面
+- **[并发安全与异常处理规范](docs/Conventions/并发安全与异常处理规范.md)** - 并发访问控制和异常隔离统一模式
+- **[架构硬性规则](docs/Conventions/架构硬性规则.md)** - 架构分层与依赖规则
+- **[永久约束规则](docs/Conventions/永久约束规则.md)** - DI、时间、异常、并发等约束
 - **[贡献指南 (CONTRIBUTING.md)](CONTRIBUTING.md)** - 编码规范与命名约定
 
 ### 🏗️ 架构设计文档
@@ -383,19 +383,19 @@ dotnet run
 存放在 `docs/Architecture/` 目录：
 
 #### 核心架构文档
-- **[SystemTopology.md](docs/Architecture/SystemTopology.md)** - 系统拓扑图，展示上游系统、Host、Execution、Drivers、小车/格口关系
-- **[CoreBusinessFlow.md](docs/Architecture/CoreBusinessFlow.md)** - 核心业务流程图，从启动按钮到落格的完整流程
-- **[ExceptionHandlingFlow.md](docs/Architecture/ExceptionHandlingFlow.md)** - 异常处理流程图，SafetyIsolator 使用和降级策略
-- **[LayeredArchitecture.md](docs/Architecture/LayeredArchitecture.md)** - 分层架构详细说明，各层职责和依赖规则
+- **[系统拓扑图](docs/Architecture/系统拓扑图.md)** - 系统拓扑图，展示上游系统、Host、Execution、Drivers、小车/格口关系
+- **[核心业务流程](docs/Architecture/核心业务流程.md)** - 核心业务流程图，从启动按钮到落格的完整流程
+- **[异常处理流程](docs/Architecture/异常处理流程.md)** - 异常处理流程图，SafetyIsolator 使用和降级策略
+- **[分层架构说明](docs/Architecture/分层架构说明.md)** - 分层架构详细说明，各层职责和依赖规则
 
 #### 设计原则与规范
-- **[Layering.md](docs/Architecture/Layering.md)** - 分层架构设计原则与规范
-- **[Dependencies.md](docs/Architecture/Dependencies.md)** - 项目依赖关系与管理
-- **[Contracts.md](docs/Architecture/Contracts.md)** - 契约层设计与接口定义
+- **[分层架构设计原则](docs/Architecture/分层架构设计原则.md)** - 分层架构设计原则与规范
+- **[项目依赖关系](docs/Architecture/项目依赖关系.md)** - 项目依赖关系与管理
+- **[契约层设计](docs/Architecture/契约层设计.md)** - 契约层设计与接口定义
 
 #### 系统设计文档
 - **[SORTING_SYSTEM.md](docs/Architecture/SORTING_SYSTEM.md)** - 分拣系统架构文档
-- **[NarrowBeltDesign.md](docs/Architecture/NarrowBeltDesign.md)** - 窄带分拣机设计文档
+- **[窄带分拣机设计](docs/Architecture/窄带分拣机设计.md)** - 窄带分拣机设计文档
 - **[ARCHITECTURE_BASELINE_SUMMARY.md](docs/Architecture/ARCHITECTURE_BASELINE_SUMMARY.md)** - 架构基线总结
 - **[DOMAIN_PURIFICATION_SUMMARY_CN.md](docs/Architecture/DOMAIN_PURIFICATION_SUMMARY_CN.md)** - 领域层净化总结
 - **[PORTS_ADAPTERS_REFACTORING_SUMMARY.md](docs/Architecture/PORTS_ADAPTERS_REFACTORING_SUMMARY.md)** - 端口适配器重构总结
@@ -406,11 +406,11 @@ dotnet run
 
 存放在 `docs/Operations/` 目录：
 
-- **[BringUpGuide.md](docs/Operations/BringUpGuide.md)** - Bring-up 模式指南，包含逐步调试步骤
-- **[RemaLm1000HBringUpGuide.md](docs/Operations/RemaLm1000HBringUpGuide.md)** - Rema LM1000H 主线实机 Bring-up 详细指南
+- **[分步调试指南](docs/Operations/分步调试指南.md)** - Bring-up 模式指南，包含逐步调试步骤
+- **[Rema主线实机调试指南](docs/Operations/Rema主线实机调试指南.md)** - Rema LM1000H 主线实机 Bring-up 详细指南
 - **[SAFETY_CONTROL.md](docs/Operations/SAFETY_CONTROL.md)** - 安全控制设计
 - **[CHUTE_IO_SIMULATION.md](docs/Operations/CHUTE_IO_SIMULATION.md)** - 格口 IO 仿真
-- **[ChuteIoArchitecture.md](docs/Operations/ChuteIoArchitecture.md)** - 格口 IO 架构
+- **[格口IO架构](docs/Operations/格口IO架构.md)** - 格口 IO 架构
 - **[SIGNALR_REALTIME_MONITORING.md](docs/Operations/SIGNALR_REALTIME_MONITORING.md)** - SignalR 实时监控
 - **[REALTIME_MONITORING_PR_SUMMARY.md](docs/Operations/REALTIME_MONITORING_PR_SUMMARY.md)** - 实时监控 PR 总结
 - **[RECORDING_REPLAY_README.md](docs/Operations/RECORDING_REPLAY_README.md)** - 录制回放功能说明
@@ -420,8 +420,8 @@ dotnet run
 
 存放在 `docs/Simulation/` 和 `docs/NarrowBelt/` 目录：
 
-- **[SimulationTesting.md](docs/Simulation/SimulationTesting.md)** - 仿真测试说明，包含1000包裹全链路测试详细文档
-- **[CartNumberingAndChutes.md](docs/NarrowBelt/CartNumberingAndChutes.md)** - 小车编号与格口绑定系统详细说明
+- **[仿真测试说明](docs/Simulation/仿真测试说明.md)** - 仿真测试说明，包含1000包裹全链路测试详细文档
+- **[小车编号与格口绑定](docs/NarrowBelt/小车编号与格口绑定.md)** - 小车编号与格口绑定系统详细说明
 
 #### 1000包裹全链路仿真测试
 
@@ -449,7 +449,7 @@ dotnet test --filter "TestCategory=Simulation"
 - ✅ 无漏落格、无误触发
 - ✅ 所有1000个包裹成功处理
 
-详细说明请参阅 [仿真测试文档](docs/Simulation/SimulationTesting.md)。
+详细说明请参阅 [仿真测试文档](docs/Simulation/仿真测试说明.md)。
 
 ### 📚 实施总结文档
 
@@ -474,10 +474,10 @@ dotnet test --filter "TestCategory=Simulation"
 ### 📚 必读规范文档
 
 1. **[Copilot 强制约束规则](.github/copilot-instructions.md)** - GitHub Copilot 必须遵守的硬性规则
-2. **[项目规则集](docs/Conventions/ProjectRules.md)** - 完整的项目规则文档
-3. **[并发安全与异常处理规范](docs/Conventions/ConcurrencyAndExceptionHandling.md)** - 并发控制与异常隔离（**必读**）
-4. **[架构硬性规则](ARCHITECTURE_RULES.md)** - 架构分层与依赖规则（**必读**）
-5. **[永久约束规则](PERMANENT_CONSTRAINTS.md)** - 技术约束规则
+2. **[项目规则集](docs/Conventions/项目规则集.md)** - 完整的项目规则文档
+3. **[并发安全与异常处理规范](docs/Conventions/并发安全与异常处理规范.md)** - 并发控制与异常隔离（**必读**）
+4. **[架构硬性规则](docs/Conventions/架构硬性规则.md)** - 架构分层与依赖规则（**必读**）
+5. **[永久约束规则](docs/Conventions/永久约束规则.md)** - 技术约束规则
 6. **[贡献指南](CONTRIBUTING.md)** - 编码规范与命名约定
 
 ### ✅ 贡献前检查清单
@@ -518,9 +518,9 @@ dotnet test --filter "TestCategory=Simulation"
 
 ### 📐 核心架构文档
 
-- **[系统拓扑图](docs/Architecture/SystemTopology.md)** - 完整的系统组件拓扑，包含上游系统、Host、Execution、Drivers、小车/格口关系、数据流向
-- **[核心业务流程](docs/Architecture/CoreBusinessFlow.md)** - 从启动按钮 → 数小车 → 包裹创建 → 绑定 → 落格的完整流程
-- **[分层架构说明](docs/Architecture/LayeredArchitecture.md)** - 各层职责、依赖规则和最佳实践
+- **[系统拓扑图](docs/Architecture/系统拓扑图.md)** - 完整的系统组件拓扑，包含上游系统、Host、Execution、Drivers、小车/格口关系、数据流向
+- **[核心业务流程](docs/Architecture/核心业务流程.md)** - 从启动按钮 → 数小车 → 包裹创建 → 绑定 → 落格的完整流程
+- **[分层架构说明](docs/Architecture/分层架构说明.md)** - 各层职责、依赖规则和最佳实践
 
 ### 🔄 业务流程概览
 
@@ -535,7 +535,7 @@ dotnet test --filter "TestCategory=Simulation"
 7. **落格确认**: 格口传感器确认包裹成功落格
 8. **结果上报**: 通过 Communication 层上报分拣结果到上游 WCS
 
-详细流程请参阅 [核心业务流程文档](docs/Architecture/CoreBusinessFlow.md)。
+详细流程请参阅 [核心业务流程文档](docs/Architecture/核心业务流程.md)。
 
 ---
 
@@ -545,7 +545,7 @@ dotnet test --filter "TestCategory=Simulation"
 
 ### 🛡️ 异常处理策略
 
-- **[异常处理流程](docs/Architecture/ExceptionHandlingFlow.md)** - 完整的异常处理流程图和最佳实践
+- **[异常处理流程](docs/Architecture/异常处理流程.md)** - 完整的异常处理流程图和最佳实践
 
 ### 核心机制
 
@@ -582,7 +582,7 @@ _throttledLogger.LogError(ex, "上游连接失败");
 - ✅ **连接失败**: 无限重试，最大退避 2 秒
 - ❌ **发送失败**: 不重试，仅记录日志
 
-详细说明请参阅 [异常处理流程文档](docs/Architecture/ExceptionHandlingFlow.md)。
+详细说明请参阅 [异常处理流程文档](docs/Architecture/异常处理流程.md)。
 
 ---
 
