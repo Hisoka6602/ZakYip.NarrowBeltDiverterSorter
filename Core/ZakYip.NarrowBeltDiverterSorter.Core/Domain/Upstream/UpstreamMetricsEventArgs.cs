@@ -36,7 +36,7 @@ public record class UpstreamMetricsEventArgs
     public DateTimeOffset? LastErrorAt { get; init; }
 
     /// <summary>
-    /// 事件时间戳
+    /// 事件时间戳（本地时间）
     /// </summary>
-    public DateTimeOffset Timestamp { get; init; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset Timestamp { get; init; } = DateTimeOffset.Now;
 }

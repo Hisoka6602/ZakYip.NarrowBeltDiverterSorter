@@ -46,7 +46,7 @@ public record class SortingResultAckEventArgs
     public string? FailureReason { get; init; }
 
     /// <summary>
-    /// 确认时间
+    /// 确认时间（本地时间）
     /// </summary>
-    public DateTimeOffset AckTime { get; init; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset AckTime { get; init; } = DateTimeOffset.Now;
 }

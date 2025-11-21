@@ -27,7 +27,7 @@ public class ParcelRoutedEventArgs : EventArgs
     public string? ErrorMessage { get; init; }
 
     /// <summary>
-    /// 路由时间
+    /// 路由时间（本地时间）
     /// </summary>
-    public DateTimeOffset RoutedTime { get; init; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset RoutedTime { get; init; } = DateTimeOffset.Now;
 }

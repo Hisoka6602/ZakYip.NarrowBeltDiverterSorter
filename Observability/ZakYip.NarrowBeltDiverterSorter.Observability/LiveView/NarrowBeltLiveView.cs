@@ -24,19 +24,19 @@ public class NarrowBeltLiveView : INarrowBeltLiveView, IDisposable
         ActualMmps = 0,
         TargetMmps = 0,
         Status = LineSpeedStatus.Unknown,
-        LastUpdatedAt = DateTimeOffset.UtcNow
+        LastUpdatedAt = DateTimeOffset.Now
     };
 
     private OriginCartSnapshot _originCartSnapshot = new()
     {
         CartId = null,
-        LastUpdatedAt = DateTimeOffset.UtcNow
+        LastUpdatedAt = DateTimeOffset.Now
     };
 
     private ChuteCartSnapshot _chuteCartSnapshot = new()
     {
         Mapping = new Dictionary<long, long?>(),
-        LastUpdatedAt = DateTimeOffset.UtcNow
+        LastUpdatedAt = DateTimeOffset.Now
     };
 
     private ParcelSummary? _lastCreatedParcel;
@@ -47,20 +47,20 @@ public class NarrowBeltLiveView : INarrowBeltLiveView, IDisposable
     {
         Status = DeviceStatus.Idle,
         Message = null,
-        LastUpdatedAt = DateTimeOffset.UtcNow
+        LastUpdatedAt = DateTimeOffset.Now
     };
 
     private CartLayoutSnapshot _cartLayoutSnapshot = new()
     {
         CartPositions = Array.Empty<CartPositionSnapshot>(),
-        LastUpdatedAt = DateTimeOffset.UtcNow
+        LastUpdatedAt = DateTimeOffset.Now
     };
 
     private LineRunStateSnapshot _lineRunStateSnapshot = new()
     {
         State = "Idle",
         Message = null,
-        LastUpdatedAt = DateTimeOffset.UtcNow
+        LastUpdatedAt = DateTimeOffset.Now
     };
 
     private SafetyStateSnapshot _safetyStateSnapshot = new()
@@ -68,7 +68,7 @@ public class NarrowBeltLiveView : INarrowBeltLiveView, IDisposable
         State = "Safe",
         Source = null,
         Message = null,
-        LastUpdatedAt = DateTimeOffset.UtcNow
+        LastUpdatedAt = DateTimeOffset.Now
     };
 
     private UpstreamRuleEngineSnapshot _upstreamRuleEngineSnapshot = new()
@@ -76,7 +76,7 @@ public class NarrowBeltLiveView : INarrowBeltLiveView, IDisposable
         Mode = "Disabled",
         Status = UpstreamConnectionStatus.Disabled,
         ConnectionAddress = null,
-        LastUpdatedAt = DateTimeOffset.UtcNow
+        LastUpdatedAt = DateTimeOffset.Now
     };
 
     private LastSortingRequestSnapshot? _lastSortingRequest;
@@ -91,7 +91,7 @@ public class NarrowBeltLiveView : INarrowBeltLiveView, IDisposable
         FeedingThrottledCount = 0,
         FeedingPausedCount = 0,
         ThrottleMode = "None",
-        LastUpdatedAt = DateTimeOffset.UtcNow
+        LastUpdatedAt = DateTimeOffset.Now
     };
 
     public NarrowBeltLiveView(IEventBus eventBus, ISystemFaultService faultService, ILogger<NarrowBeltLiveView> logger)
@@ -216,7 +216,7 @@ public class NarrowBeltLiveView : INarrowBeltLiveView, IDisposable
             VolumeCubicMm = eventArgs.VolumeCubicMm,
             TargetChuteId = eventArgs.TargetChuteId,
             ActualChuteId = eventArgs.ActualChuteId,
-            CreatedAt = DateTimeOffset.UtcNow, // 没有创建时间，使用当前时间
+            CreatedAt = DateTimeOffset.Now, // 没有创建时间，使用当前本地时间
             DivertedAt = eventArgs.DivertedAt
         };
 
@@ -532,7 +532,7 @@ public class NarrowBeltLiveView : INarrowBeltLiveView, IDisposable
                 IsBlocking = f.IsBlocking
             }).ToList(),
             HasBlockingFault = hasBlockingFault,
-            LastUpdatedAt = DateTimeOffset.UtcNow
+            LastUpdatedAt = DateTimeOffset.Now
         };
     }
 

@@ -75,7 +75,7 @@ public class ParcelLoadCoordinator
             return;
         }
 
-        var loadedTime = DateTimeOffset.UtcNow;
+        var loadedTime = DateTimeOffset.Now;
 
         _logAction?.Invoke($"[上车规划] 包裹 {e.ParcelId.Value} 预测上车小车 {predictedCartId.Value.Value}");
 

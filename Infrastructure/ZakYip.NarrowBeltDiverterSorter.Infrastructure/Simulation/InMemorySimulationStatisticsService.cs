@@ -22,7 +22,7 @@ public class InMemorySimulationStatisticsService : ISimulationStatisticsService
         _runs[runId] = new RunStatistics
         {
             RunId = runId,
-            StartTime = DateTimeOffset.UtcNow,
+            StartTime = DateTimeOffset.Now,
             IsCompleted = false
         };
     }
@@ -36,7 +36,7 @@ public class InMemorySimulationStatisticsService : ISimulationStatisticsService
             _runs[runId] = stats with
             {
                 IsCompleted = true,
-                EndTime = DateTimeOffset.UtcNow
+                EndTime = DateTimeOffset.Now
             };
         }
 

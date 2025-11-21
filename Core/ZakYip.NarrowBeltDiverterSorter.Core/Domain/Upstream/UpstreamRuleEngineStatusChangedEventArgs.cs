@@ -21,7 +21,7 @@ public record class UpstreamRuleEngineStatusChangedEventArgs
     public string? ConnectionAddress { get; init; }
 
     /// <summary>
-    /// 状态变更时间
+    /// 状态变更时间（本地时间）
     /// </summary>
-    public DateTimeOffset Timestamp { get; init; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset Timestamp { get; init; } = DateTimeOffset.Now;
 }
