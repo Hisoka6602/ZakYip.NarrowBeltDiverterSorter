@@ -13,49 +13,105 @@
 - [ ] 🧪 测试相关 (Test changes)
 - [ ] 🔧 配置更改 (Configuration change)
 
-## 架构硬性规则检查 (Architecture Rules Checklist)
+---
 
-<!-- 在提交 PR 前，请务必检查以下项目。详见 ARCHITECTURE_RULES.md -->
+## 项目强制基线规则检查清单 (Baseline Rules Checklist)
 
-### Host 层规则
+> **⚠️ 重要**：在提交 PR 前，请务必检查以下项目。详见 [.github/copilot-instructions.md](.github/copilot-instructions.md)、[ARCHITECTURE_RULES.md](ARCHITECTURE_RULES.md) 和 [PERMANENT_CONSTRAINTS.md](PERMANENT_CONSTRAINTS.md)
+
+### 1. 通讯与重试策略
+
+- [ ] 通讯重试策略未被破坏（客户端连接失败无限重试，最大退避 2 秒）
+- [ ] 发送失败不重试，仅记录日志
+- [ ] 未新增发送失败自动重试的行为
+
+### 2. API 设计与参数验证
+
+- [ ] 新增/修改的 API 端点均使用特性（Attribute）标记做参数验证
+- [ ] 没有仅依赖手写 if 判断与抛异常来做参数校验
+- [ ] 相关功能的 API 端点合理合并在同一控制器中
+- [ ] 必须配置都有 API 端点用于设置和读取
+
+### 3. 日志管理
+
+- [ ] 相同内容的日志间隔至少 1 秒（使用节流日志记录器）
+- [ ] 日志保留天数在 appsettings.json 中可配置
+- [ ] 默认保留 3 天日志
+
+### 4. Host 层规则
 
 - [ ] Host 层代码只包含 DI 配置和启动逻辑，没有业务逻辑
+- [ ] Host 层控制器未直接依赖 `Infrastructure.*` 命名空间下的具体类型
+- [ ] Host 层控制器未直接依赖具体驱动实现
+- [ ] Host 层控制器只依赖 Core/Application 层的抽象接口
 - [ ] 所有服务注册都使用依赖注入
+- [ ] 所有构造函数依赖都已在 DI 容器中注册
 
-### 时间使用规则
+### 5. Execution/Drivers 分层
 
-- [ ] 没有直接使用 `DateTime.Now` 或 `DateTime.UtcNow`
-- [ ] 所有时间获取都通过 `ILocalTimeProvider` 或类似的时间提供器
+- [ ] Execution 层通过抽象接口调用 Drivers / Infrastructure
+- [ ] 核心调度、小车逻辑、分拣逻辑在 Execution 层
+- [ ] 具体厂商硬件实现在 Drivers 层（如适用）
+- [ ] 支持多厂商设备扩展（如适用）
 
-### 异常处理规则
+### 6. 时间使用规范
+
+- [ ] 没有直接使用 `DateTime.UtcNow` 或 `DateTimeOffset.UtcNow`
+- [ ] 所有时间获取都通过 `ILocalTimeProvider` 或使用本地时间
+- [ ] 日志、事件、数据库字段、配置更新时间等均使用本地时间
+- [ ] UTC 转换仅在与外部系统边界处理
+
+### 7. 异常安全隔离
 
 - [ ] 所有外部调用（硬件、网络、文件 IO）都使用了安全隔离器
+- [ ] 异常被捕获并记录日志
 - [ ] 异常处理不会导致应用崩溃
+- [ ] 返回安全的结果/状态，而不是让异常冒泡
 
-### 线程安全规则
+### 8. 并发安全
 
-- [ ] 多线程共享的集合使用了线程安全类型（`ConcurrentDictionary`、`ImmutableList` 等）
+- [ ] 多线程共享的集合使用了线程安全类型（`ConcurrentDictionary`、`ConcurrentQueue` 等）
 - [ ] 没有不安全的并发访问
+- [ ] 锁的使用正确且不会导致死锁（如使用锁）
 
-### 语言特性规则
+### 9. C# 语言特性规范
 
-- [ ] DTO 和事件载荷使用了 `record` 或 `record struct`
+- [ ] DTO 和不可变数据使用了 `record` 或 `record struct`
 - [ ] 必填属性使用了 `required` + `init`
 - [ ] 事件载荷命名以 `EventArgs` 结尾
 - [ ] 性能关键的值类型使用了 `readonly struct`（如适用）
+- [ ] 启用了 nullable，处理了空引用警告
+- [ ] 内部辅助类型使用文件作用域（file 关键字）
 
-### 文档更新规则
+### 10. 文档更新
 
+- [ ] 文档按目录分类（Architecture/Simulation/Operations/Conventions）
 - [ ] README.md 已更新（如果功能影响项目整体）
+- [ ] README.md 有文档导航入口
 - [ ] docs/ 目录下的相应文档已更新
 - [ ] 新增功能有使用说明和示例
-- [ ] 架构图已更新（如有架构变化）
+- [ ] 架构图/拓扑图/流程图已更新（如有架构变化）
+
+### 11. 性能与资源
+
+- [ ] 代码简洁高效，减少不必要的复杂度
+- [ ] 避免不必要的内存分配
+- [ ] 热路径代码已优化（如适用）
+
+### 12. 仿真与测试（如适用）
+
+- [ ] 新逻辑和关键路径通过仿真验证
+- [ ] 复杂仿真场景覆盖完整流程（如适用）
+
+---
 
 ## 例外说明 (Exceptions)
 
-<!-- 如果某些规则在本 PR 中不适用或有特殊原因需要例外，请在此说明 -->
+<!-- 如果某些规则在本 PR 中不适用或有特殊原因需要例外，请在此明确说明 -->
 
 N/A
+
+---
 
 ## 测试 (Testing)
 
@@ -64,15 +120,21 @@ N/A
 - [ ] 已添加单元测试
 - [ ] 已添加集成测试
 - [ ] 已运行现有测试套件，全部通过
+- [ ] 已运行 DI 验证测试，全部通过
 - [ ] 已手动测试功能
+- [ ] 构建成功（dotnet build）
 
 ### 测试结果
 
 <!-- 请粘贴测试结果或截图 -->
 
-```
+```bash
+# dotnet build 输出
+
 # dotnet test 输出
 ```
+
+---
 
 ## 相关 Issue (Related Issues)
 
@@ -80,15 +142,33 @@ N/A
 
 Closes #
 
+---
+
 ## 额外说明 (Additional Notes)
 
 <!-- 任何其他需要说明的信息 -->
 
 ---
 
-**审查者注意事项 (Reviewer Notes):**
+## 审查者注意事项 (Reviewer Notes)
 
-1. 请仔细检查上述架构规则检查项是否都已勾选
-2. 如有例外情况，请确认例外原因合理
-3. 确保所有测试通过
-4. 检查代码风格是否符合 CONTRIBUTING.md
+**在批准此 PR 前，请确认：**
+
+1. ✅ 所有基线规则检查项都已勾选或有合理例外说明
+2. ✅ Host 层依赖关系符合架构规范
+3. ✅ 时间使用符合本地时间规范
+4. ✅ 异常处理使用安全隔离器
+5. ✅ 并发访问使用线程安全集合
+6. ✅ 所有测试通过
+7. ✅ 代码风格符合 [CONTRIBUTING.md](CONTRIBUTING.md)
+8. ✅ 文档已同步更新
+
+**如有例外情况，请确认例外原因合理且已获批准。**
+
+---
+
+**相关规范文档：**
+- [Copilot 强制约束规则](.github/copilot-instructions.md)
+- [架构硬性规则](ARCHITECTURE_RULES.md)
+- [永久约束规则](PERMANENT_CONSTRAINTS.md)
+- [贡献指南](CONTRIBUTING.md)

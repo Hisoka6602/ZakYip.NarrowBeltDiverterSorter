@@ -10,6 +10,7 @@
 - [运行流程](#运行流程-execution-flow)
 - [技术栈](#技术栈-technology-stack)
 - [开发指南](#开发指南-development-guide)
+- [项目规范与约束](#项目规范与约束-project-conventions-and-constraints)
 - [文档导航](#文档导航-documentation-navigation)
 - [贡献指南](#贡献指南-contributing)
 
@@ -270,49 +271,151 @@ dotnet run
 - 模拟格口发信器和分拣过程
 - 中文控制台日志输出
 
-详细设计文档请参阅 [docs/NarrowBeltDesign.md](docs/NarrowBeltDesign.md)
+详细设计文档请参阅 [docs/Architecture/NarrowBeltDesign.md](docs/Architecture/NarrowBeltDesign.md)
+
+## 项目规范与约束 (Project Conventions and Constraints)
+
+本项目建立了一套完整的强制基线规范，覆盖架构、编码、通讯、日志、异常处理等所有方面。**所有贡献者和 GitHub Copilot 必须严格遵守这些规范。**
+
+### 📌 核心规范文档
+
+1. **[Copilot 强制约束规则](.github/copilot-instructions.md)**  
+   GitHub Copilot 在生成或修改代码时必须遵守的 14 大类硬性规则，包括：
+   - 通讯与重试策略（客户端无限重试，发送失败不重试）
+   - API 设计与参数验证（必须使用特性标记）
+   - 日志管理（节流、保留天数配置）
+   - 架构分层（Host/Execution/Drivers 职责划分）
+   - 时间使用规范（统一使用本地时间）
+   - 异常安全隔离（使用安全隔离器）
+   - 并发安全（线程安全集合）
+   - C# 语言特性（required + init、record、readonly struct）
+
+2. **[项目规则集 (ProjectRules.md)](docs/Conventions/ProjectRules.md)**  
+   完整的项目规则文档（15 个主要章节），提供详细的正确/错误示例和验证方法
+
+3. **[架构硬性规则 (ARCHITECTURE_RULES.md)](ARCHITECTURE_RULES.md)**  
+   架构分层与依赖规则：
+   - Host 层禁止实现业务逻辑
+   - DI 注册完整性要求
+   - 时间使用规则（必须使用 ILocalTimeProvider）
+   - 异常处理规则（必须使用安全隔离器）
+   - 线程安全规则（线程安全集合）
+   - 语言特性规则（record、required + init、EventArgs 命名）
+
+4. **[永久约束规则 (PERMANENT_CONSTRAINTS.md)](PERMANENT_CONSTRAINTS.md)**  
+   永久性技术约束：
+   - Host 控制器依赖限制（禁止直接依赖 Infrastructure 具体类型）
+   - 线程安全规则（必须使用线程安全集合）
+   - 时间使用规则（不能使用 UTC 时间）
+   - 异常安全规则（必须使用 SafetyIsolator）
+   - 接口完整性规则
+
+5. **[贡献指南 (CONTRIBUTING.md)](CONTRIBUTING.md)**  
+   编码规范与命名约定：
+   - 注释语言（中文）
+   - 事件载荷命名（以 EventArgs 结尾）
+   - 枚举类型（必须添加 Description 特性）
+   - 布尔属性命名（Is/Has/Can/Should 前缀）
+   - ID 类型约定（long 类型）
+   - 技术偏好（.NET 8、LINQ 优先、性能优化）
+
+### 🔒 强制约束要点
+
+#### 1. 通讯重试策略
+- ✅ 客户端连接失败：无限重试，最大退避 2 秒
+- ✅ 发送失败：只记录日志，不重试
+- ❌ 禁止修改为有限重试或发送重试
+
+#### 2. API 参数验证
+- ✅ 必须使用特性标记（`[Required]`、`[Range]` 等）
+- ❌ 禁止仅依赖手写 if 判断
+
+#### 3. Host 层打薄
+- ✅ Host 层只负责 DI 配置和启动
+- ❌ 禁止直接依赖 Infrastructure 具体类型
+- ❌ 禁止包含业务逻辑
+
+#### 4. 时间使用
+- ✅ 统一使用本地时间（`ILocalTimeProvider`）
+- ❌ 禁止使用 `DateTime.UtcNow`
+
+#### 5. 异常安全
+- ✅ 外部调用必须使用安全隔离器
+- ✅ 异常只记录不崩溃
+
+#### 6. 并发安全
+- ✅ 多线程共享集合使用 `ConcurrentDictionary` 等
+- ❌ 禁止使用非线程安全集合
+
+#### 7. C# 语言特性
+- ✅ DTO 使用 `record`
+- ✅ 必填属性使用 `required + init`
+- ✅ 事件载荷命名以 `EventArgs` 结尾
+
+### 📝 PR 提交要求
+
+所有 PR 必须：
+- [ ] 通过所有基线规则检查（见 [PR 模板](.github/pull_request_template.md)）
+- [ ] 构建成功（`dotnet build`）
+- [ ] 测试通过（`dotnet test`）
+- [ ] DI 验证测试通过
+- [ ] 文档同步更新
+
+**违反规则的 PR 将被拒绝，除非有明确的例外说明并获得批准。**
 
 ## 文档导航 (Documentation Navigation)
 
-### 架构设计文档
+本项目采用分类文档结构，所有文档按职责分类存放。
 
-- **[Layering.md](docs/architecture/Layering.md)** - 分层架构设计原则与规范
-- **[Dependencies.md](docs/architecture/Dependencies.md)** - 项目依赖关系与管理
-- **[Contracts.md](docs/architecture/Contracts.md)** - 契约层设计与接口定义
-- **[ARCHITECTURE_BASELINE_SUMMARY.md](docs/architecture/ARCHITECTURE_BASELINE_SUMMARY.md)** - 架构基线总结
-- **[DOMAIN_PURIFICATION_SUMMARY_CN.md](docs/architecture/DOMAIN_PURIFICATION_SUMMARY_CN.md)** - 领域层净化总结
-- **[PORTS_ADAPTERS_REFACTORING_SUMMARY.md](docs/architecture/PORTS_ADAPTERS_REFACTORING_SUMMARY.md)** - 端口适配器重构总结
-- **[SORTING_SYSTEM.md](docs/architecture/SORTING_SYSTEM.md)** - 分拣系统架构文档
+### 📋 项目规范与约束文档
 
-### 执行与运维文档
+- **[Copilot 强制约束规则](.github/copilot-instructions.md)** - GitHub Copilot 必须遵守的硬性规则
+- **[项目规则集 (ProjectRules.md)](docs/Conventions/ProjectRules.md)** - 完整的项目规则文档，覆盖所有方面
+- **[架构硬性规则 (ARCHITECTURE_RULES.md)](ARCHITECTURE_RULES.md)** - 架构分层与依赖规则
+- **[永久约束规则 (PERMANENT_CONSTRAINTS.md)](PERMANENT_CONSTRAINTS.md)** - DI、时间、异常、并发等约束
+- **[贡献指南 (CONTRIBUTING.md)](CONTRIBUTING.md)** - 编码规范与命名约定
 
-- **[BringUpGuide.md](docs/BringUpGuide.md)** - Bring-up 模式指南，包含逐步调试步骤
-- **[RemaLm1000HBringUpGuide.md](docs/RemaLm1000HBringUpGuide.md)** - Rema LM1000H 主线实机 Bring-up 详细指南
-- **[NarrowBeltDesign.md](docs/NarrowBeltDesign.md)** - 窄带分拣机设计文档
-  - 与 WheelDiverterSorter 的异同对比
-  - 双 IO 数小车算法说明
-  - 入口 IO 到落车的时间-位置换算
-  - 主驱稳速与格口发信器窗口控制
-  - 强排口清空策略
+### 🏗️ 架构设计文档
 
-### 可观测性文档
+存放在 `docs/Architecture/` 目录：
 
-- **[SAFETY_CONTROL.md](docs/SAFETY_CONTROL.md)** - 安全控制设计
-- **[CHUTE_IO_SIMULATION.md](docs/CHUTE_IO_SIMULATION.md)** - 格口 IO 仿真
-- **[ChuteIoArchitecture.md](docs/ChuteIoArchitecture.md)** - 格口 IO 架构
-- **[SIGNALR_REALTIME_MONITORING.md](docs/SIGNALR_REALTIME_MONITORING.md)** - SignalR 实时监控
-- **[REALTIME_MONITORING_PR_SUMMARY.md](docs/REALTIME_MONITORING_PR_SUMMARY.md)** - 实时监控 PR 总结
-- **[RECORDING_REPLAY_README.md](docs/observability/RECORDING_REPLAY_README.md)** - 录制回放功能说明
-- **[RECORDING_REPLAY_SIMULATION_SETUP.md](docs/observability/RECORDING_REPLAY_SIMULATION_SETUP.md)** - 录制回放仿真设置
+- **[Layering.md](docs/Architecture/Layering.md)** - 分层架构设计原则与规范
+- **[Dependencies.md](docs/Architecture/Dependencies.md)** - 项目依赖关系与管理
+- **[Contracts.md](docs/Architecture/Contracts.md)** - 契约层设计与接口定义
+- **[SORTING_SYSTEM.md](docs/Architecture/SORTING_SYSTEM.md)** - 分拣系统架构文档
+- **[NarrowBeltDesign.md](docs/Architecture/NarrowBeltDesign.md)** - 窄带分拣机设计文档
+- **[ARCHITECTURE_BASELINE_SUMMARY.md](docs/Architecture/ARCHITECTURE_BASELINE_SUMMARY.md)** - 架构基线总结
+- **[DOMAIN_PURIFICATION_SUMMARY_CN.md](docs/Architecture/DOMAIN_PURIFICATION_SUMMARY_CN.md)** - 领域层净化总结
+- **[PORTS_ADAPTERS_REFACTORING_SUMMARY.md](docs/Architecture/PORTS_ADAPTERS_REFACTORING_SUMMARY.md)** - 端口适配器重构总结
+- **[LiteDB_Configuration_Refactoring.md](docs/Architecture/LiteDB_Configuration_Refactoring.md)** - LiteDB 配置重构说明
+- **[UPSTREAM_ROUTING_CONFIG_API.md](docs/Architecture/UPSTREAM_ROUTING_CONFIG_API.md)** - 上游路由配置 API
 
-### 配置与集成文档
+### 🚀 执行与运维文档
 
-- **[LiteDB_Configuration_Refactoring.md](docs/LiteDB_Configuration_Refactoring.md)** - LiteDB 配置重构说明
-- **[UPSTREAM_ROUTING_CONFIG_API.md](docs/UPSTREAM_ROUTING_CONFIG_API.md)** - 上游路由配置 API
+存放在 `docs/Operations/` 目录：
 
-### 实施总结文档
+- **[BringUpGuide.md](docs/Operations/BringUpGuide.md)** - Bring-up 模式指南，包含逐步调试步骤
+- **[RemaLm1000HBringUpGuide.md](docs/Operations/RemaLm1000HBringUpGuide.md)** - Rema LM1000H 主线实机 Bring-up 详细指南
+- **[SAFETY_CONTROL.md](docs/Operations/SAFETY_CONTROL.md)** - 安全控制设计
+- **[CHUTE_IO_SIMULATION.md](docs/Operations/CHUTE_IO_SIMULATION.md)** - 格口 IO 仿真
+- **[ChuteIoArchitecture.md](docs/Operations/ChuteIoArchitecture.md)** - 格口 IO 架构
+- **[SIGNALR_REALTIME_MONITORING.md](docs/Operations/SIGNALR_REALTIME_MONITORING.md)** - SignalR 实时监控
+- **[REALTIME_MONITORING_PR_SUMMARY.md](docs/Operations/REALTIME_MONITORING_PR_SUMMARY.md)** - 实时监控 PR 总结
+- **[RECORDING_REPLAY_README.md](docs/Operations/RECORDING_REPLAY_README.md)** - 录制回放功能说明
+- **[RECORDING_REPLAY_SIMULATION_SETUP.md](docs/Operations/RECORDING_REPLAY_SIMULATION_SETUP.md)** - 录制回放仿真设置
 
-存放在 `docs/implementation-summaries/` 目录下，包含各个功能模块的实施总结：
+### 🧪 仿真与测试文档
+
+存放在 `docs/Simulation/` 目录：
+
+- **[NarrowBelt/](docs/NarrowBelt/)** - 窄带分拣机仿真相关文档
+  - 仿真场景说明
+  - 小车编号与格口计算逻辑
+  - 仿真测试与回归验证
+
+### 📚 实施总结文档
+
+存放在 `docs/implementation-summaries/` 目录，包含各个功能模块的实施总结：
 
 - **[IMPLEMENTATION_SUMMARY.md](docs/implementation-summaries/IMPLEMENTATION_SUMMARY.md)** - 总体实施总结
 - **[PR1_RUNTIME_COMMUNICATION_REFACTOR_SUMMARY.md](docs/implementation-summaries/PR1_RUNTIME_COMMUNICATION_REFACTOR_SUMMARY.md)** - PR1 运行时通信重构
@@ -328,14 +431,47 @@ dotnet run
 
 ## 贡献指南 (Contributing)
 
-在贡献代码前，请务必阅读 [CONTRIBUTING.md](CONTRIBUTING.md)，了解：
+在贡献代码前，**必须**阅读以下规范文档：
 
-- 编码规范与命名约定
-- 架构分层原则
-- 技术偏好（.NET 8 特性、LINQ 优先、性能优化）
-- 测试要求
+### 📚 必读规范文档
 
-我们期待您的贡献！🎉
+1. **[Copilot 强制约束规则](.github/copilot-instructions.md)** - GitHub Copilot 必须遵守的硬性规则
+2. **[项目规则集](docs/Conventions/ProjectRules.md)** - 完整的项目规则文档
+3. **[架构硬性规则](ARCHITECTURE_RULES.md)** - 架构分层与依赖规则（**必读**）
+4. **[永久约束规则](PERMANENT_CONSTRAINTS.md)** - 技术约束规则
+5. **[贡献指南](CONTRIBUTING.md)** - 编码规范与命名约定
+
+### ✅ 贡献前检查清单
+
+提交 PR 前，请确认：
+
+- [ ] 已阅读所有规范文档
+- [ ] 代码符合架构分层原则（Host 层打薄、依赖抽象接口）
+- [ ] 时间使用本地时间，未使用 UTC
+- [ ] 外部调用使用安全隔离器
+- [ ] 多线程共享集合使用线程安全类型
+- [ ] API 参数使用特性标记验证
+- [ ] DTO 使用 `record`，对象使用 `required + init`
+- [ ] 事件载荷命名以 `EventArgs` 结尾
+- [ ] 构建成功（`dotnet build`）
+- [ ] 所有测试通过（`dotnet test`）
+- [ ] 文档已同步更新
+
+### 🚫 常见违规提醒
+
+**禁止的行为**：
+- ❌ Host 控制器直接依赖 Infrastructure 具体类型
+- ❌ 使用 `DateTime.UtcNow`
+- ❌ 外部调用不使用安全隔离器
+- ❌ 多线程共享使用非线程安全集合（如 `Dictionary`）
+- ❌ API 参数仅用 if 语句校验
+- ❌ 修改通讯重试策略（客户端无限重试，发送失败不重试）
+
+### 📝 提交 PR
+
+使用 [PR 模板](.github/pull_request_template.md) 提交 PR，确保勾选所有适用的检查项。
+
+**我们期待您的贡献！** 🎉
 
 ## 系统架构 (System Architecture)
 
