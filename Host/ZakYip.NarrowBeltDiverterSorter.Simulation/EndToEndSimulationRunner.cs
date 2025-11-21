@@ -13,6 +13,7 @@ using ZakYip.NarrowBeltDiverterSorter.Execution.Vendors.Simulated;
 using ZakYip.NarrowBeltDiverterSorter.Simulation.Fakes;
 using ZakYip.NarrowBeltDiverterSorter.UpstreamContracts.Models;
 using ZakYip.NarrowBeltDiverterSorter.Core.Enums;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Simulation;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Simulation;
 

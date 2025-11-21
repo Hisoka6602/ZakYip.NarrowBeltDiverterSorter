@@ -31,6 +31,8 @@ using ZakYip.NarrowBeltDiverterSorter.Simulation.Fakes;
 using ZakYip.NarrowBeltDiverterSorter.Observability;
 using ZakYip.NarrowBeltDiverterSorter.Core.SelfCheck;
 using ZakYip.NarrowBeltDiverterSorter.Simulation.Scenarios;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Configuration;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Simulation;
 
 Console.OutputEncoding = System.Text.Encoding.UTF8;
 Console.WriteLine("════════════════════════════════════════");

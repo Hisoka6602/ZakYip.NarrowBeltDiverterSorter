@@ -1,5 +1,6 @@
 using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.UpstreamContracts.Models;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Simulation;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Simulation.Fakes;
 
