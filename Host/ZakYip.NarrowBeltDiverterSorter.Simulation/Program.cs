@@ -197,6 +197,13 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
     });
 
     // ============================================================================
+    // 注册配置存储（仿真模式）
+    // ============================================================================
+    
+    builder.Services.AddSingleton<ISorterConfigurationStore>(sp =>
+        new LiteDbSorterConfigurationStore(sp.GetRequiredService<ILogger<LiteDbSorterConfigurationStore>>(), dbPath));
+
+    // ============================================================================
     // 配置选项
     // ============================================================================
 
@@ -317,6 +324,54 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
     builder.Services.AddSingleton<IMainLineSpeedProvider, MainLineSpeedProvider>();
     builder.Services.AddSingleton<IMainLineStabilityProvider, MainLineStabilityProvider>();
     builder.Services.AddSingleton<ICartPositionTracker, CartPositionTracker>();
+    
+    // 注册小车环配置提供器（仿真模式使用内存配置）
+
+    
+    builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Configuration.ICartRingConfigurationProvider>(sp =>
+
+    
+    {
+
+    
+        var logger = sp.GetRequiredService<ILoggerFactory>()
+
+    
+            .CreateLogger<ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration.CartRingConfigurationProvider>();
+
+    
+        var configStore = sp.GetRequiredService<ZakYip.NarrowBeltDiverterSorter.Core.Configuration.ISorterConfigurationStore>();
+
+    
+        var provider = new ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration.CartRingConfigurationProvider(configStore, logger);
+
+    
+        
+
+    
+        // 使用仿真配置中的小车数量初始化
+
+    
+        var cartRingConfig = new ZakYip.NarrowBeltDiverterSorter.Core.Configuration.CartRingConfiguration
+        {
+            TotalCartCount = simulationConfig.NumberOfCarts
+        };
+
+    
+        provider.UpdateAsync(cartRingConfig, CancellationToken.None).ConfigureAwait(false).GetAwaiter().GetResult();
+
+    
+        
+
+    
+        return provider;
+
+    
+    });
+
+    
+    
+
     
     // 注册格口小车号解析器和计算器
     builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Domain.Sorting.IChuteCartNumberCalculator, 
@@ -712,6 +767,9 @@ static async Task RunTraditionalSimulationAsync()
 
     var builder = Host.CreateApplicationBuilder();
 
+    // 定义数据库路径（传统仿真模式使用独立的数据库）
+    var dbPath = Path.Combine(Environment.CurrentDirectory, "simulation-traditional.db");
+
     // ============================================================================
     // 配置仿真参数
     // ============================================================================
@@ -749,6 +807,13 @@ static async Task RunTraditionalSimulationAsync()
         Mode = StartupMode.Normal,
         EnableBringupLogging = false
     });
+
+    // ============================================================================
+    // 注册配置存储（仿真模式）
+    // ============================================================================
+    
+    builder.Services.AddSingleton<ISorterConfigurationStore>(sp =>
+        new LiteDbSorterConfigurationStore(sp.GetRequiredService<ILogger<LiteDbSorterConfigurationStore>>(), dbPath));
 
     // ============================================================================
     // 配置选项
@@ -834,6 +899,54 @@ static async Task RunTraditionalSimulationAsync()
     builder.Services.AddSingleton<IMainLineSpeedProvider, MainLineSpeedProvider>();
     builder.Services.AddSingleton<IMainLineStabilityProvider, MainLineStabilityProvider>();
     builder.Services.AddSingleton<ICartPositionTracker, CartPositionTracker>();
+    
+    // 注册小车环配置提供器（仿真模式使用内存配置）
+
+    
+    builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Configuration.ICartRingConfigurationProvider>(sp =>
+
+    
+    {
+
+    
+        var logger = sp.GetRequiredService<ILoggerFactory>()
+
+    
+            .CreateLogger<ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration.CartRingConfigurationProvider>();
+
+    
+        var configStore = sp.GetRequiredService<ZakYip.NarrowBeltDiverterSorter.Core.Configuration.ISorterConfigurationStore>();
+
+    
+        var provider = new ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration.CartRingConfigurationProvider(configStore, logger);
+
+    
+        
+
+    
+        // 使用仿真配置中的小车数量初始化
+
+    
+        var cartRingConfig = new ZakYip.NarrowBeltDiverterSorter.Core.Configuration.CartRingConfiguration
+        {
+            TotalCartCount = simulationConfig.NumberOfCarts
+        };
+
+    
+        provider.UpdateAsync(cartRingConfig, CancellationToken.None).ConfigureAwait(false).GetAwaiter().GetResult();
+
+    
+        
+
+    
+        return provider;
+
+    
+    });
+
+    
+    
+
     
     // 注册格口小车号解析器和计算器
     builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Domain.Sorting.IChuteCartNumberCalculator, 
@@ -1303,6 +1416,13 @@ static async Task RunLongRunLoadTestScenarioAsync(string? outputPath, bool reset
     });
 
     // ============================================================================
+    // 注册配置存储（仿真模式）
+    // ============================================================================
+    
+    builder.Services.AddSingleton<ISorterConfigurationStore>(sp =>
+        new LiteDbSorterConfigurationStore(sp.GetRequiredService<ILogger<LiteDbSorterConfigurationStore>>(), dbPath));
+
+    // ============================================================================
     // 配置选项
     // ============================================================================
 
@@ -1387,6 +1507,54 @@ static async Task RunLongRunLoadTestScenarioAsync(string? outputPath, bool reset
     builder.Services.AddSingleton<IMainLineSpeedProvider, MainLineSpeedProvider>();
     builder.Services.AddSingleton<IMainLineStabilityProvider, MainLineStabilityProvider>();
     builder.Services.AddSingleton<ICartPositionTracker, CartPositionTracker>();
+    
+    // 注册小车环配置提供器（仿真模式使用内存配置）
+
+    
+    builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Configuration.ICartRingConfigurationProvider>(sp =>
+
+    
+    {
+
+    
+        var logger = sp.GetRequiredService<ILoggerFactory>()
+
+    
+            .CreateLogger<ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration.CartRingConfigurationProvider>();
+
+    
+        var configStore = sp.GetRequiredService<ZakYip.NarrowBeltDiverterSorter.Core.Configuration.ISorterConfigurationStore>();
+
+    
+        var provider = new ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration.CartRingConfigurationProvider(configStore, logger);
+
+    
+        
+
+    
+        // 使用仿真配置中的小车数量初始化
+
+    
+        var cartRingConfig = new ZakYip.NarrowBeltDiverterSorter.Core.Configuration.CartRingConfiguration
+        {
+            TotalCartCount = simulationConfig.NumberOfCarts
+        };
+
+    
+        provider.UpdateAsync(cartRingConfig, CancellationToken.None).ConfigureAwait(false).GetAwaiter().GetResult();
+
+    
+        
+
+    
+        return provider;
+
+    
+    });
+
+    
+    
+
     
     // 注册格口小车号解析器和计算器
     builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Domain.Sorting.IChuteCartNumberCalculator, 

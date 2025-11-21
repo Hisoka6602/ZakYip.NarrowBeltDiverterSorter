@@ -116,6 +116,10 @@ builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Host.Configuration
 builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Configuration.ISorterConfigurationProvider,
     ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration.SorterConfigurationProvider>();
 
+// 注册小车环配置提供器
+builder.Services.AddSingleton<ZakYip.NarrowBeltDiverterSorter.Core.Configuration.ICartRingConfigurationProvider,
+    ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration.CartRingConfigurationProvider>();
+
 // 注册配置仓储（保留用于向后兼容和特定仓储需求）
 builder.Services.AddSingleton<IMainLineOptionsRepository, LiteDbMainLineOptionsRepository>();
 builder.Services.AddSingleton<IInfeedLayoutOptionsRepository, LiteDbInfeedLayoutOptionsRepository>();
