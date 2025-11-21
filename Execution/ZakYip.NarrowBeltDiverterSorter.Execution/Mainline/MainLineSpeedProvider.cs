@@ -61,7 +61,7 @@ public class MainLineSpeedProvider : IMainLineSpeedProvider
                 if (isCurrentlyStable && !_wasStable)
                 {
                     // 刚进入稳定状态
-                    _stableStartTime = DateTime.UtcNow;
+                    _stableStartTime = DateTime.Now;
                     _wasStable = true;
                 }
                 else if (!isCurrentlyStable && _wasStable)
@@ -77,7 +77,7 @@ public class MainLineSpeedProvider : IMainLineSpeedProvider
                 }
 
                 // 检查稳定持续时间
-                var stableDuration = DateTime.UtcNow - _stableStartTime;
+                var stableDuration = DateTime.Now - _stableStartTime;
                 return stableDuration >= _options.StableHold;
             }
         }
@@ -95,7 +95,7 @@ public class MainLineSpeedProvider : IMainLineSpeedProvider
                     return TimeSpan.Zero;
                 }
 
-                return DateTime.UtcNow - _stableStartTime;
+                return DateTime.Now - _stableStartTime;
             }
         }
     }

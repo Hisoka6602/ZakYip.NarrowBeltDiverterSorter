@@ -118,7 +118,7 @@ public class SimulatedSafetyInputMonitor : ISafetyInputMonitor
             Source = source,
             InputType = inputType,
             IsActive = isActive,
-            OccurredAt = DateTimeOffset.UtcNow
+            OccurredAt = DateTimeOffset.Now
         };
     }
 }

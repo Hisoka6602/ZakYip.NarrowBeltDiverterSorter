@@ -28,7 +28,7 @@ public class FakeMainLineFeedbackPort : IMainLineFeedbackPort
     {
         _drivePort = drivePort;
         _currentSpeed = 0;
-        _lastUpdateTime = DateTimeOffset.UtcNow;
+        _lastUpdateTime = DateTimeOffset.Now;
         _unstableMode = false;
         _oscillationAmplitude = 0;
         _oscillationFrequency = 0;
@@ -46,7 +46,7 @@ public class FakeMainLineFeedbackPort : IMainLineFeedbackPort
             _unstableMode = true;
             _oscillationAmplitude = amplitude;
             _oscillationFrequency = frequency;
-            _unstableModeStartTime = DateTimeOffset.UtcNow;
+            _unstableModeStartTime = DateTimeOffset.Now;
         }
     }
     
@@ -86,7 +86,7 @@ public class FakeMainLineFeedbackPort : IMainLineFeedbackPort
     /// </summary>
     private void UpdateCurrentSpeed()
     {
-        var now = DateTimeOffset.UtcNow;
+        var now = DateTimeOffset.Now;
         var deltaTime = (now - _lastUpdateTime).TotalSeconds;
         _lastUpdateTime = now;
 

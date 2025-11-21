@@ -74,7 +74,7 @@ public class FeedingCapacityMonitorWorker : BackgroundService
                 FeedingThrottledCount = _backpressureController?.GetThrottleCount() ?? 0,
                 FeedingPausedCount = _backpressureController?.GetPauseCount() ?? 0,
                 ThrottleMode = config.ThrottleMode.ToString(),
-                LastUpdatedAt = DateTimeOffset.UtcNow
+                LastUpdatedAt = DateTimeOffset.Now
             };
 
             _liveView.UpdateFeedingCapacity(snapshot);

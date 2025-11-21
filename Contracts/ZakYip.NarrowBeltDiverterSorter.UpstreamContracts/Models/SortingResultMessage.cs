@@ -49,5 +49,5 @@ public record class SortingResultMessage
     /// <summary>
     /// 结果时间
     /// </summary>
-    public DateTimeOffset ResultTime { get; init; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset ResultTime { get; init; } = DateTimeOffset.Now;
 }

@@ -88,7 +88,7 @@ public class CartNumberBindingIntegrationTests
 
         var parcelId = new ParcelId(12345);
         var barcode = "TEST-BARCODE-001";
-        var createdAt = DateTimeOffset.UtcNow;
+        var createdAt = DateTimeOffset.Now;
 
         // Act - 解析格口当前小车号
         var cartNumber = resolver.ResolveCurrentCartNumberForChute(1);
@@ -120,7 +120,7 @@ public class CartNumberBindingIntegrationTests
 
         var parcelId = new ParcelId(67890);
         var barcode = "TEST-BARCODE-002";
-        var createdAt = DateTimeOffset.UtcNow;
+        var createdAt = DateTimeOffset.Now;
 
         // Act - 解析格口当前小车号
         var cartNumber = resolver.ResolveCurrentCartNumberForChute(3);

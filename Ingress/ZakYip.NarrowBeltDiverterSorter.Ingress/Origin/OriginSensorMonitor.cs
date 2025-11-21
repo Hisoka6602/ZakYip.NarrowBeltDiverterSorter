@@ -106,7 +106,7 @@ public class OriginSensorMonitor : IIoMonitor
                 bool sensor1State = _sensorPort.GetFirstSensorState();
                 bool sensor2State = _sensorPort.GetSecondSensorState();
 
-                var timestamp = DateTimeOffset.UtcNow;
+                var timestamp = DateTimeOffset.Now;
 
                 // Check for edges on sensor 1
                 if (sensor1State != _previousSensor1State)

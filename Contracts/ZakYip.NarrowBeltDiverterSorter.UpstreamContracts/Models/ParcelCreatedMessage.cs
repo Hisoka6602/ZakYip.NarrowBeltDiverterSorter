@@ -28,5 +28,5 @@ public record class ParcelCreatedMessage
     /// <summary>
     /// 创建时间
     /// </summary>
-    public DateTimeOffset CreatedTime { get; init; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset CreatedTime { get; init; } = DateTimeOffset.Now;
 }

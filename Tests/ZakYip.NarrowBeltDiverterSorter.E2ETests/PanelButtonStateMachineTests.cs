@@ -135,7 +135,7 @@ public class PanelButtonStateMachineTests
         Assert.True(fakeFieldBus.GetCoilState(102));
 
         // Assert: 此时可以创建包裹
-        var parcel = parcelService.CreateParcel(new ParcelId(1000000000001), "TEST001", DateTimeOffset.UtcNow);
+        var parcel = parcelService.CreateParcel(new ParcelId(1000000000001), "TEST001", DateTimeOffset.Now);
         Assert.NotNull(parcel);
     }
 
@@ -177,7 +177,7 @@ public class PanelButtonStateMachineTests
 
         // Assert: 创建包裹应被拒绝
         Assert.Throws<InvalidOperationException>(() =>
-            parcelService.CreateParcel(new ParcelId(1000000000002), "TEST002", DateTimeOffset.UtcNow));
+            parcelService.CreateParcel(new ParcelId(1000000000002), "TEST002", DateTimeOffset.Now));
 
         // Act: 再次按下停止按钮
         fakeFieldBus.ClearHistory();
@@ -257,7 +257,7 @@ public class PanelButtonStateMachineTests
 
         // Assert: 创建包裹应被拒绝
         var exception = Assert.Throws<InvalidOperationException>(() =>
-            parcelService.CreateParcel(new ParcelId(1000000000003), "TEST003", DateTimeOffset.UtcNow));
+            parcelService.CreateParcel(new ParcelId(1000000000003), "TEST003", DateTimeOffset.Now));
         Assert.Contains("故障状态", exception.Message);
 
         fakeFieldBus.ClearHistory();

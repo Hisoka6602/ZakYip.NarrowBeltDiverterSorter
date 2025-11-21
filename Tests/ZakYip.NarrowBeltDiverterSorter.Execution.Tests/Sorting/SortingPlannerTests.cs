@@ -34,7 +34,7 @@ public class SortingPlannerTests
         var planner = CreatePlanner(cartRingBuilder: mockCartRingBuilder.Object);
 
         // Act
-        var plans = planner.PlanEjects(DateTimeOffset.UtcNow, TimeSpan.FromSeconds(5));
+        var plans = planner.PlanEjects(DateTimeOffset.Now, TimeSpan.FromSeconds(5));
 
         // Assert
         Assert.Empty(plans);
@@ -56,7 +56,7 @@ public class SortingPlannerTests
             mainLineSpeedProvider: mockSpeedProvider.Object);
 
         // Act
-        var plans = planner.PlanEjects(DateTimeOffset.UtcNow, TimeSpan.FromSeconds(5));
+        var plans = planner.PlanEjects(DateTimeOffset.Now, TimeSpan.FromSeconds(5));
 
         // Assert
         Assert.Empty(plans);
@@ -79,13 +79,13 @@ public class SortingPlannerTests
             .Returns(new CartIndex(5));
 
         var cartLifecycleService = new CartLifecycleService();
-        cartLifecycleService.InitializeCart(cartId, new CartIndex(5), DateTimeOffset.UtcNow);
+        cartLifecycleService.InitializeCart(cartId, new CartIndex(5), DateTimeOffset.Now);
         cartLifecycleService.LoadParcel(cartId, parcelId);
 
         var parcelLifecycleService = new ParcelLifecycleService(CreateRunningStateService());
-        parcelLifecycleService.CreateParcel(parcelId, "TEST123", DateTimeOffset.UtcNow);
+        parcelLifecycleService.CreateParcel(parcelId, "TEST123", DateTimeOffset.Now);
         parcelLifecycleService.BindChuteId(parcelId, chuteId);
-        parcelLifecycleService.BindCartId(parcelId, cartId, DateTimeOffset.UtcNow);
+        parcelLifecycleService.BindCartId(parcelId, cartId, DateTimeOffset.Now);
 
         var mockChuteConfigProvider = new Mock<IChuteConfigProvider>();
         mockChuteConfigProvider.Setup(x => x.GetAllConfigs()).Returns(new[]
@@ -113,7 +113,7 @@ public class SortingPlannerTests
             mainLineSpeedProvider: mockSpeedProvider.Object);
 
         // Act
-        var plans = planner.PlanEjects(DateTimeOffset.UtcNow, TimeSpan.FromSeconds(5));
+        var plans = planner.PlanEjects(DateTimeOffset.Now, TimeSpan.FromSeconds(5));
 
         // Assert
         Assert.Single(plans);
@@ -141,7 +141,7 @@ public class SortingPlannerTests
             .Returns(new CartIndex(5));
 
         var cartLifecycleService = new CartLifecycleService();
-        cartLifecycleService.InitializeCart(cartId, new CartIndex(5), DateTimeOffset.UtcNow);
+        cartLifecycleService.InitializeCart(cartId, new CartIndex(5), DateTimeOffset.Now);
         cartLifecycleService.LoadParcel(cartId, parcelId);
 
         var parcelLifecycleService = new ParcelLifecycleService(CreateRunningStateService());
@@ -172,7 +172,7 @@ public class SortingPlannerTests
             mainLineSpeedProvider: mockSpeedProvider.Object);
 
         // Act
-        var plans = planner.PlanEjects(DateTimeOffset.UtcNow, TimeSpan.FromSeconds(5));
+        var plans = planner.PlanEjects(DateTimeOffset.Now, TimeSpan.FromSeconds(5));
 
         // Assert
         Assert.Single(plans);
@@ -215,7 +215,7 @@ public class SortingPlannerTests
             mainLineSpeedProvider: mockSpeedProvider.Object);
 
         // Act
-        var plans = planner.PlanEjects(DateTimeOffset.UtcNow, TimeSpan.FromSeconds(5));
+        var plans = planner.PlanEjects(DateTimeOffset.Now, TimeSpan.FromSeconds(5));
 
         // Assert
         Assert.Empty(plans);
@@ -254,7 +254,7 @@ public class SortingPlannerTests
             ZeroCartId = new CartId(0),
             ZeroIndex = new CartIndex(0),
             CartIds = cartIds,
-            BuiltAt = DateTimeOffset.UtcNow
+            BuiltAt = DateTimeOffset.Now
         };
     }
 }

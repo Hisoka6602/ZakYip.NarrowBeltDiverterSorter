@@ -43,7 +43,7 @@ public class UpstreamTimeoutChecker
     {
         try
         {
-            var currentTime = DateTimeOffset.UtcNow;
+            var currentTime = DateTimeOffset.Now;
             var timedOutRequests = _requestTracker.GetTimedOutRequests(currentTime);
 
             if (timedOutRequests.Count == 0)

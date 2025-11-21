@@ -13,7 +13,7 @@ public class DomainModelsTests
         // Arrange
         var parcelId = new ParcelId(1234567890123);
         var chuteId = new ChuteId(5);
-        var createdAt = DateTimeOffset.UtcNow;
+        var createdAt = DateTimeOffset.Now;
 
         var waitingParcel = new ParcelSnapshot
         {
@@ -45,8 +45,8 @@ public class DomainModelsTests
         var parcelId = new ParcelId(1234567890123);
         var chuteId = new ChuteId(5);
         var cartId = new CartId(10);
-        var createdAt = DateTimeOffset.UtcNow;
-        var loadedAt = DateTimeOffset.UtcNow.AddSeconds(5);
+        var createdAt = DateTimeOffset.Now;
+        var loadedAt = DateTimeOffset.Now.AddSeconds(5);
 
         var routedParcel = new ParcelSnapshot
         {
@@ -83,9 +83,9 @@ public class DomainModelsTests
         var parcelId = new ParcelId(1234567890123);
         var chuteId = new ChuteId(5);
         var cartId = new CartId(10);
-        var createdAt = DateTimeOffset.UtcNow;
-        var loadedAt = DateTimeOffset.UtcNow.AddSeconds(5);
-        var sortedAt = DateTimeOffset.UtcNow.AddSeconds(10);
+        var createdAt = DateTimeOffset.Now;
+        var loadedAt = DateTimeOffset.Now.AddSeconds(5);
+        var sortedAt = DateTimeOffset.Now.AddSeconds(10);
 
         var sortingParcel = new ParcelSnapshot
         {
@@ -118,7 +118,7 @@ public class DomainModelsTests
     {
         // Arrange
         var parcelId = new ParcelId(1234567890123);
-        var createdAt = DateTimeOffset.UtcNow;
+        var createdAt = DateTimeOffset.Now;
 
         var waitingParcel = new ParcelSnapshot
         {
@@ -144,7 +144,7 @@ public class DomainModelsTests
         // Arrange
         var parcelId = new ParcelId(1234567890123);
         var chuteId = new ChuteId(5);
-        var createdAt = DateTimeOffset.UtcNow;
+        var createdAt = DateTimeOffset.Now;
 
         var routedParcel = new ParcelSnapshot
         {
@@ -171,7 +171,7 @@ public class DomainModelsTests
         // Arrange & Act
         var cartId = new CartId(10);
         var cartIndex = new CartIndex(5);
-        var lastResetAt = DateTimeOffset.UtcNow;
+        var lastResetAt = DateTimeOffset.Now;
 
         var cartSnapshot = new CartSnapshot
         {
@@ -197,7 +197,7 @@ public class DomainModelsTests
             CartId = new CartId(1),
             CartIndex = new CartIndex(0),
             IsLoaded = true,
-            LastResetAt = DateTimeOffset.UtcNow
+            LastResetAt = DateTimeOffset.Now
         };
 
         // Assert - 验证布尔属性以Is开头

@@ -102,7 +102,7 @@ public class ParcelSortingOrchestrator : IDisposable
             {
                 ParcelId = request.ParcelId,
                 EventType = ParcelTimelineEventType.UpstreamRequestSent,
-                OccurredAt = DateTimeOffset.UtcNow,
+                OccurredAt = DateTimeOffset.Now,
                 Barcode = request.Barcode,
                 Note = "向上游规则引擎发送分拣请求"
             });
@@ -121,7 +121,7 @@ public class ParcelSortingOrchestrator : IDisposable
             {
                 ParcelId = request.ParcelId,
                 EventType = ParcelTimelineEventType.Aborted,
-                OccurredAt = DateTimeOffset.UtcNow,
+                OccurredAt = DateTimeOffset.Now,
                 Barcode = request.Barcode,
                 Note = "上游请求被取消"
             });
@@ -141,7 +141,7 @@ public class ParcelSortingOrchestrator : IDisposable
             {
                 ParcelId = request.ParcelId,
                 EventType = ParcelTimelineEventType.Aborted,
-                OccurredAt = DateTimeOffset.UtcNow,
+                OccurredAt = DateTimeOffset.Now,
                 Barcode = request.Barcode,
                 Note = $"上游请求失败: {ex.Message}"
             });
@@ -174,7 +174,7 @@ public class ParcelSortingOrchestrator : IDisposable
                 ChuteId = _fallbackChuteId.Value,
                 IsSuccess = true,
                 Message = "使用本地降级策略（上游不可用）",
-                RoutedAt = DateTimeOffset.UtcNow
+                RoutedAt = DateTimeOffset.Now
             });
         }
         catch (Exception ex)

@@ -35,7 +35,7 @@ public class LineController : ControllerBase
         {
             LineRunState = _safetyOrchestrator.CurrentLineRunState.ToString(),
             SafetyState = _safetyOrchestrator.CurrentSafetyState.ToString(),
-            Timestamp = DateTimeOffset.UtcNow
+            Timestamp = DateTimeOffset.Now
         };
 
         return Ok(response);
@@ -59,7 +59,7 @@ public class LineController : ControllerBase
             Message = success ? "启动命令已接受" : "启动命令被拒绝",
             CurrentLineRunState = _safetyOrchestrator.CurrentLineRunState.ToString(),
             CurrentSafetyState = _safetyOrchestrator.CurrentSafetyState.ToString(),
-            Timestamp = DateTimeOffset.UtcNow
+            Timestamp = DateTimeOffset.Now
         };
 
         return success ? Ok(response) : BadRequest(response);
@@ -83,7 +83,7 @@ public class LineController : ControllerBase
             Message = success ? "停止命令已接受" : "停止命令被拒绝",
             CurrentLineRunState = _safetyOrchestrator.CurrentLineRunState.ToString(),
             CurrentSafetyState = _safetyOrchestrator.CurrentSafetyState.ToString(),
-            Timestamp = DateTimeOffset.UtcNow
+            Timestamp = DateTimeOffset.Now
         };
 
         return success ? Ok(response) : BadRequest(response);
@@ -107,7 +107,7 @@ public class LineController : ControllerBase
             Message = success ? "暂停命令已接受" : "暂停命令被拒绝",
             CurrentLineRunState = _safetyOrchestrator.CurrentLineRunState.ToString(),
             CurrentSafetyState = _safetyOrchestrator.CurrentSafetyState.ToString(),
-            Timestamp = DateTimeOffset.UtcNow
+            Timestamp = DateTimeOffset.Now
         };
 
         return success ? Ok(response) : BadRequest(response);
@@ -131,7 +131,7 @@ public class LineController : ControllerBase
             Message = success ? "恢复命令已接受" : "恢复命令被拒绝",
             CurrentLineRunState = _safetyOrchestrator.CurrentLineRunState.ToString(),
             CurrentSafetyState = _safetyOrchestrator.CurrentSafetyState.ToString(),
-            Timestamp = DateTimeOffset.UtcNow
+            Timestamp = DateTimeOffset.Now
         };
 
         return success ? Ok(response) : BadRequest(response);
@@ -155,7 +155,7 @@ public class LineController : ControllerBase
             Message = success ? "故障已确认" : "故障确认被拒绝",
             CurrentLineRunState = _safetyOrchestrator.CurrentLineRunState.ToString(),
             CurrentSafetyState = _safetyOrchestrator.CurrentSafetyState.ToString(),
-            Timestamp = DateTimeOffset.UtcNow
+            Timestamp = DateTimeOffset.Now
         };
 
         return success ? Ok(response) : BadRequest(response);

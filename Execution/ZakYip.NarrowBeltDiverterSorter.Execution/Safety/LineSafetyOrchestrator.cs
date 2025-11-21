@@ -403,7 +403,7 @@ public class LineSafetyOrchestrator : ILineSafetyOrchestrator, IDisposable
         {
             State = newState,
             Message = message,
-            OccurredAt = DateTimeOffset.UtcNow
+            OccurredAt = DateTimeOffset.Now
         };
 
         _logger.LogInformation(

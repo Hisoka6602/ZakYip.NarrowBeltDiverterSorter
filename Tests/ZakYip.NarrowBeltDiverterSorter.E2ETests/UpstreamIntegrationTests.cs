@@ -49,7 +49,7 @@ public class UpstreamIntegrationTests
         };
 
         // Act - 发送分拣请求
-        var parcelId = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        var parcelId = DateTimeOffset.Now.ToUnixTimeMilliseconds();
         var sortingRequest = new SortingRequestEventArgs
         {
             ParcelId = parcelId,
@@ -59,7 +59,7 @@ public class UpstreamIntegrationTests
             Length = 300m,
             Width = 200m,
             Height = 150m,
-            RequestTime = DateTimeOffset.UtcNow
+            RequestTime = DateTimeOffset.Now
         };
 
         logger.LogInformation("发送分拣请求: ParcelId={ParcelId}, Barcode={Barcode}", parcelId, sortingRequest.Barcode);
@@ -96,14 +96,14 @@ public class UpstreamIntegrationTests
         var portAdapter = new SortingRuleEnginePortAdapter(fakeClient, adapterLogger);
 
         // Act - 发送分拣请求（应该抛出异常）
-        var parcelId = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        var parcelId = DateTimeOffset.Now.ToUnixTimeMilliseconds();
         var sortingRequest = new SortingRequestEventArgs
         {
             ParcelId = parcelId,
             CartNumber = 1,
             Barcode = "TEST-FAILURE-001",
             Weight = 1.5m,
-            RequestTime = DateTimeOffset.UtcNow
+            RequestTime = DateTimeOffset.Now
         };
 
         logger.LogInformation("发送分拣请求（预期失败）: ParcelId={ParcelId}", parcelId);
@@ -143,14 +143,14 @@ public class UpstreamIntegrationTests
         var portAdapter = new SortingRuleEnginePortAdapter(fakeClient, adapterLogger);
 
         // Act - 发送分拣请求并快速取消
-        var parcelId = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        var parcelId = DateTimeOffset.Now.ToUnixTimeMilliseconds();
         var sortingRequest = new SortingRequestEventArgs
         {
             ParcelId = parcelId,
             CartNumber = 1,
             Barcode = "TEST-CANCEL-001",
             Weight = 1.5m,
-            RequestTime = DateTimeOffset.UtcNow
+            RequestTime = DateTimeOffset.Now
         };
 
         logger.LogInformation("发送分拣请求并准备取消: ParcelId={ParcelId}", parcelId);

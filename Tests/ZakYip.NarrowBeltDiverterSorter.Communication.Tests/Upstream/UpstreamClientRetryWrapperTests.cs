@@ -109,7 +109,7 @@ public class UpstreamClientRetryWrapperTests
         var message = new ParcelCreatedMessage
         {
             ParcelId = 12345,
-            CreatedTime = DateTimeOffset.UtcNow
+            CreatedTime = DateTimeOffset.Now
         };
 
         // Act

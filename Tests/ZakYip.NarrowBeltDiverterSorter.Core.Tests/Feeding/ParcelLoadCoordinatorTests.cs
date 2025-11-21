@@ -18,7 +18,7 @@ public class ParcelLoadCoordinatorTests
 
         var parcelId = new ParcelId(100);
         var barcode = "TEST001";
-        var infeedTime = DateTimeOffset.UtcNow;
+        var infeedTime = DateTimeOffset.Now;
 
         var eventArgs = new ParcelCreatedFromInfeedEventArgs
         {
@@ -53,7 +53,7 @@ public class ParcelLoadCoordinatorTests
 
         var parcelId = new ParcelId(101);
         var barcode = "TEST002";
-        var infeedTime = DateTimeOffset.UtcNow;
+        var infeedTime = DateTimeOffset.Now;
 
         var eventArgs = new ParcelCreatedFromInfeedEventArgs
         {
@@ -91,7 +91,7 @@ public class ParcelLoadCoordinatorTests
             {
                 ParcelId = new ParcelId(200 + i),
                 Barcode = $"MULTI{i:D3}",
-                InfeedTriggerTime = DateTimeOffset.UtcNow.AddSeconds(i)
+                InfeedTriggerTime = DateTimeOffset.Now.AddSeconds(i)
             };
             coordinator.HandleParcelCreatedFromInfeed(null, eventArgs);
         }

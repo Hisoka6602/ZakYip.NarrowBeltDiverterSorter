@@ -13,7 +13,7 @@ public class CartRingBuilderTests
     {
         // Arrange
         var builder = new CartRingBuilder();
-        var baseTime = DateTimeOffset.UtcNow;
+        var baseTime = DateTimeOffset.Now;
 
         // Simulate a complete ring with 5 carts
         // Cart 0 (zero cart) - blocks both sensors
@@ -73,7 +73,7 @@ public class CartRingBuilderTests
     {
         // Arrange
         var builder = new CartRingBuilder();
-        var baseTime = DateTimeOffset.UtcNow;
+        var baseTime = DateTimeOffset.Now;
 
         // Act
         // Only first zero cart
@@ -91,7 +91,7 @@ public class CartRingBuilderTests
     {
         // Arrange
         var builder = new CartRingBuilder();
-        var baseTime = DateTimeOffset.UtcNow;
+        var baseTime = DateTimeOffset.Now;
 
         // Act
         // First zero cart
@@ -124,7 +124,7 @@ public class CartRingBuilderTests
     {
         // Arrange
         var builder = new CartRingBuilder();
-        var baseTime = DateTimeOffset.UtcNow;
+        var baseTime = DateTimeOffset.Now;
 
         // Act
         // Complete a ring with just the zero cart going around twice

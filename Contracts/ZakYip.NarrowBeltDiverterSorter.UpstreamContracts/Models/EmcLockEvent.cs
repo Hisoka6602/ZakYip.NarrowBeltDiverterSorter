@@ -29,7 +29,7 @@ public record class EmcLockEvent
     /// <summary>
     /// 时间戳
     /// </summary>
-    public DateTime Timestamp { get; init; } = DateTime.UtcNow;
+    public DateTime Timestamp { get; init; } = DateTime.Now;
     
     /// <summary>
     /// 额外消息

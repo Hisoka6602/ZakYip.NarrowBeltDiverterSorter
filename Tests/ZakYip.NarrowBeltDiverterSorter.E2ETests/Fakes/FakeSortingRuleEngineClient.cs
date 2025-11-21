@@ -71,7 +71,7 @@ public class FakeSortingRuleEngineClient : ISortingRuleEngineClient
                 ParcelId = message.ParcelId,
                 ChuteNumber = _options.AutoRespondWithChuteNumber.Value,
                 Success = true,
-                ResultTime = DateTimeOffset.UtcNow
+                ResultTime = DateTimeOffset.Now
             };
 
             SortingResultReceived?.Invoke(this, result);

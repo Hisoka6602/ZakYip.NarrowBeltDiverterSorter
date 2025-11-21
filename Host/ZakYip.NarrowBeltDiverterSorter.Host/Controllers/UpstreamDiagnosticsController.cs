@@ -134,7 +134,7 @@ public class UpstreamDiagnosticsController : ControllerBase
 
         // 构造测试请求
         var parcelId = string.IsNullOrWhiteSpace(request.ParcelId) 
-            ? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+            ? DateTimeOffset.Now.ToUnixTimeMilliseconds()
             : long.Parse(request.ParcelId);
 
         var testRequest = new SortingRequestEventArgs
@@ -146,7 +146,7 @@ public class UpstreamDiagnosticsController : ControllerBase
             Length = 300m,
             Width = 200m,
             Height = 150m,
-            RequestTime = DateTimeOffset.UtcNow
+            RequestTime = DateTimeOffset.Now
         };
 
         _logger.LogInformation("发送测试包裹: ParcelId={ParcelId}, Barcode={Barcode}", parcelId, request.Barcode);
@@ -165,7 +165,7 @@ public class UpstreamDiagnosticsController : ControllerBase
                 Message = "测试包裹发送成功",
                 ParcelId = parcelId.ToString(),
                 Barcode = request.Barcode,
-                SentAt = DateTimeOffset.UtcNow
+                SentAt = DateTimeOffset.Now
             };
 
             return Ok(DTO.ApiResult<TestParcelResponse>.Ok(response));

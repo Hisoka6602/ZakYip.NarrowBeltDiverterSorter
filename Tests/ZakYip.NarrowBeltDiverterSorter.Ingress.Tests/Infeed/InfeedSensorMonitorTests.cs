@@ -32,7 +32,7 @@ public class InfeedSensorMonitorTests
         await monitor.StartAsync();
 
         // Act
-        var detectionTime = DateTimeOffset.UtcNow;
+        var detectionTime = DateTimeOffset.Now;
         mockSensorPort.TriggerParcelDetection(true, detectionTime);
 
         await Task.Delay(100); // Give event time to propagate
@@ -54,7 +54,7 @@ public class InfeedSensorMonitorTests
         await monitor.StartAsync();
 
         // Act
-        mockSensorPort.TriggerParcelDetection(false, DateTimeOffset.UtcNow); // Falling edge
+        mockSensorPort.TriggerParcelDetection(false, DateTimeOffset.Now); // Falling edge
 
         await Task.Delay(100);
 

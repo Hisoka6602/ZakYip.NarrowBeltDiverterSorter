@@ -14,5 +14,5 @@ public record ParcelRoutingRequestDto
     /// <summary>
     /// 请求时间
     /// </summary>
-    public DateTimeOffset RequestTime { get; init; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset RequestTime { get; init; } = DateTimeOffset.Now;
 }

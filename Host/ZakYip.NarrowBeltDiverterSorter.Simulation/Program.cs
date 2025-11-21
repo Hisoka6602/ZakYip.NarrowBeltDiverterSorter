@@ -1861,7 +1861,7 @@ static async Task RunLongRunLoadTestScenarioAsync(string? outputPath, bool reset
             
             var markdownReport = timelineRecorder.GenerateMarkdownReport(parcelLifecycleService, configSummary);
             var markdownPath = outputPath ?? Path.Combine(Environment.CurrentDirectory, 
-                $"LongRunLoadTest_{DateTime.UtcNow:yyyyMMddHHmmss}.md");
+                $"LongRunLoadTest_{DateTime.Now:yyyyMMddHHmmss}.md");
             
             await File.WriteAllTextAsync(markdownPath, markdownReport, cts.Token);
             

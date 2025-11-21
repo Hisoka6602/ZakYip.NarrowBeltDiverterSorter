@@ -18,7 +18,7 @@ public class ParcelTimelineRecorder
     public ParcelTimelineRecorder(ILogger<ParcelTimelineRecorder> logger)
     {
         _logger = logger;
-        _startTime = DateTimeOffset.UtcNow;
+        _startTime = DateTimeOffset.Now;
     }
 
     /// <summary>
@@ -28,8 +28,8 @@ public class ParcelTimelineRecorder
     {
         var evt = new TimelineEvent
         {
-            Timestamp = DateTimeOffset.UtcNow,
-            ElapsedMs = (DateTimeOffset.UtcNow - _startTime).TotalMilliseconds,
+            Timestamp = DateTimeOffset.Now,
+            ElapsedMs = (DateTimeOffset.Now - _startTime).TotalMilliseconds,
             Label = eventLabel,
             Details = details
         };

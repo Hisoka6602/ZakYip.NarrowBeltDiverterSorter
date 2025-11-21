@@ -103,7 +103,7 @@ public sealed class RemaLm1000HMainLineDrive : IMainLineDrive, IDisposable
         lock (_lock)
         {
             _lastSuccessfulTargetSpeedMmps = clampedSpeed;
-            _lastSuccessfulSpeedSetTime = DateTime.UtcNow;
+            _lastSuccessfulSpeedSetTime = DateTime.Now;
         }
     }
 
@@ -431,7 +431,7 @@ public sealed class RemaLm1000HMainLineDrive : IMainLineDrive, IDisposable
             // 步骤 2: 等待当前速度降到阈值以下
             var shutdownThreshold = 50m; // 50 mm/s 作为停机阈值
             var maxWaitTime = TimeSpan.FromSeconds(30);
-            var startTime = DateTime.UtcNow;
+            var startTime = DateTime.Now;
             
             _logger.LogInformation("等待主线速度降到 {Threshold} mm/s 以下（最多等待 {MaxWait} 秒）",
                 shutdownThreshold, maxWaitTime.TotalSeconds);
@@ -446,7 +446,7 @@ public sealed class RemaLm1000HMainLineDrive : IMainLineDrive, IDisposable
                     break;
                 }
                 
-                var elapsed = DateTime.UtcNow - startTime;
+                var elapsed = DateTime.Now - startTime;
                 if (elapsed >= maxWaitTime)
                 {
                     _logger.LogWarning(
@@ -634,7 +634,7 @@ public sealed class RemaLm1000HMainLineDrive : IMainLineDrive, IDisposable
     private void UpdateStabilityState(decimal currentMmps, decimal targetMmps)
     {
         var error = Math.Abs(currentMmps - targetMmps);
-        var now = DateTime.UtcNow;
+        var now = DateTime.Now;
         
         // 判断是否在稳定死区内
         var isInDeadband = error <= _options.StableDeadbandMmps;

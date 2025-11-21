@@ -59,7 +59,7 @@ public class ParcelSortingSimulator : BackgroundService
         {
             try
             {
-                var now = DateTimeOffset.UtcNow;
+                var now = DateTimeOffset.Now;
 
                 // 1. Check for parcels that need divert plans
                 await UpdateDivertPlansAsync(now);
@@ -194,7 +194,7 @@ public class ParcelSortingSimulator : BackgroundService
             if (isCorrectChute)
             {
                 // Normal sort - parcel ejected to correct chute
-                _parcelLifecycleService.MarkSorted(parcel.ParcelId, DateTimeOffset.UtcNow);
+                _parcelLifecycleService.MarkSorted(parcel.ParcelId, DateTimeOffset.Now);
                 _parcelLifecycleService.UpdateSortingOutcome(
                     parcel.ParcelId,
                     ParcelSortingOutcome.NormalSort,
@@ -224,7 +224,7 @@ public class ParcelSortingSimulator : BackgroundService
             // Unload cart and unbind parcel
             if (parcel.BoundCartId.HasValue)
             {
-                _cartLifecycleService.UnloadCart(parcel.BoundCartId.Value, DateTimeOffset.UtcNow);
+                _cartLifecycleService.UnloadCart(parcel.BoundCartId.Value, DateTimeOffset.Now);
             }
             _parcelLifecycleService.UnbindCartId(parcel.ParcelId);
         }
@@ -301,7 +301,7 @@ public class ParcelSortingSimulator : BackgroundService
             // Unload cart and unbind parcel
             if (parcel.BoundCartId.HasValue)
             {
-                _cartLifecycleService.UnloadCart(parcel.BoundCartId.Value, DateTimeOffset.UtcNow);
+                _cartLifecycleService.UnloadCart(parcel.BoundCartId.Value, DateTimeOffset.Now);
             }
             _parcelLifecycleService.UnbindCartId(parcel.ParcelId);
         }
