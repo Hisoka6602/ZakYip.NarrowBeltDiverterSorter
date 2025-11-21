@@ -4,7 +4,6 @@ using ZakYip.NarrowBeltDiverterSorter.Core.Configuration;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Feeding;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.MainLine;
 using ZakYip.NarrowBeltDiverterSorter.Host.Contracts.Configuration;
-// TODO: Repository interfaces like IUpstreamConnectionOptionsRepository should be moved to Core layer
 using ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
 using DTO = ZakYip.NarrowBeltDiverterSorter.Host.DTOs;
 using ZakYip.NarrowBeltDiverterSorter.Host.DTOs.Requests;
