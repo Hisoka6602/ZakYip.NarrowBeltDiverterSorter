@@ -1,12 +1,13 @@
 using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums;
 
-namespace ZakYip.NarrowBeltDiverterSorter.Host;
+namespace ZakYip.NarrowBeltDiverterSorter.Execution.Vendors.Simulated;
 
 /// <summary>
-/// 仿真主线驱动端口 (用于Host项目的仿真模式)
+/// 仿真主线驱动端口 (用于仿真和测试)
 /// </summary>
-internal sealed class FakeMainLineDrivePort : IMainLineDrivePort
+public sealed class FakeMainLineDrivePort : IMainLineDrivePort
 {
     private double _targetSpeed;
     private bool _isRunning;
@@ -45,9 +46,9 @@ internal sealed class FakeMainLineDrivePort : IMainLineDrivePort
 }
 
 /// <summary>
-/// 仿真主线反馈端口 (用于Host项目的仿真模式)
+/// 仿真主线反馈端口 (用于仿真和测试)
 /// </summary>
-internal sealed class FakeMainLineFeedbackPort : IMainLineFeedbackPort
+public sealed class FakeMainLineFeedbackPort : IMainLineFeedbackPort
 {
     private readonly FakeMainLineDrivePort _drivePort;
     private double _currentSpeed;

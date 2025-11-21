@@ -1,4 +1,4 @@
-namespace ZakYip.NarrowBeltDiverterSorter.Host;
+namespace ZakYip.NarrowBeltDiverterSorter.Core.Configuration;
 
 /// <summary>
 /// 格口 IO 配置选项

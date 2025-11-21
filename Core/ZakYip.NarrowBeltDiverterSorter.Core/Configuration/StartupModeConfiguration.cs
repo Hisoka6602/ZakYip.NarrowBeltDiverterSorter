@@ -77,12 +77,12 @@ public class StartupModeConfiguration
     /// <summary>
     /// 判断是否应该启动主线控制
     /// </summary>
-    public bool ShouldStartMainLineControl() => Mode != StartupMode.BringupUpstream; // 上游调试模式不需要
+    public bool ShouldStartMainLineControl() => Mode != StartupMode.BringupUpstream;
 
     /// <summary>
     /// 判断是否应该启动原点传感器监控
     /// </summary>
-    public bool ShouldStartOriginSensorMonitor() => Mode != StartupMode.BringupUpstream; // 上游调试模式不需要
+    public bool ShouldStartOriginSensorMonitor() => Mode != StartupMode.BringupUpstream;
 
     /// <summary>
     /// 判断是否应该启动入口传感器监控

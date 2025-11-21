@@ -24,6 +24,8 @@ using ZakYip.NarrowBeltDiverterSorter.Ingress.Origin;
 using ZakYip.NarrowBeltDiverterSorter.Simulation;
 using ZakYip.NarrowBeltDiverterSorter.Simulation.Fakes;
 using ZakYip.NarrowBeltDiverterSorter.Observability;
+using FakeMainLineDrivePortFromSim = ZakYip.NarrowBeltDiverterSorter.Simulation.Fakes.FakeMainLineDrivePort;
+using FakeMainLineFeedbackPortFromSim = ZakYip.NarrowBeltDiverterSorter.Simulation.Fakes.FakeMainLineFeedbackPort;
 
 #pragma warning disable CS0618 // E2E 测试需要测试已过时的事件以确保系统完整性。新代码应使用 IEventBus 订阅事件。
 
@@ -314,11 +316,11 @@ public class SimulationOutputTests
         });
 
         // 注册 Fake 硬件
-        var fakeMainLineDrive = new FakeMainLineDrivePort();
+        var fakeMainLineDrive = new FakeMainLineDrivePortFromSim();
         builder.Services.AddSingleton(fakeMainLineDrive);
         builder.Services.AddSingleton<IMainLineDrivePort>(fakeMainLineDrive);
 
-        var fakeMainLineFeedback = new FakeMainLineFeedbackPort(fakeMainLineDrive);
+        var fakeMainLineFeedback = new FakeMainLineFeedbackPortFromSim(fakeMainLineDrive);
         
         // 如果是不稳定速度场景，启用速度波动
         if (simulationConfig.Scenario == "e2e-speed-unstable")

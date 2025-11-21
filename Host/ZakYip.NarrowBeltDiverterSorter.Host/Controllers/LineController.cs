@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Safety;
 using ZakYip.NarrowBeltDiverterSorter.Host.Contracts.API;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Host.Controllers;
 

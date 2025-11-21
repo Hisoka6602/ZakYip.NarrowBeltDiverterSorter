@@ -8,6 +8,7 @@ using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Runtime;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Upstream;
 using ZakYip.NarrowBeltDiverterSorter.Communication.Upstream;
 using ZakYip.NarrowBeltDiverterSorter.UpstreamContracts.Models;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Execution.Runtime;
 

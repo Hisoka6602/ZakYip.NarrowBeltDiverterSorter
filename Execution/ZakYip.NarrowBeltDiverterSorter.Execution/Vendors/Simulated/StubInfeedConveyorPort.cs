@@ -1,10 +1,10 @@
 using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 
-namespace ZakYip.NarrowBeltDiverterSorter.Host;
+namespace ZakYip.NarrowBeltDiverterSorter.Execution.Vendors.Simulated;
 
 /// <summary>
-/// 入口输送线端口占位实现
-/// TODO: 替换为实际硬件实现
+/// 入口输送线端口占位实现（用于仿真和测试）
+/// TODO: 在生产模式下替换为实际硬件实现
 /// </summary>
 public class StubInfeedConveyorPort : IInfeedConveyorPort
 {

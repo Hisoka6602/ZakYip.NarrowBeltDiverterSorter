@@ -5,10 +5,10 @@ using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.MainLine;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Tracking;
 using ZakYip.NarrowBeltDiverterSorter.Execution.Mainline;
-using ZakYip.NarrowBeltDiverterSorter.Execution.Vendors.Simulated;
 using ZakYip.NarrowBeltDiverterSorter.Ingress.Infeed;
 using ZakYip.NarrowBeltDiverterSorter.Ingress.Origin;
 using ZakYip.NarrowBeltDiverterSorter.Simulation.Fakes;
+using FakeMainLineDrivePortFromSim = ZakYip.NarrowBeltDiverterSorter.Simulation.Fakes.FakeMainLineDrivePort;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Simulation;
 
@@ -20,7 +20,7 @@ public class SimulationOrchestrator : BackgroundService
 {
     private readonly SimulationConfiguration _config;
     private readonly IMainLineDrive _mainLineDrive;
-    private readonly FakeMainLineDrivePort _fakeMainLineDrivePort;
+    private readonly FakeMainLineDrivePortFromSim _fakeMainLineDrivePort;
     private readonly FakeInfeedConveyorPort _infeedConveyor;
     private readonly FakeInfeedSensorPort _infeedSensor;
     private readonly FakeFieldBusClient _fieldBus;
@@ -36,7 +36,7 @@ public class SimulationOrchestrator : BackgroundService
     public SimulationOrchestrator(
         SimulationConfiguration config,
         IMainLineDrive mainLineDrive,
-        FakeMainLineDrivePort fakeMainLineDrivePort,
+        FakeMainLineDrivePortFromSim fakeMainLineDrivePort,
         FakeInfeedConveyorPort infeedConveyor,
         FakeInfeedSensorPort infeedSensor,
         FakeFieldBusClient fieldBus,

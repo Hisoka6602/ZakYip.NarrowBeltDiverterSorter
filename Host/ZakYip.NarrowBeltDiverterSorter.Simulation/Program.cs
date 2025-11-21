@@ -1,3 +1,5 @@
+using FakeMainLineDrivePortFromSim = ZakYip.NarrowBeltDiverterSorter.Simulation.Fakes.FakeMainLineDrivePort;
+using FakeMainLineFeedbackPortFromSim = ZakYip.NarrowBeltDiverterSorter.Simulation.Fakes.FakeMainLineFeedbackPort;
 using System.CommandLine;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
@@ -236,11 +238,11 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
     // 注册 Fake 硬件实现
     // ============================================================================
 
-    var fakeMainLineDrive = new FakeMainLineDrivePort();
+    var fakeMainLineDrive = new FakeMainLineDrivePortFromSim();
     builder.Services.AddSingleton(fakeMainLineDrive);
     builder.Services.AddSingleton<IMainLineDrivePort>(fakeMainLineDrive);
 
-    var fakeMainLineFeedback = new FakeMainLineFeedbackPort(fakeMainLineDrive);
+    var fakeMainLineFeedback = new FakeMainLineFeedbackPortFromSim(fakeMainLineDrive);
     
     // 如果是不稳定速度场景，启用速度波动
     if (isUnstableSpeedScenario)
@@ -848,11 +850,11 @@ static async Task RunTraditionalSimulationAsync()
     // 注册 Fake 硬件实现
     // ============================================================================
 
-    var fakeMainLineDrive = new FakeMainLineDrivePort();
+    var fakeMainLineDrive = new FakeMainLineDrivePortFromSim();
     builder.Services.AddSingleton(fakeMainLineDrive);
     builder.Services.AddSingleton<IMainLineDrivePort>(fakeMainLineDrive);
 
-    var fakeMainLineFeedback = new FakeMainLineFeedbackPort(fakeMainLineDrive);
+    var fakeMainLineFeedback = new FakeMainLineFeedbackPortFromSim(fakeMainLineDrive);
     builder.Services.AddSingleton(fakeMainLineFeedback);
     builder.Services.AddSingleton<IMainLineFeedbackPort>(fakeMainLineFeedback);
 
@@ -1258,8 +1260,8 @@ static async Task RunChuteCartMappingSelfCheckScenarioAsync(bool resetConfig)
     // 注册 Fake 硬件实现
     // ============================================================================
 
-    var fakeMainLineDrive = new FakeMainLineDrivePort();
-    var fakeMainLineFeedback = new FakeMainLineFeedbackPort(fakeMainLineDrive);
+    var fakeMainLineDrive = new FakeMainLineDrivePortFromSim();
+    var fakeMainLineFeedback = new FakeMainLineFeedbackPortFromSim(fakeMainLineDrive);
     
     builder.Services.AddSingleton(fakeMainLineDrive);
     builder.Services.AddSingleton<IMainLineDrivePort>(fakeMainLineDrive);
@@ -1455,11 +1457,11 @@ static async Task RunLongRunLoadTestScenarioAsync(string? outputPath, bool reset
     // 注册 Fake 硬件实现
     // ============================================================================
 
-    var fakeMainLineDrive = new FakeMainLineDrivePort();
+    var fakeMainLineDrive = new FakeMainLineDrivePortFromSim();
     builder.Services.AddSingleton(fakeMainLineDrive);
     builder.Services.AddSingleton<IMainLineDrivePort>(fakeMainLineDrive);
 
-    var fakeMainLineFeedback = new FakeMainLineFeedbackPort(fakeMainLineDrive);
+    var fakeMainLineFeedback = new FakeMainLineFeedbackPortFromSim(fakeMainLineDrive);
     builder.Services.AddSingleton(fakeMainLineFeedback);
     builder.Services.AddSingleton<IMainLineFeedbackPort>(fakeMainLineFeedback);
 

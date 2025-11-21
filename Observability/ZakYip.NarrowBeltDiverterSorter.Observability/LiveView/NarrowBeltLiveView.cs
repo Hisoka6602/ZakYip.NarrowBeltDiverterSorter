@@ -4,6 +4,7 @@ using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.SystemState;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Upstream;
 using ZakYip.NarrowBeltDiverterSorter.Observability.Events;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Observability.LiveView;
 

@@ -1,4 +1,5 @@
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Safety;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Core.Domain.Safety;
 
