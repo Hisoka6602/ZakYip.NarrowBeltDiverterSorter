@@ -4,7 +4,7 @@ namespace ZakYip.NarrowBeltDiverterSorter.Core.Domain.Ingress;
 /// 传感器触发事件参数
 /// 当IO监控检测到传感器状态变化时发布
 /// </summary>
-public class SensorTriggeredEventArgs : EventArgs
+public record class SensorTriggeredEventArgs
 {
     /// <summary>
     /// 传感器标识

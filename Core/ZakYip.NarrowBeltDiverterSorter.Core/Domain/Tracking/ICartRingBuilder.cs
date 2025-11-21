@@ -3,7 +3,7 @@ namespace ZakYip.NarrowBeltDiverterSorter.Core.Domain.Tracking;
 /// <summary>
 /// 小车通过事件参数
 /// </summary>
-public class CartPassedEventArgs : EventArgs
+public record class CartPassedEventArgs
 {
     /// <summary>
     /// 小车ID

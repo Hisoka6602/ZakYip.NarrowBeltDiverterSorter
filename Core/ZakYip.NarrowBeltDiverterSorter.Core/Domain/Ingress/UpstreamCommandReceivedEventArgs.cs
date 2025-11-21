@@ -6,7 +6,7 @@ namespace ZakYip.NarrowBeltDiverterSorter.Core.Domain.Ingress;
 /// 上游指令接收事件参数
 /// 当从上游系统接收到分拣指令时发布
 /// </summary>
-public class UpstreamCommandReceivedEventArgs : EventArgs
+public record class UpstreamCommandReceivedEventArgs
 {
     /// <summary>
     /// 接收时间

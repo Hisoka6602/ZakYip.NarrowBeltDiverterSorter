@@ -3,7 +3,7 @@ namespace ZakYip.NarrowBeltDiverterSorter.Core.Domain.Feeding;
 /// <summary>
 /// 从入口创建包裹事件参数
 /// </summary>
-public class ParcelCreatedFromInfeedEventArgs : EventArgs
+public record class ParcelCreatedFromInfeedEventArgs
 {
     /// <summary>
     /// 包裹ID
@@ -24,7 +24,7 @@ public class ParcelCreatedFromInfeedEventArgs : EventArgs
 /// <summary>
 /// 包裹装载到小车事件参数
 /// </summary>
-public class ParcelLoadedOnCartEventArgs : EventArgs
+public record class ParcelLoadedOnCartEventArgs
 {
     /// <summary>
     /// 包裹ID

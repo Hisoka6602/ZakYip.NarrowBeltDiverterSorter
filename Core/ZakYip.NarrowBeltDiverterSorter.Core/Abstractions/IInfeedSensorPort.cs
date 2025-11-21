@@ -35,7 +35,7 @@ public interface IInfeedSensorPort
 /// <summary>
 /// 包裹检测事件参数
 /// </summary>
-public class ParcelDetectedEventArgs : EventArgs
+public record class ParcelDetectedEventArgs
 {
     /// <summary>
     /// 检测时间
