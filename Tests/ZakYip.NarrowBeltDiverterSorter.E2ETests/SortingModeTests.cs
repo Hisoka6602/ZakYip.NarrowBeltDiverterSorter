@@ -2,6 +2,7 @@ using Xunit;
 using ZakYip.NarrowBeltDiverterSorter.Simulation;
 using ZakYip.NarrowBeltDiverterSorter.Simulation.Fakes;
 using ZakYip.NarrowBeltDiverterSorter.UpstreamContracts.Models;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Simulation;
 
 namespace ZakYip.NarrowBeltDiverterSorter.E2ETests;
 
