@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
+using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Chutes;
 using ZakYip.NarrowBeltDiverterSorter.Host.Contracts.Configuration.Chutes;
-using ZakYip.NarrowBeltDiverterSorter.Infrastructure.LiteDb;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Host.Controllers.Configuration;
 
@@ -12,14 +12,14 @@ namespace ZakYip.NarrowBeltDiverterSorter.Host.Controllers.Configuration;
 [Route("api/config/chutes")]
 public class ChuteIoConfigurationController : ControllerBase
 {
-    private readonly LiteDbSorterConfigurationStore _configStore;
+    private readonly IChuteTransmitterConfigurationPort _configPort;
     private readonly ILogger<ChuteIoConfigurationController> _logger;
 
     public ChuteIoConfigurationController(
-        LiteDbSorterConfigurationStore configStore,
+        IChuteTransmitterConfigurationPort configPort,
         ILogger<ChuteIoConfigurationController> logger)
     {
-        _configStore = configStore ?? throw new ArgumentNullException(nameof(configStore));
+        _configPort = configPort ?? throw new ArgumentNullException(nameof(configPort));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -34,7 +34,7 @@ public class ChuteIoConfigurationController : ControllerBase
     {
         try
         {
-            var bindings = await _configStore.GetAllBindingsAsync(cancellationToken);
+            var bindings = await _configPort.GetAllBindingsAsync(cancellationToken);
             var dtos = bindings.Select(b => new ChuteIoConfigDto
             {
                 ChuteId = b.ChuteId,
@@ -65,7 +65,7 @@ public class ChuteIoConfigurationController : ControllerBase
     {
         try
         {
-            var bindings = await _configStore.GetAllBindingsAsync(cancellationToken);
+            var bindings = await _configPort.GetAllBindingsAsync(cancellationToken);
             var binding = bindings.FirstOrDefault(b => b.ChuteId == chuteId);
 
             if (binding == null)
@@ -131,7 +131,7 @@ public class ChuteIoConfigurationController : ControllerBase
                 IsNormallyOn = dto.IsNormallyOn
             };
 
-            await _configStore.UpsertBindingAsync(binding, cancellationToken);
+            await _configPort.UpsertBindingAsync(binding, cancellationToken);
             _logger.LogInformation("已保存格口 {ChuteId} 的 IO 配置", chuteId);
 
             return Ok(new { message = $"已保存格口 {chuteId} 的 IO 配置" });
@@ -155,7 +155,7 @@ public class ChuteIoConfigurationController : ControllerBase
     {
         try
         {
-            await _configStore.DeleteBindingAsync(chuteId, cancellationToken);
+            await _configPort.DeleteBindingAsync(chuteId, cancellationToken);
             _logger.LogInformation("已删除格口 {ChuteId} 的 IO 配置", chuteId);
 
             return Ok(new { message = $"已删除格口 {chuteId} 的 IO 配置" });
