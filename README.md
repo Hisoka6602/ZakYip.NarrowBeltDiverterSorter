@@ -114,6 +114,31 @@ dotnet build
 dotnet test
 ```
 
+#### 执行特定类别的测试
+
+项目包含多种测试类别，可以通过过滤器选择性执行：
+
+```bash
+# 执行所有测试（包括单元测试、集成测试和仿真测试）
+dotnet test
+
+# 仅执行仿真测试（验证首车/格口/包裹绑定逻辑）
+dotnet test --filter "TestCategory=Simulation"
+
+# 仅执行小车绑定相关测试
+dotnet test --filter "TestCategory=CartBinding"
+
+# 执行仿真测试项目
+dotnet test Tests/ZakYip.NarrowBeltDiverterSorter.Simulator.Tests
+```
+
+**仿真测试说明**：
+- 仿真测试位于 `ZakYip.NarrowBeltDiverterSorter.Simulator.Tests` 项目
+- 验证首车原点基准下的格口小车号计算、包裹绑定一致性、配置热更新和异常处理
+- 覆盖场景：基础正确性、连续移动、热更新、异常场景
+- 详细文档：[docs/NarrowBelt/CartNumberingAndChutes.md](docs/NarrowBelt/CartNumberingAndChutes.md#八仿真测试与回归验证)
+
+
 ### 运行宿主程序 (Run Host)
 
 ```bash

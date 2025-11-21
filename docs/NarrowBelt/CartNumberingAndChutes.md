@@ -419,6 +419,183 @@ for (int headCart = 1; headCart <= 100; headCart++)
 
 ---
 
+## 八、仿真测试与回归验证
+
+### 8.1 仿真测试目的
+
+本项目提供了全面的仿真测试，用于验证以下关键功能：
+
+1. **首车原点基准下的格口小车号计算正确性**
+   - 验证环形数组公式在各种首车位置下的计算结果
+   - 确保计算结果始终在有效范围 [1, TotalCartCount] 内
+
+2. **包裹创建时的上车号绑定一致性**
+   - 验证 `IPackageCartBinder` 绑定结果与 `ICartAtChuteResolver` 一致
+   - 确保所有包裹创建路径统一使用标准接口
+
+3. **配置热更新后的新旧配置切换正常性**
+   - 验证运行中修改 `CartNumberWhenHeadAtOrigin` 后立即生效
+   - 确保新旧配置不会混合，前后批次包裹分别使用对应配置
+
+4. **异常场景下的错误处理机制**
+   - 验证各种配置错误（TotalCartCount=0、越界等）的检测和报告
+   - 确保错误信息为中文，包含关键参数，便于排查
+
+### 8.2 如何执行仿真测试
+
+#### 8.2.1 执行所有测试（包括仿真）
+
+```bash
+# 在仓库根目录执行
+dotnet test
+```
+
+#### 8.2.2 仅执行仿真测试
+
+仿真测试统一标记为 `Category=Simulation` 和 `Category=CartBinding`，可通过过滤器单独执行：
+
+```bash
+# 仅执行仿真相关测试
+dotnet test --filter "TestCategory=Simulation"
+
+# 仅执行小车绑定相关测试
+dotnet test --filter "TestCategory=CartBinding"
+
+# 同时匹配两个类别
+dotnet test --filter "TestCategory=Simulation|TestCategory=CartBinding"
+```
+
+#### 8.2.3 执行仿真测试项目
+
+```bash
+# 指定项目路径执行
+dotnet test Tests/ZakYip.NarrowBeltDiverterSorter.Simulator.Tests
+```
+
+### 8.3 仿真测试场景覆盖
+
+仿真测试位于项目 `ZakYip.NarrowBeltDiverterSorter.Simulator.Tests` 中，按场景分为以下几类：
+
+#### 8.3.1 基础正确性场景 (BasicCorrectnessSimulationTests)
+
+验证典型配置下的计算正确性：
+- **配置**：TotalCartCount = 100, Chute1.Base = 90, Chute3.Base = 80
+- **测试首车位置**：1, 5, 98, 99, 100, 12（覆盖起始、中间、回绕等关键点）
+- **验证内容**：
+  - 每个首车位置对应的格口小车号与预期一致
+  - 包裹绑定结果与 Resolver 计算结果一致
+  - 所有结果在有效范围 [1, 100] 内
+
+#### 8.3.2 连续移动场景 (ContinuousMovementSimulationTests)
+
+验证首车连续移动时的行为：
+- **完整循环测试**：首车从 1 → 100 → 1 循环，验证所有位置的小车号计算正确
+- **包裹创建测试**：每 N 步创建包裹，验证绑定结果与 Resolver 一致，无 off-by-one 错误
+- **环绕处理测试**：关注 10-13、98-100、1-2 等环绕点附近的行为
+- **多格口测试**：验证格口 1 和格口 3 的计算互不干扰，偏移量保持恒定
+
+#### 8.3.3 热更新场景 (HotUpdateSimulationTests)
+
+验证运行中修改配置的行为：
+- **单次更新测试**：
+  - 前半段使用旧配置（Base=90）绑定包裹
+  - 运行中修改配置（Base=85）
+  - 后半段使用新配置绑定包裹
+  - 验证新旧配置结果不同，且各自批次内部一致
+- **批量更新测试**：
+  - 连续绑定 5 个包裹使用旧配置
+  - 更新配置
+  - 再绑定 5 个包裹使用新配置
+  - 验证两批包裹完全使用对应配置，无混合
+
+#### 8.3.4 异常场景 (ErrorScenarioSimulationTests)
+
+验证各种配置错误和状态异常的处理：
+- **TotalCartCount 异常**：
+  - TotalCartCount = 0（未完成学习）
+  - TotalCartCount < 0（配置错误）
+  - 预期：抛出 `InvalidOperationException`，包含中文错误提示
+- **首车状态异常**：
+  - CartPositionTracker 未初始化
+  - CurrentOriginCartIndex 为 null
+  - 预期：抛出异常，提示"当前首车状态未就绪"
+- **格口配置异常**：
+  - 格口配置不存在
+  - CartNumberWhenHeadAtOrigin 为 0、负数或超过 TotalCartCount
+  - 预期：抛出异常，提示配置无效，包含参数值和有效范围
+- **首车编号越界**：
+  - HeadCartNumber 超过 TotalCartCount
+  - 预期：抛出异常，提示首车编号超出有效范围
+- **包裹绑定失败传播**：
+  - 当 Resolver 失败时，PackageCartBinder 应该传播异常
+  - 预期：异常信息一致，便于上层处理
+
+### 8.4 如何判断逻辑无退化
+
+#### 8.4.1 自动化验证
+
+1. **所有仿真测试全部通过**
+   ```bash
+   dotnet test --filter "TestCategory=Simulation"
+   ```
+   输出应显示：`Passed: XX, Failed: 0`
+
+2. **日志中无意外错误**
+   - 检查测试输出，确保没有"越界"、"未配置"等异常日志
+   - 仿真测试使用 `NullLogger`，不产生日志干扰
+
+3. **CI 流水线验证**
+   - 每次 PR 和 push 都会自动执行全部测试
+   - 查看 GitHub Actions 工作流运行记录，确认仿真测试通过
+
+#### 8.4.2 手工验证（可选）
+
+对于关键仿真测试，可以输出关键样本供人工抽样检查：
+
+```csharp
+// 示例：输出首车号、格口号、绑定车号
+[Fact]
+public void Manual_Verification_Sample()
+{
+    var samples = new[]
+    {
+        (Head: 1, Chute: 1, Expected: 90),
+        (Head: 5, Chute: 1, Expected: 94),
+        (Head: 12, Chute: 1, Expected: 1),
+    };
+
+    foreach (var (head, chute, expected) in samples)
+    {
+        var resolver = CreateResolver(head);
+        var actual = resolver.ResolveCurrentCartNumberForChute(chute);
+        Assert.Equal(expected, actual);
+        Console.WriteLine($"首车={head}, 格口={chute}, 绑定车号={actual} (预期={expected}) ✓");
+    }
+}
+```
+
+### 8.5 回归测试策略
+
+1. **每次代码变更后**：
+   - 执行 `dotnet test` 确保所有测试通过
+   - 重点关注与小车号计算、包裹绑定相关的修改
+
+2. **每次配置变更后**：
+   - 执行仿真测试验证新配置的正确性
+   - 特别是修改 `TotalCartCount` 或 `CartNumberWhenHeadAtOrigin` 时
+
+3. **重构或重大变更前**：
+   - 先确保现有仿真测试全部通过（建立基线）
+   - 变更后再次执行，对比结果无退化
+   - 必要时增加新的仿真测试覆盖新逻辑
+
+4. **生产环境上线前**：
+   - 完整执行一次全部测试（包括仿真）
+   - 检查 CI 记录，确认最近一次构建的测试结果
+   - 审查测试覆盖率报告，确保关键路径被覆盖
+
+---
+
 ## 七、扩展阅读
 
 - [窄带分拣机设计文档](../NarrowBeltDesign.md)
