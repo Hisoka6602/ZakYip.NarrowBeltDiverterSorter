@@ -4,7 +4,7 @@ namespace ZakYip.NarrowBeltDiverterSorter.Core.Domain.Parcels;
 /// 包裹路由完成事件参数
 /// 当包裹从上游获得格口分配后触发
 /// </summary>
-public class ParcelRoutedEventArgs : EventArgs
+public record class ParcelRoutedEventArgs
 {
     /// <summary>
     /// 包裹ID

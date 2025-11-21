@@ -4,25 +4,25 @@ namespace ZakYip.NarrowBeltDiverterSorter.Core.Domain.SystemState;
 /// 系统故障记录
 /// 表示一个当前活动的系统故障
 /// </summary>
-public class SystemFault
+public record class SystemFault
 {
     /// <summary>
     /// 故障代码
     /// </summary>
-    public SystemFaultCode FaultCode { get; init; }
+    public required SystemFaultCode FaultCode { get; init; }
 
     /// <summary>
     /// 故障发生时间
     /// </summary>
-    public DateTimeOffset OccurredAt { get; init; }
+    public required DateTimeOffset OccurredAt { get; init; }
 
     /// <summary>
     /// 故障消息
     /// </summary>
-    public string Message { get; init; } = string.Empty;
+    public required string Message { get; init; }
 
     /// <summary>
     /// 故障是否会阻断系统运行
     /// </summary>
-    public bool IsBlocking { get; init; }
+    public required bool IsBlocking { get; init; }
 }

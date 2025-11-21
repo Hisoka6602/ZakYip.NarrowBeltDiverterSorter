@@ -6,7 +6,7 @@ namespace ZakYip.NarrowBeltDiverterSorter.Execution.Sorting;
 /// 格口动作触发事件参数
 /// 在仿真模式下，当小车到达格口时间窗口时触发
 /// </summary>
-public class ChuteEjectedEventArgs : EventArgs
+public record class ChuteEjectedEventArgs
 {
     /// <summary>
     /// 格口ID

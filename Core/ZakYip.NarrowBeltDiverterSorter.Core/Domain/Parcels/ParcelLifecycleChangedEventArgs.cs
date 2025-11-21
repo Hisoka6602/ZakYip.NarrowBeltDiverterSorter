@@ -3,7 +3,7 @@ namespace ZakYip.NarrowBeltDiverterSorter.Core.Domain.Parcels;
 /// <summary>
 /// 包裹生命周期状态变化事件参数
 /// </summary>
-public class ParcelLifecycleChangedEventArgs : EventArgs
+public record class ParcelLifecycleChangedEventArgs
 {
     /// <summary>
     /// 包裹ID

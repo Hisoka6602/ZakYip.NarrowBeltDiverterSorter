@@ -4,7 +4,7 @@ namespace ZakYip.NarrowBeltDiverterSorter.Core.Domain.SystemState;
 /// 系统故障事件参数
 /// 描述故障的详细信息
 /// </summary>
-public class SystemFaultEventArgs : EventArgs
+public record class SystemFaultEventArgs
 {
     /// <summary>
     /// 故障代码

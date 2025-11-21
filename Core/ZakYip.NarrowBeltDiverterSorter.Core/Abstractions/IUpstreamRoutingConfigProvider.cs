@@ -31,7 +31,7 @@ public interface IUpstreamRoutingConfigProvider
 /// <summary>
 /// 上游路由配置变更事件参数
 /// </summary>
-public class UpstreamRoutingConfigChangedEventArgs : EventArgs
+public record class UpstreamRoutingConfigChangedEventArgs
 {
     /// <summary>
     /// 新的配置选项
