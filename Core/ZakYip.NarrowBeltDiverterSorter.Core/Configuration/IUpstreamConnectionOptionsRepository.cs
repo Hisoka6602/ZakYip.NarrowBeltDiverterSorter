@@ -1,6 +1,6 @@
 using ZakYip.NarrowBeltDiverterSorter.Communication.Upstream;
 
-namespace ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
+namespace ZakYip.NarrowBeltDiverterSorter.Core.Configuration;
 
 /// <summary>
 /// 上游连接选项仓储接口

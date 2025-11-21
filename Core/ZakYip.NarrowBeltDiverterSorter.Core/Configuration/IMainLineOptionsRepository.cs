@@ -1,6 +1,6 @@
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.MainLine;
 
-namespace ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
+namespace ZakYip.NarrowBeltDiverterSorter.Core.Configuration;
 
 /// <summary>
 /// 主线控制选项仓储接口

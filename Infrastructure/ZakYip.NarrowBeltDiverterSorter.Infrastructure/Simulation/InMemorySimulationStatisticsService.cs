@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Infrastructure.Simulation;
 

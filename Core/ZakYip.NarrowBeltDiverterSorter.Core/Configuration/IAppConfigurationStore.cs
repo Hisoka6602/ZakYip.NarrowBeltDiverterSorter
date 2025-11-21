@@ -1,8 +1,8 @@
-namespace ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
+namespace ZakYip.NarrowBeltDiverterSorter.Core.Configuration;
 
 /// <summary>
 /// 应用配置存储接口
-/// 提供统一的配置读写能力，底层使用 LiteDB 持久化
+/// 提供统一的配置读写能力，由 Infrastructure 层实现（如 LiteDB 持久化）
 /// 读取失败时应返回 null 而不抛出异常，确保应用能够使用默认值启动
 /// </summary>
 public interface IAppConfigurationStore

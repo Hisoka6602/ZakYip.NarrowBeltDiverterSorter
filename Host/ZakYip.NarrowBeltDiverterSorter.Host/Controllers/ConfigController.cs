@@ -4,7 +4,6 @@ using ZakYip.NarrowBeltDiverterSorter.Core.Configuration;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Feeding;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.MainLine;
 using ZakYip.NarrowBeltDiverterSorter.Host.Contracts.Configuration;
-using ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
 using DTO = ZakYip.NarrowBeltDiverterSorter.Host.DTOs;
 using ZakYip.NarrowBeltDiverterSorter.Host.DTOs.Requests;
 
@@ -25,7 +24,7 @@ public class ConfigController : ControllerBase
     private readonly IFeedingBackpressureController? _backpressureController;
     private readonly ILogger<ConfigController> _logger;
     private readonly ZakYip.NarrowBeltDiverterSorter.Host.Configuration.IHostConfigurationProvider? _hostConfigProvider;
-    private readonly ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration.IAppConfigurationStore? _appConfigStore;
+    private readonly IAppConfigurationStore? _appConfigStore;
     private readonly ISorterConfigurationProvider? _sorterConfigProvider;
 
     public ConfigController(
@@ -35,7 +34,7 @@ public class ConfigController : ControllerBase
         ILongRunLoadTestOptionsRepository longRunLoadTestRepo,
         ILogger<ConfigController> logger,
         ZakYip.NarrowBeltDiverterSorter.Host.Configuration.IHostConfigurationProvider? hostConfigProvider = null,
-        ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration.IAppConfigurationStore? appConfigStore = null,
+        IAppConfigurationStore? appConfigStore = null,
         ISorterConfigurationProvider? sorterConfigProvider = null,
         IFeedingCapacityOptionsRepository? feedingCapacityRepo = null,
         IFeedingBackpressureController? backpressureController = null)

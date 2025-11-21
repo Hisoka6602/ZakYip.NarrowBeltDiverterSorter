@@ -1,6 +1,6 @@
 using ZakYip.NarrowBeltDiverterSorter.Core.Configuration;
 
-namespace ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
+namespace ZakYip.NarrowBeltDiverterSorter.Core.Configuration;
 
 /// <summary>
 /// 长跑高负载测试选项仓储接口。

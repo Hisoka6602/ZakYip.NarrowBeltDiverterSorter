@@ -1,4 +1,4 @@
-namespace ZakYip.NarrowBeltDiverterSorter.Infrastructure.Simulation;
+namespace ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 
 /// <summary>
 /// 仿真统计服务接口
