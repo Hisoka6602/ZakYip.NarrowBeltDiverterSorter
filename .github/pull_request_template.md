@@ -17,7 +17,7 @@
 
 ## 项目强制基线规则检查清单 (Baseline Rules Checklist)
 
-> **⚠️ 重要**：在提交 PR 前，请务必检查以下项目。详见 [.github/copilot-instructions.md](.github/copilot-instructions.md)、[ARCHITECTURE_RULES.md](ARCHITECTURE_RULES.md) 和 [PERMANENT_CONSTRAINTS.md](PERMANENT_CONSTRAINTS.md)
+> **⚠️ 重要**：在提交 PR 前，请务必检查以下项目。详见 [.github/copilot-instructions.md](.github/copilot-instructions.md)、[docs/Conventions/架构硬性规则.md](docs/Conventions/架构硬性规则.md) 和 [docs/Conventions/永久约束规则.md](docs/Conventions/永久约束规则.md)
 
 ### 1. 通讯与重试策略
 
@@ -169,6 +169,6 @@ Closes #
 
 **相关规范文档：**
 - [Copilot 强制约束规则](.github/copilot-instructions.md)
-- [架构硬性规则](ARCHITECTURE_RULES.md)
-- [永久约束规则](PERMANENT_CONSTRAINTS.md)
+- [架构硬性规则](docs/Conventions/架构硬性规则.md)
+- [永久约束规则](docs/Conventions/永久约束规则.md)
 - [贡献指南](CONTRIBUTING.md)

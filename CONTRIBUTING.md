@@ -2,11 +2,11 @@
 
 本文档定义了针对 GitHub Copilot 的全局编码约定，所有贡献者在使用 Copilot 生成或编辑代码时应遵循这些规范。
 
-> **⚠️ 重要：** 在开始贡献之前，请务必阅读 [ARCHITECTURE_RULES.md](ARCHITECTURE_RULES.md)，了解项目的硬性架构规则。这些规则是强制性的，违反规则的代码将不会被接受。
+> **⚠️ 重要：** 在开始贡献之前，请务必阅读 [ARCHITECTURE_RULES.md](docs/Conventions/ARCHITECTURE_RULES.md)，了解项目的硬性架构规则。这些规则是强制性的，违反规则的代码将不会被接受。
 
 ## 快速链接
 
-- [架构硬性规则](ARCHITECTURE_RULES.md) - **必读**：Host 层规则、时间使用、异常处理等硬性要求
+- [架构硬性规则](docs/Conventions/ARCHITECTURE_RULES.md) - **必读**：Host 层规则、时间使用、异常处理等硬性要求
 - [文档导航](README.md#文档导航-documentation-navigation) - 完整的项目文档索引
 
 ## 语言与注释

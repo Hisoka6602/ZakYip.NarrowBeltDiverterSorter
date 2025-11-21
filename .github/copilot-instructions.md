@@ -660,10 +660,10 @@ var config = new Config
 
 ## 参考文档
 
-- [ARCHITECTURE_RULES.md](../ARCHITECTURE_RULES.md) - 架构硬性规则详细说明
-- [PERMANENT_CONSTRAINTS.md](../PERMANENT_CONSTRAINTS.md) - 永久约束规则
+- [docs/Conventions/架构硬性规则.md](../docs/Conventions/架构硬性规则.md) - 架构硬性规则详细说明
+- [docs/Conventions/永久约束规则.md](../docs/Conventions/永久约束规则.md) - 永久约束规则
 - [CONTRIBUTING.md](../CONTRIBUTING.md) - 贡献指南
-- [docs/Conventions/ProjectRules.md](../docs/Conventions/ProjectRules.md) - 项目规则详细文档
+- [docs/Conventions/项目规则集.md](../docs/Conventions/项目规则集.md) - 项目规则详细文档
 
 ---
 
