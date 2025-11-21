@@ -51,7 +51,7 @@ public class UpstreamSortingApiClient : IUpstreamSortingApiClient
                 ChuteId = 0,
                 IsSuccess = false,
                 ErrorMessage = $"请求上游系统失败: {ex.Message}",
-                ResponseTime = DateTimeOffset.UtcNow
+                ResponseTime = DateTimeOffset.Now
             };
         }
     }

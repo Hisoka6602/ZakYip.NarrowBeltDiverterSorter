@@ -97,7 +97,7 @@ public class ObservableSortingRuleEngineClient : ISortingRuleEngineClient
 
     private async Task<bool> TrackRequestAsync(Func<Task<bool>> operation)
     {
-        var startTime = DateTimeOffset.UtcNow;
+        var startTime = DateTimeOffset.Now;
         bool success = false;
         string? errorMessage = null;
 
@@ -124,7 +124,7 @@ public class ObservableSortingRuleEngineClient : ISortingRuleEngineClient
         }
         finally
         {
-            var latency = (DateTimeOffset.UtcNow - startTime).TotalMilliseconds;
+            var latency = (DateTimeOffset.Now - startTime).TotalMilliseconds;
             
             lock (_metricsLock)
             {
@@ -137,7 +137,7 @@ public class ObservableSortingRuleEngineClient : ISortingRuleEngineClient
                 if (!success && errorMessage != null)
                 {
                     _lastError = errorMessage;
-                    _lastErrorAt = DateTimeOffset.UtcNow;
+                    _lastErrorAt = DateTimeOffset.Now;
                 }
             }
 
@@ -173,7 +173,7 @@ public class ObservableSortingRuleEngineClient : ISortingRuleEngineClient
                 AverageLatencyMs = avgLatency,
                 LastError = lastError,
                 LastErrorAt = lastErrorAt,
-                Timestamp = DateTimeOffset.UtcNow
+                Timestamp = DateTimeOffset.Now
             };
 
             _ = _eventBus.PublishAsync(eventArgs, CancellationToken.None);
@@ -196,7 +196,7 @@ public class ObservableSortingRuleEngineClient : ISortingRuleEngineClient
                 Mode = _mode,
                 Status = status,
                 ConnectionAddress = _connectionAddress,
-                Timestamp = DateTimeOffset.UtcNow
+                Timestamp = DateTimeOffset.Now
             };
 
             _ = _eventBus.PublishAsync(eventArgs, CancellationToken.None);

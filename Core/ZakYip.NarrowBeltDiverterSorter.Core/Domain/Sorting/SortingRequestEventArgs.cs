@@ -51,7 +51,7 @@ public record class SortingRequestEventArgs
     public decimal? Volume { get; init; }
 
     /// <summary>
-    /// 请求时间
+    /// 请求时间（本地时间）
     /// </summary>
-    public DateTimeOffset RequestTime { get; init; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset RequestTime { get; init; } = DateTimeOffset.Now;
 }

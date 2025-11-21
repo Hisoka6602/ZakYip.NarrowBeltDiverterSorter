@@ -51,7 +51,7 @@ public class SystemFaultService : ISystemFaultService
             var fault = new SystemFault
             {
                 FaultCode = faultCode,
-                OccurredAt = DateTimeOffset.UtcNow,
+                OccurredAt = DateTimeOffset.Now,
                 Message = message,
                 IsBlocking = isBlocking
             };

@@ -41,7 +41,7 @@ public record class SortingResultReceivedEventArgs
     public string? FailureReason { get; init; }
 
     /// <summary>
-    /// 结果时间
+    /// 结果时间（本地时间）
     /// </summary>
-    public DateTimeOffset ResultTime { get; init; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset ResultTime { get; init; } = DateTimeOffset.Now;
 }

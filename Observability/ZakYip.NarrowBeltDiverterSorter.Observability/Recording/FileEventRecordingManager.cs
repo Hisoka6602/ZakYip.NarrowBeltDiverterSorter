@@ -49,7 +49,7 @@ public class FileEventRecordingManager : IEventRecordingManager, IEventRecorder,
             }
 
             var sessionId = Guid.NewGuid();
-            var startedAt = DateTimeOffset.UtcNow;
+            var startedAt = DateTimeOffset.Now;
             
             var session = new RecordingSessionInfo
             {
@@ -107,7 +107,7 @@ public class FileEventRecordingManager : IEventRecordingManager, IEventRecorder,
             // 更新会话元数据
             var updatedSession = _activeSession with
             {
-                StoppedAt = DateTimeOffset.UtcNow,
+                StoppedAt = DateTimeOffset.Now,
                 IsCompleted = true,
                 EventCount = writer?.EventCount ?? 0
             };

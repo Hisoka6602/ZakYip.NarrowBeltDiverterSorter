@@ -21,7 +21,7 @@ public record class SafetyStateChangedEventArgs
     public string? Message { get; init; }
 
     /// <summary>
-    /// 事件发生时间
+    /// 事件发生时间（本地时间）
     /// </summary>
-    public DateTimeOffset OccurredAt { get; init; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset OccurredAt { get; init; } = DateTimeOffset.Now;
 }

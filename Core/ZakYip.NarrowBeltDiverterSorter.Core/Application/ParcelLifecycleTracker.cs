@@ -34,7 +34,7 @@ public class ParcelLifecycleTracker : IParcelLifecycleTracker
         ParcelFailureReason failureReason = ParcelFailureReason.None,
         string? remarks = null)
     {
-        var occurredAt = DateTimeOffset.UtcNow;
+        var occurredAt = DateTimeOffset.Now;
 
         // 从底层服务获取当前包裹快照
         var currentSnapshot = _parcelLifecycleService.Get(parcelId);

@@ -23,9 +23,9 @@ public record class UpstreamRuleEngineSnapshot
     public string? ConnectionAddress { get; init; }
 
     /// <summary>
-    /// 最后更新时间
+    /// 最后更新时间（本地时间）
     /// </summary>
-    public DateTimeOffset LastUpdatedAt { get; init; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset LastUpdatedAt { get; init; } = DateTimeOffset.Now;
 
     /// <summary>
     /// 总请求次数
