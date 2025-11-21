@@ -804,9 +804,6 @@ if (startupConfig.ShouldStartUpstreamBringupWorker())
     builder.Services.AddHostedService<UpstreamBringupWorker>();
 }
 
-// 注册占位符工作器（可以移除）
-builder.Services.AddHostedService<Worker>();
-
 // 面板按钮监控工作器（所有模式都需要）
 builder.Services.AddHostedService<PanelButtonMonitorWorker>();
 
