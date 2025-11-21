@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using ZakYip.NarrowBeltDiverterSorter.Communication.Upstream;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Sorting;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Upstream;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Communication;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Domain;
 using ZakYip.NarrowBeltDiverterSorter.Observability.LiveView;
 using ZakYip.NarrowBeltDiverterSorter.Host.DTOs.Requests;
 using ZakYip.NarrowBeltDiverterSorter.Host.DTOs.Responses;
