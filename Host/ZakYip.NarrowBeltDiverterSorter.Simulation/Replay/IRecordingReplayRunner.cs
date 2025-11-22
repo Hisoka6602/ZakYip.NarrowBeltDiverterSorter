@@ -1,27 +1,7 @@
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Contracts;
 using ZakYip.NarrowBeltDiverterSorter.Observability.Recording;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Simulation.Replay;
-
-/// <summary>
-/// 回放模式
-/// </summary>
-public enum ReplayMode
-{
-    /// <summary>
-    /// 原速回放 - 保持原始事件间隔
-    /// </summary>
-    OriginalSpeed,
-
-    /// <summary>
-    /// 加速回放 - 将间隔除以加速倍数
-    /// </summary>
-    Accelerated,
-
-    /// <summary>
-    /// 固定间隔回放 - 使用固定的时间间隔
-    /// </summary>
-    FixedInterval
-}
 
 /// <summary>
 /// 回放配置

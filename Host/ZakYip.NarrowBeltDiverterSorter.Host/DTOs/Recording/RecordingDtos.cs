@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Contracts;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Host.DTOs.Recording;
 
@@ -60,27 +61,6 @@ public class RecordingSessionResponse
     /// 事件计数
     /// </summary>
     public int EventCount { get; init; }
-}
-
-/// <summary>
-/// 回放模式
-/// </summary>
-public enum ReplayMode
-{
-    /// <summary>
-    /// 原速回放
-    /// </summary>
-    OriginalSpeed,
-
-    /// <summary>
-    /// 加速回放
-    /// </summary>
-    Accelerated,
-
-    /// <summary>
-    /// 固定间隔回放
-    /// </summary>
-    FixedInterval
 }
 
 /// <summary>
