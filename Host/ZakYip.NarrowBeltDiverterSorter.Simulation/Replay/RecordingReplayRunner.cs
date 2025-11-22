@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using ZakYip.NarrowBeltDiverterSorter.Observability;
 using ZakYip.NarrowBeltDiverterSorter.Observability.Recording;
 using ZakYip.NarrowBeltDiverterSorter.Core.Enums;
+using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Contracts;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Simulation.Replay;
 
