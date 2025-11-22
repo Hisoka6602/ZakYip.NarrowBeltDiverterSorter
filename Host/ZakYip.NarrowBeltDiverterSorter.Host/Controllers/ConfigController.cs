@@ -28,6 +28,7 @@ public class ConfigController : ControllerBase
     private readonly ZakYip.NarrowBeltDiverterSorter.Host.Configuration.IHostConfigurationProvider? _hostConfigProvider;
     private readonly IAppConfigurationStore? _appConfigStore;
     private readonly ISorterConfigurationProvider? _sorterConfigProvider;
+    private readonly IPanelIoLinkageOptionsRepository? _panelIoLinkageRepo;
 
     public ConfigController(
         IMainLineOptionsRepository mainLineRepo,
@@ -39,7 +40,8 @@ public class ConfigController : ControllerBase
         IAppConfigurationStore? appConfigStore = null,
         ISorterConfigurationProvider? sorterConfigProvider = null,
         IFeedingCapacityOptionsRepository? feedingCapacityRepo = null,
-        IFeedingBackpressureController? backpressureController = null)
+        IFeedingBackpressureController? backpressureController = null,
+        IPanelIoLinkageOptionsRepository? panelIoLinkageRepo = null)
     {
         _mainLineRepo = mainLineRepo ?? throw new ArgumentNullException(nameof(mainLineRepo));
         _infeedLayoutRepo = infeedLayoutRepo ?? throw new ArgumentNullException(nameof(infeedLayoutRepo));
@@ -51,6 +53,7 @@ public class ConfigController : ControllerBase
         _sorterConfigProvider = sorterConfigProvider;
         _feedingCapacityRepo = feedingCapacityRepo;
         _backpressureController = backpressureController;
+        _panelIoLinkageRepo = panelIoLinkageRepo;
     }
 
     /// <summary>
@@ -817,6 +820,93 @@ public class ConfigController : ControllerBase
         {
             _logger.LogError(ex, "更新供包容量配置失败");
             return StatusCode(500, new { error = "更新供包容量配置失败", message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// 获取面板 IO 联动配置
+    /// </summary>
+    /// <remarks>
+    /// 获取启动/停止/首次稳速/稳速后不稳速时的输出通道联动配置
+    /// </remarks>
+    [HttpGet("panel-io-linkage")]
+    [ProducesResponseType(typeof(DTO.ApiResult<PanelIoLinkageConfigurationDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetPanelIoLinkageConfiguration(CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (_panelIoLinkageRepo == null)
+            {
+                return StatusCode(500, new { error = "面板 IO 联动配置仓储未初始化" });
+            }
+
+            var options = await _panelIoLinkageRepo.LoadAsync(cancellationToken);
+            var dto = new PanelIoLinkageConfigurationDto
+            {
+                StartFollowOutputChannels = options.StartFollowOutputChannels.ToList(),
+                StopFollowOutputChannels = options.StopFollowOutputChannels.ToList(),
+                FirstStableSpeedFollowOutputChannels = options.FirstStableSpeedFollowOutputChannels.ToList(),
+                UnstableAfterStableFollowOutputChannels = options.UnstableAfterStableFollowOutputChannels.ToList()
+            };
+            return Ok(DTO.ApiResult<PanelIoLinkageConfigurationDto>.Ok(dto));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "获取面板 IO 联动配置失败");
+            return StatusCode(500, new { error = "获取面板 IO 联动配置失败", message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// 更新面板 IO 联动配置
+    /// </summary>
+    /// <remarks>
+    /// 更新启动/停止/首次稳速/稳速后不稳速时的输出通道联动配置。配置立即生效，无需重启。
+    /// </remarks>
+    [HttpPut("panel-io-linkage")]
+    [ProducesResponseType(typeof(DTO.ApiResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(DTO.ApiResult), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> UpdatePanelIoLinkageConfiguration(
+        [FromBody] PanelIoLinkageConfigurationDto dto,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (_panelIoLinkageRepo == null)
+            {
+                return StatusCode(500, new { error = "面板 IO 联动配置仓储未初始化" });
+            }
+
+            // 参数验证
+            if (dto.StartFollowOutputChannels == null)
+                return BadRequest(DTO.ApiResult.Fail("启动联动输出通道列表不能为 null", "ValidationError"));
+
+            if (dto.StopFollowOutputChannels == null)
+                return BadRequest(DTO.ApiResult.Fail("停止联动输出通道列表不能为 null", "ValidationError"));
+
+            if (dto.FirstStableSpeedFollowOutputChannels == null)
+                return BadRequest(DTO.ApiResult.Fail("首次稳速联动输出通道列表不能为 null", "ValidationError"));
+
+            if (dto.UnstableAfterStableFollowOutputChannels == null)
+                return BadRequest(DTO.ApiResult.Fail("稳速后不稳速联动输出通道列表不能为 null", "ValidationError"));
+
+            // 构建配置对象
+            var options = new ZakYip.NarrowBeltDiverterSorter.Core.Configuration.PanelIoLinkageOptions
+            {
+                StartFollowOutputChannels = dto.StartFollowOutputChannels.ToList(),
+                StopFollowOutputChannels = dto.StopFollowOutputChannels.ToList(),
+                FirstStableSpeedFollowOutputChannels = dto.FirstStableSpeedFollowOutputChannels.ToList(),
+                UnstableAfterStableFollowOutputChannels = dto.UnstableAfterStableFollowOutputChannels.ToList()
+            };
+
+            await _panelIoLinkageRepo.SaveAsync(options, cancellationToken);
+            _logger.LogInformation("面板 IO 联动配置已更新");
+            return Ok(DTO.ApiResult.Ok("面板 IO 联动配置已更新，新配置立即生效"));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "更新面板 IO 联动配置失败");
+            return StatusCode(500, new { error = "更新面板 IO 联动配置失败", message = ex.Message });
         }
     }
 }
