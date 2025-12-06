@@ -371,6 +371,7 @@ dotnet run
 
 ### 📋 项目规范与约束文档
 
+- **[技术债务文档](docs/Conventions/技术债务.md)** - **技术债务管理（每个 PR 必读）**
 - **[Copilot 强制约束规则](.github/copilot-instructions.md)** - GitHub Copilot 必须遵守的硬性规则
 - **[项目规则集](docs/Conventions/项目规则集.md)** - 完整的项目规则文档，覆盖所有方面
 - **[并发安全与异常处理规范](docs/Conventions/并发安全与异常处理规范.md)** - 并发访问控制和异常隔离统一模式
@@ -473,18 +474,25 @@ dotnet test --filter "TestCategory=Simulation"
 
 ### 📚 必读规范文档
 
-1. **[Copilot 强制约束规则](.github/copilot-instructions.md)** - GitHub Copilot 必须遵守的硬性规则
-2. **[项目规则集](docs/Conventions/项目规则集.md)** - 完整的项目规则文档
-3. **[并发安全与异常处理规范](docs/Conventions/并发安全与异常处理规范.md)** - 并发控制与异常隔离（**必读**）
-4. **[架构硬性规则](docs/Conventions/架构硬性规则.md)** - 架构分层与依赖规则（**必读**）
-5. **[永久约束规则](docs/Conventions/永久约束规则.md)** - 技术约束规则
-6. **[贡献指南](CONTRIBUTING.md)** - 编码规范与命名约定
+1. **[技术债务文档](docs/Conventions/技术债务.md)** - **技术债务管理（每个 PR 必读）**
+2. **[Copilot 强制约束规则](.github/copilot-instructions.md)** - GitHub Copilot 必须遵守的硬性规则
+3. **[项目规则集](docs/Conventions/项目规则集.md)** - 完整的项目规则文档
+4. **[并发安全与异常处理规范](docs/Conventions/并发安全与异常处理规范.md)** - 并发控制与异常隔离（**必读**）
+5. **[架构硬性规则](docs/Conventions/架构硬性规则.md)** - 架构分层与依赖规则（**必读**）
+6. **[永久约束规则](docs/Conventions/永久约束规则.md)** - 技术约束规则
+7. **[贡献指南](CONTRIBUTING.md)** - 编码规范与命名约定
 
 ### ✅ 贡献前检查清单
 
 提交 PR 前，请确认：
 
+- [ ] ✅ **已通读** [技术债务文档](docs/Conventions/技术债务.md)
+- [ ] 已运行 `./scripts/detect-shadow-clones.sh` 检测影分身代码
+- [ ] 已运行 `./check-pr.sh` 完成所有 PR 检查
 - [ ] 已阅读所有规范文档
+- [ ] 没有引入新的代码重复（影分身）
+- [ ] 新增技术债务已记录到技术债务文档
+- [ ] 高优先级技术债务已全部解决或有明确说明
 - [ ] 代码符合架构分层原则（Host 层打薄、依赖抽象接口）
 - [ ] 时间使用本地时间，未使用 UTC
 - [ ] 外部调用使用安全隔离器
@@ -499,12 +507,14 @@ dotnet test --filter "TestCategory=Simulation"
 ### 🚫 常见违规提醒
 
 **禁止的行为**：
+- ❌ **复制粘贴代码创建影分身**
 - ❌ Host 控制器直接依赖 Infrastructure 具体类型
 - ❌ 使用 `DateTime.UtcNow`
 - ❌ 外部调用不使用安全隔离器
 - ❌ 多线程共享使用非线程安全集合（如 `Dictionary`）
 - ❌ API 参数仅用 if 语句校验
 - ❌ 修改通讯重试策略（客户端无限重试，发送失败不重试）
+- ❌ 引入新技术债务但不记录到文档
 
 ### 📝 提交 PR
 
