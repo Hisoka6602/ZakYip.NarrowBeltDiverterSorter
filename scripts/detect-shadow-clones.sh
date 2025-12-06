@@ -1,14 +1,15 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # 影分身代码检测脚本
 # 用于检测项目中的重复代码（影分身）
 #
 # 配置说明：
 # - DUPLICATE_METHOD_TYPES_THRESHOLD: 重复方法签名类型数量阈值（默认：3）
-# - UTC 时间检测排除模式：
+# - UTC 时间检测排除模式（必须精确匹配）：
 #   - "// 边界转换" - 标记在API边界进行UTC转换的代码
 #   - "// UTC required" - 标记明确需要UTC时间的代码
-#   这些特殊注释允许在特定场景下使用UTC时间
+#   注意：这些注释必须出现在使用UTC的同一行，且格式必须精确匹配
+#   建议：在编码规范文档中明确说明这些标记的使用规则
 
 set -e
 
@@ -29,14 +30,14 @@ ISSUES_FOUND=0
 # 1. 检测重复的类名
 echo -e "${BLUE}[1/7] 检测重复的类名...${NC}"
 DUPLICATE_CLASSES=$(find . -name "*.cs" -type f | grep -v "/bin/" | grep -v "/obj/" | \
-    xargs grep -h "^public class\|^public interface\|^public record\|^internal class" | \
+    xargs grep -h "^\s*public class\|^\s*public interface\|^\s*public record\|^\s*internal class" | \
     sed 's/\s\+/ /g' | sort | uniq -c | grep -v "^ *1 " | wc -l)
 
 if [ "$DUPLICATE_CLASSES" -gt 0 ]; then
     echo -e "${YELLOW}⚠️  发现 $DUPLICATE_CLASSES 个重复的类/接口/记录定义${NC}"
     echo "详细信息："
     find . -name "*.cs" -type f | grep -v "/bin/" | grep -v "/obj/" | \
-        xargs grep -h "^public class\|^public interface\|^public record\|^internal class" | \
+        xargs grep -h "^\s*public class\|^\s*public interface\|^\s*public record\|^\s*internal class" | \
         sed 's/\s\+/ /g' | sort | uniq -c | grep -v "^ *1 " | head -10
     ISSUES_FOUND=$((ISSUES_FOUND + 1))
     echo ""
@@ -48,14 +49,14 @@ fi
 echo ""
 echo -e "${BLUE}[2/7] 检测重复的事件参数类型...${NC}"
 DUPLICATE_EVENTS=$(find . -name "*.cs" -type f | grep -v "/bin/" | grep -v "/obj/" | \
-    xargs grep -h "public record.*EventArgs" | \
+    xargs grep -h "^\s*public record.*EventArgs" | \
     sed 's/\s\+/ /g' | sort | uniq -c | grep -v "^ *1 " | wc -l)
 
 if [ "$DUPLICATE_EVENTS" -gt 0 ]; then
     echo -e "${YELLOW}⚠️  发现 $DUPLICATE_EVENTS 个重复的事件参数定义${NC}"
     echo "详细信息："
     find . -name "*.cs" -type f | grep -v "/bin/" | grep -v "/obj/" | \
-        xargs grep -h "public record.*EventArgs" | \
+        xargs grep -h "^\s*public record.*EventArgs" | \
         sed 's/\s\+/ /g' | sort | uniq -c | grep -v "^ *1 " | head -10
     ISSUES_FOUND=$((ISSUES_FOUND + 1))
     echo ""
@@ -67,14 +68,14 @@ fi
 echo ""
 echo -e "${BLUE}[3/7] 检测重复的 DTO 类型...${NC}"
 DUPLICATE_DTOS=$(find . -name "*.cs" -type f | grep -v "/bin/" | grep -v "/obj/" | \
-    xargs grep -h "public record.*Dto" | \
+    xargs grep -h "^\s*public record.*Dto" | \
     sed 's/\s\+/ /g' | sort | uniq -c | grep -v "^ *1 " | wc -l)
 
 if [ "$DUPLICATE_DTOS" -gt 0 ]; then
     echo -e "${YELLOW}⚠️  发现 $DUPLICATE_DTOS 个重复的 DTO 定义${NC}"
     echo "详细信息："
     find . -name "*.cs" -type f | grep -v "/bin/" | grep -v "/obj/" | \
-        xargs grep -h "public record.*Dto" | \
+        xargs grep -h "^\s*public record.*Dto" | \
         sed 's/\s\+/ /g' | sort | uniq -c | grep -v "^ *1 " | head -10
     ISSUES_FOUND=$((ISSUES_FOUND + 1))
     echo ""
@@ -129,15 +130,16 @@ echo -e "${BLUE}[6/7] 检测重复的方法签名...${NC}"
 # - 如果发现超过 3 种不同的方法签名出现 4+ 次，则报告警告
 DUPLICATE_METHOD_TYPES_THRESHOLD=3
 
+# 使用更精确的模式匹配方法签名：必须包含括号
 DUPLICATE_METHODS=$(find . -name "*.cs" -type f | grep -v "/bin/" | grep -v "/obj/" | \
-    xargs grep -h "public.*Task.*Async\|public.*void\|public.*bool" | \
+    xargs grep -h '^\s*public.*\(Task\|void\|bool\).*(' | \
     sed 's/\s\+/ /g' | sort | uniq -c | grep -v "^ *1 \|^ *2 \|^ *3 " | wc -l)
 
 if [ "$DUPLICATE_METHODS" -gt "$DUPLICATE_METHOD_TYPES_THRESHOLD" ]; then
     echo -e "${YELLOW}⚠️  发现 $DUPLICATE_METHODS 个高度重复的方法签名（出现4次或更多）${NC}"
     echo "详细信息（前5个）："
     find . -name "*.cs" -type f | grep -v "/bin/" | grep -v "/obj/" | \
-        xargs grep -h "public.*Task.*Async\|public.*void\|public.*bool" | \
+        xargs grep -h '^\s*public.*\(Task\|void\|bool\).*(' | \
         sed 's/\s\+/ /g' | sort | uniq -c | grep -v "^ *1 \|^ *2 \|^ *3 " | head -5
     ISSUES_FOUND=$((ISSUES_FOUND + 1))
     echo ""
@@ -180,6 +182,6 @@ else
     echo "3. 如有新问题，请更新技术债务文档"
     echo "4. 优先解决高优先级技术债务"
     echo ""
-    echo "注意：此脚本仅用于检测，不会阻止 PR 提交"
-    exit 0  # 不阻止 PR，仅警告
+    echo "注意：此脚本检测到问题将阻止 PR 提交"
+    exit 1  # 检测到问题时阻止 PR
 fi

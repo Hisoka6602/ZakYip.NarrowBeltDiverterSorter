@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # PR 提交前检查脚本
 # 检查代码规范、构建、测试、技术债务等
@@ -30,6 +30,10 @@ fi
 echo ""
 
 # 3. 检查UTC时间使用（包括测试代码）
+# 注意：UTC时间检测排除注释必须在同一行且格式精确匹配：
+#   - "// 边界转换" - API边界转换场景
+#   - "// UTC required" - 明确需要UTC的场景
+# 建议：在编码规范中明确文档化这些标记的使用规则
 echo "🔍 检查UTC时间使用（包括测试代码）..."
 UTC_COUNT=$(grep -r "DateTime\.UtcNow\|DateTimeOffset\.UtcNow" --include="*.cs" . | grep -v "bin\|obj\|// 边界转换\|// UTC required" | wc -l)
 if [ $UTC_COUNT -gt 0 ]; then
@@ -53,9 +57,10 @@ if [ -f "docs/Conventions/技术债务.md" ]; then
     # 从文档的统计信息部分提取总债务数量（移除 + 号）
     DEBT_LINE=$(grep -m 1 "总债务数量" docs/Conventions/技术债务.md)
     if [ -n "$DEBT_LINE" ]; then
-        # 使用 POSIX 兼容的正则表达式提取数字
-        EXTRACTED=$(echo "$DEBT_LINE" | grep -oE '[0-9]+' | head -1)
-        if [ -n "$EXTRACTED" ]; then
+        # 更精确地从"总债务数量"字段后提取数字
+        EXTRACTED=$(echo "$DEBT_LINE" | grep -oE '总债务数量[^0-9]*[0-9]+' | grep -oE '[0-9]+')
+        # 校验提取到的数字是否在合理范围（0-1000）
+        if [ -n "$EXTRACTED" ] && [ "$EXTRACTED" -ge 0 ] && [ "$EXTRACTED" -le 1000 ] 2>/dev/null; then
             RECORDED_DEBT_COUNT=$EXTRACTED
         fi
     fi
@@ -70,7 +75,8 @@ if [ $TODO_COUNT -gt $RECORDED_DEBT_COUNT ]; then
     echo "新增的技术债务标记："
     grep -rn "TODO\|FIXME\|HACK" --include="*.cs" . 2>/dev/null | grep -v "/bin/\|/obj/\|技术债务.md" | tail -5
     echo ""
-    echo "⚠️  警告：请在 PR 中说明这些新增技术债务"
+    echo "❌ 错误：检测到新增技术债务，必须先记录到文档中"
+    exit 1
 elif [ $TODO_COUNT -lt $RECORDED_DEBT_COUNT ]; then
     echo "✅ 技术债务标记减少了 $(($RECORDED_DEBT_COUNT - $TODO_COUNT)) 个（太棒了！）"
     echo "   请在 PR 中更新技术债务文档的统计信息"
