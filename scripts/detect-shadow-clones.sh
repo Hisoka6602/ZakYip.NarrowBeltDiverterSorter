@@ -115,11 +115,17 @@ fi
 # 6. 检测重复的方法签名
 echo ""
 echo -e "${BLUE}[6/7] 检测重复的方法签名...${NC}"
+
+# 阈值说明：
+# - 出现 1-3 次被认为是合理的（接口实现、测试方法等）
+# - 超过 3 次表示可能存在过度重复，需要考虑提取公共基类或模式
+DUPLICATE_METHOD_THRESHOLD=3
+
 DUPLICATE_METHODS=$(find . -name "*.cs" -type f | grep -v "/bin/" | grep -v "/obj/" | \
     xargs grep -h "public.*Task.*Async\|public.*void\|public.*bool" | \
     sed 's/\s\+/ /g' | sort | uniq -c | grep -v "^ *1 \|^ *2 \|^ *3 " | wc -l)
 
-if [ "$DUPLICATE_METHODS" -gt 3 ]; then
+if [ "$DUPLICATE_METHODS" -gt "$DUPLICATE_METHOD_THRESHOLD" ]; then
     echo -e "${YELLOW}⚠️  发现 $DUPLICATE_METHODS 个高度重复的方法签名${NC}"
     echo "详细信息（前5个）："
     find . -name "*.cs" -type f | grep -v "/bin/" | grep -v "/obj/" | \
