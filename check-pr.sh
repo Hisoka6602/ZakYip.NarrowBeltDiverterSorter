@@ -44,14 +44,17 @@ echo ""
 echo "📝 检查未记录的技术债务标记..."
 
 # 从技术债务文档中提取已记录的债务数量
-# 如果文档不存在或无法读取，使用默认值 27
-RECORDED_DEBT_COUNT=27
+# 默认值：如果无法从文档中提取，使用此值
+# 注意：当技术债务数量发生变化时，此值应同步更新，或者确保文档中的"总债务数量"字段是最新的
+DEFAULT_DEBT_COUNT=27
+RECORDED_DEBT_COUNT=$DEFAULT_DEBT_COUNT
+
 if [ -f "docs/Conventions/技术债务.md" ]; then
     # 从文档的统计信息部分提取总债务数量（移除 + 号）
     DEBT_LINE=$(grep -m 1 "总债务数量" docs/Conventions/技术债务.md)
     if [ -n "$DEBT_LINE" ]; then
-        # 提取数字，移除 + 号
-        EXTRACTED=$(echo "$DEBT_LINE" | grep -oP '\d+' | head -1)
+        # 使用 POSIX 兼容的正则表达式提取数字
+        EXTRACTED=$(echo "$DEBT_LINE" | grep -oE '[0-9]+' | head -1)
         if [ -n "$EXTRACTED" ]; then
             RECORDED_DEBT_COUNT=$EXTRACTED
         fi
