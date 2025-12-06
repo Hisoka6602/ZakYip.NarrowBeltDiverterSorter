@@ -42,15 +42,37 @@ echo ""
 
 # 4. 检查是否有未记录的技术债务
 echo "📝 检查未记录的技术债务标记..."
+
+# 从技术债务文档中提取已记录的债务数量
+# 如果文档不存在或无法读取，使用默认值 27
+RECORDED_DEBT_COUNT=27
+if [ -f "docs/Conventions/技术债务.md" ]; then
+    # 从文档的统计信息部分提取总债务数量（移除 + 号）
+    DEBT_LINE=$(grep -m 1 "总债务数量" docs/Conventions/技术债务.md)
+    if [ -n "$DEBT_LINE" ]; then
+        # 提取数字，移除 + 号
+        EXTRACTED=$(echo "$DEBT_LINE" | grep -oP '\d+' | head -1)
+        if [ -n "$EXTRACTED" ]; then
+            RECORDED_DEBT_COUNT=$EXTRACTED
+        fi
+    fi
+fi
+
 TODO_COUNT=$(grep -r "TODO\|FIXME\|HACK" --include="*.cs" . 2>/dev/null | grep -v "/bin/\|/obj/\|技术债务.md" | wc -l)
-if [ $TODO_COUNT -gt 27 ]; then
-    echo "⚠️  发现 $TODO_COUNT 个技术债务标记（上次记录：27）"
+
+if [ $TODO_COUNT -gt $RECORDED_DEBT_COUNT ]; then
+    echo "⚠️  发现 $TODO_COUNT 个技术债务标记（上次记录：$RECORDED_DEBT_COUNT）"
     echo "   请确保新增的技术债务已记录在 docs/Conventions/技术债务.md"
     echo ""
     echo "新增的技术债务标记："
     grep -rn "TODO\|FIXME\|HACK" --include="*.cs" . 2>/dev/null | grep -v "/bin/\|/obj/\|技术债务.md" | tail -5
     echo ""
     echo "⚠️  警告：请在 PR 中说明这些新增技术债务"
+elif [ $TODO_COUNT -lt $RECORDED_DEBT_COUNT ]; then
+    echo "✅ 技术债务标记减少了 $(($RECORDED_DEBT_COUNT - $TODO_COUNT)) 个（太棒了！）"
+    echo "   请在 PR 中更新技术债务文档的统计信息"
+else
+    echo "✅ 技术债务标记数量未变化（$TODO_COUNT 个）"
 fi
 echo ""
 
