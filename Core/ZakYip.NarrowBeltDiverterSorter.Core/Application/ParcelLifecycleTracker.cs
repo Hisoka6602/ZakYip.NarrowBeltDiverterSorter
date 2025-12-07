@@ -90,15 +90,7 @@ public class ParcelLifecycleTracker : IParcelLifecycleTracker
             _parcels.TryRemove(parcelId, out _);
         }
 
-        // 发布生命周期变化事件
-        var eventArgs = new ParcelLifecycleChangedEventArgs
-        {
-            ParcelId = parcelId,
-            Status = status,
-            FailureReason = failureReason,
-            OccurredAt = occurredAt,
-            Remarks = remarks
-        };
+        // TODO: Publish lifecycle changed event when event bus integration is ready
     }
 
     /// <inheritdoc/>

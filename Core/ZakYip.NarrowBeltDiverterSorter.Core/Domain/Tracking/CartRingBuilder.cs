@@ -110,10 +110,7 @@ public class CartRingBuilder : ICartRingBuilder
 
     private void RaiseCartPassed(CartId cartId, DateTimeOffset timestamp)
     {
-        var eventArgs = new CartPassedEventArgs
-        {
-            CartId = cartId,
-            PassAt = timestamp
-        };
+        // TODO: Cart passed event handling - currently not implemented
+        // This would publish to an event bus when implemented
     }
 }

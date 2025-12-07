@@ -1,7 +1,7 @@
 using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Tracking;
-using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Ingress;
 using ZakYip.NarrowBeltDiverterSorter.Observability;
+using ZakYip.NarrowBeltDiverterSorter.Observability.Events;
 using Microsoft.Extensions.Logging;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Ingress.Origin;

@@ -259,10 +259,6 @@ internal class MockCartRingBuilder : ICartRingBuilder
 
     public CartRingSnapshot? CurrentSnapshot { get; }
 
-#pragma warning disable CS0067 // 事件 'OnCartPassed' 未使用：这是测试用的 Mock 类，此事件为 ICartRingBuilder 接口的必需成员，但在此测试场景中不需要触发。
-    public event EventHandler<CartPassedEventArgs>? OnCartPassed;
-#pragma warning restore CS0067
-
     public void OnOriginSensorTriggered(bool isFirstSensor, bool isRisingEdge, DateTimeOffset timestamp)
     {
         // Not implemented for mock
