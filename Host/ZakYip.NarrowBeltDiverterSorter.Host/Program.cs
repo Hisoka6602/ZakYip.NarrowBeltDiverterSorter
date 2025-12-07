@@ -29,6 +29,7 @@ using ZakYip.NarrowBeltDiverterSorter.Infrastructure.Configuration;
 using ZakYip.NarrowBeltDiverterSorter.Infrastructure.LiteDb;
 using ZakYip.NarrowBeltDiverterSorter.Communication.Upstream;
 using ZakYip.NarrowBeltDiverterSorter.Host;
+using ZakYip.NarrowBeltDiverterSorter.Host.Contracts.SignalR;
 using ZakYip.NarrowBeltDiverterSorter.Host.Extensions;
 using ZakYip.NarrowBeltDiverterSorter.Host.Middleware;
 using ZakYip.NarrowBeltDiverterSorter.Host.SignalR;

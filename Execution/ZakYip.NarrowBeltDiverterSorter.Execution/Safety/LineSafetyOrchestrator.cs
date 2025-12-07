@@ -299,27 +299,19 @@ public class LineSafetyOrchestrator : ILineSafetyOrchestrator, IDisposable
                 var oldSafetyState = _currentSafetyState;
                 _currentSafetyState = newSafetyState;
 
-                var safetyEventArgs = new SafetyStateChangedEventArgs
-                {
-                    State = newSafetyState,
-                    Source = eventArgs.Source,
-                    Message = $"安全状态从 {oldSafetyState} 变更为 {newSafetyState}",
-                    OccurredAt = eventArgs.OccurredAt
-                };
-
                 _logger.LogWarning(
                     "安全状态变化: {OldState} -> {NewState}, 源: {Source}",
                     oldSafetyState,
                     newSafetyState,
                     eventArgs.Source);
 
-                // 同时发布到事件总线 (Observability层事件)
+                // 发布到事件总线 (Observability层事件)
                 var observabilitySafetyEvent = new Observability.Events.SafetyStateChangedEventArgs
                 {
                     State = newSafetyState.ToString(),
                     Source = eventArgs.Source,
-                    Message = safetyEventArgs.Message,
-                    OccurredAt = safetyEventArgs.OccurredAt
+                    Message = $"安全状态从 {oldSafetyState} 变更为 {newSafetyState}",
+                    OccurredAt = eventArgs.OccurredAt
                 };
                 _ = _eventBus.PublishAsync(observabilitySafetyEvent);
 
@@ -400,25 +392,18 @@ public class LineSafetyOrchestrator : ILineSafetyOrchestrator, IDisposable
         var oldState = _currentLineRunState;
         _currentLineRunState = newState;
 
-        var eventArgs = new LineRunStateChangedEventArgs
-        {
-            State = newState,
-            Message = message,
-            OccurredAt = DateTimeOffset.Now
-        };
-
         _logger.LogInformation(
             "线体状态变化: {OldState} -> {NewState}, 原因: {Message}",
             oldState,
             newState,
             message);
 
-        // 同时发布到事件总线 (Observability层事件)
+        // 发布到事件总线 (Observability层事件)
         var observabilityEvent = new Observability.Events.LineRunStateChangedEventArgs
         {
             State = newState.ToString(),
             Message = message,
-            OccurredAt = eventArgs.OccurredAt
+            OccurredAt = DateTimeOffset.Now
         };
         _ = _eventBus.PublishAsync(observabilityEvent);
     }

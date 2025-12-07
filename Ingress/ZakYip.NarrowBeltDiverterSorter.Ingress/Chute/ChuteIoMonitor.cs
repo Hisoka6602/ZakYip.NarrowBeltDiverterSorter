@@ -2,8 +2,8 @@ using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;
 using ZakYip.NarrowBeltDiverterSorter.Communication;
 using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
-using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Ingress;
 using ZakYip.NarrowBeltDiverterSorter.Observability;
+using ZakYip.NarrowBeltDiverterSorter.Observability.Events;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Ingress.Chute;
 

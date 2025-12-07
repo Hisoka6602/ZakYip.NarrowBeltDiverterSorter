@@ -110,10 +110,8 @@ public class CartRingBuilder : ICartRingBuilder
 
     private void RaiseCartPassed(CartId cartId, DateTimeOffset timestamp)
     {
-        var eventArgs = new CartPassedEventArgs
-        {
-            CartId = cartId,
-            PassAt = timestamp
-        };
+        // TD-IMPL-006: CartRingBuilder事件发布未实现
+        // 需要注入 IEventBus 并发布 CartPassedEventArgs 事件
+        // 当前该方法被调用但无实际效果
     }
 }

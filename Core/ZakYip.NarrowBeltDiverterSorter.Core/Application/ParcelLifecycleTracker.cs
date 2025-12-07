@@ -90,15 +90,9 @@ public class ParcelLifecycleTracker : IParcelLifecycleTracker
             _parcels.TryRemove(parcelId, out _);
         }
 
-        // 发布生命周期变化事件
-        var eventArgs = new ParcelLifecycleChangedEventArgs
-        {
-            ParcelId = parcelId,
-            Status = status,
-            FailureReason = failureReason,
-            OccurredAt = occurredAt,
-            Remarks = remarks
-        };
+        // TD-IMPL-007: ParcelLifecycleTracker事件发布未实现
+        // 需要注入 IEventBus 并发布 ParcelLifecycleChangedEventArgs 事件
+        // IEventBus 已在 Core.Abstractions 中定义，可立即实现此功能
     }
 
     /// <inheritdoc/>

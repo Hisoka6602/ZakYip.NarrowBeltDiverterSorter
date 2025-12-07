@@ -7,6 +7,7 @@ using ZakYip.NarrowBeltDiverterSorter.Observability;
 using ZakYip.NarrowBeltDiverterSorter.Observability.LiveView;
 using ZakYip.NarrowBeltDiverterSorter.Observability.Events;
 using ZakYip.NarrowBeltDiverterSorter.Core.Enums;
+using ZakYip.NarrowBeltDiverterSorter.Host.Contracts.SignalR;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Host.SignalR;
 
