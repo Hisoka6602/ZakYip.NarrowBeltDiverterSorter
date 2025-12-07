@@ -90,7 +90,9 @@ public class ParcelLifecycleTracker : IParcelLifecycleTracker
             _parcels.TryRemove(parcelId, out _);
         }
 
-        // TODO: Publish lifecycle changed event when event bus integration is ready
+        // TD-IMPL-007: ParcelLifecycleTracker事件发布未实现
+        // 需要注入 IEventBus 并发布 ParcelLifecycleChangedEventArgs 事件
+        // IEventBus 已在 Core.Abstractions 中定义，可立即实现此功能
     }
 
     /// <inheritdoc/>
