@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Domain;
 using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain;
+using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Feeding;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Parcels;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Sorting;
 using ZakYip.NarrowBeltDiverterSorter.Observability.Events;
@@ -58,7 +59,7 @@ public class ParcelSortingOrchestrator : IDisposable
             // 记录包裹创建时间线事件
             _timelineService.Append(new ParcelTimelineEventArgs
             {
-                ParcelId = eventArgs.ParcelId,
+                ParcelId = eventArgs.ParcelId.Value,
                 EventType = ParcelTimelineEventType.Created,
                 OccurredAt = eventArgs.InfeedTriggerTime,
                 Barcode = eventArgs.Barcode,
@@ -68,7 +69,7 @@ public class ParcelSortingOrchestrator : IDisposable
             // 构造分拣请求
             var sortingRequest = new SortingRequestEventArgs
             {
-                ParcelId = eventArgs.ParcelId,
+                ParcelId = eventArgs.ParcelId.Value,
                 Barcode = eventArgs.Barcode,
                 RequestTime = eventArgs.InfeedTriggerTime
             };

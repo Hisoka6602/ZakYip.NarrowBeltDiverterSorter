@@ -447,27 +447,19 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
         var logger = sp.GetRequiredService<ILogger<InfeedSensorMonitor>>();
         
         // 订阅 IEventBus 的包裹创建事件（InfeedSensorMonitor 会自动发布到 EventBus）
-        eventBus.Subscribe<ZakYip.NarrowBeltDiverterSorter.Observability.Events.ParcelCreatedFromInfeedEventArgs>(async (busArgs, ct) =>
+        eventBus.Subscribe<ZakYip.NarrowBeltDiverterSorter.Core.Domain.Feeding.ParcelCreatedFromInfeedEventArgs>(async (busArgs, ct) =>
         {
             try
             {
-                // 转换为 Core 层事件参数
-                var coreArgs = new ZakYip.NarrowBeltDiverterSorter.Core.Domain.Feeding.ParcelCreatedFromInfeedEventArgs
-                {
-                    ParcelId = new ZakYip.NarrowBeltDiverterSorter.Core.Domain.ParcelId(busArgs.ParcelId),
-                    Barcode = busArgs.Barcode,
-                    InfeedTriggerTime = busArgs.InfeedTriggerTime
-                };
-                
                 // 通知路由运行时处理包裹
                 var routingRuntime = sp.GetRequiredService<ZakYip.NarrowBeltDiverterSorter.Core.Domain.Runtime.IParcelRoutingRuntime>();
                 if (routingRuntime is ZakYip.NarrowBeltDiverterSorter.Execution.Runtime.ParcelRoutingRuntime runtime)
                 {
-                    await runtime.HandleParcelCreatedAsync(coreArgs);
+                    await runtime.HandleParcelCreatedAsync(busArgs);
                 }
                 
                 // 通知落车协调器
-                loadCoordinator.HandleParcelCreatedFromInfeed(null, coreArgs);
+                loadCoordinator.HandleParcelCreatedFromInfeed(null, busArgs);
             }
             catch (Exception ex)
             {
@@ -476,18 +468,15 @@ static async Task RunE2EScenarioAsync(int parcelCount, string? outputPath, bool 
         });
         
         // 订阅 IEventBus 的包裹装载事件（ParcelLoadCoordinator 内部会发布到 EventBus）
-        eventBus.Subscribe<ZakYip.NarrowBeltDiverterSorter.Observability.Events.ParcelLoadedOnCartEventArgs>(async (busArgs, ct) =>
+        eventBus.Subscribe<ZakYip.NarrowBeltDiverterSorter.Core.Domain.Feeding.ParcelLoadedOnCartEventArgs>(async (busArgs, ct) =>
         {
             try
             {
-                var parcelId = new ZakYip.NarrowBeltDiverterSorter.Core.Domain.ParcelId(busArgs.ParcelId);
-                var cartId = new ZakYip.NarrowBeltDiverterSorter.Core.Domain.CartId(busArgs.CartId);
-                
                 // 更新包裹生命周期服务 - BindCartId 会自动将状态设置为 Sorting
-                parcelLifecycleService.BindCartId(parcelId, cartId, busArgs.LoadedAt);
+                parcelLifecycleService.BindCartId(busArgs.ParcelId, busArgs.CartId, busArgs.LoadedTime);
                 
                 // 更新小车生命周期服务
-                cartLifecycleService.LoadParcel(cartId, parcelId);
+                cartLifecycleService.LoadParcel(busArgs.CartId, busArgs.ParcelId);
                 
                 // 注意：不再手动设置状态为 Routed，因为 BindCartId 已经正确地将状态设置为 Sorting
                 
@@ -1628,31 +1617,21 @@ static async Task RunLongRunLoadTestScenarioAsync(string? outputPath, bool reset
         var logger = sp.GetRequiredService<ILogger<InfeedSensorMonitor>>();
         
         // 订阅 IEventBus 的包裹创建事件（InfeedSensorMonitor 会自动发布到 EventBus）
-        eventBus.Subscribe<ZakYip.NarrowBeltDiverterSorter.Observability.Events.ParcelCreatedFromInfeedEventArgs>(async (busArgs, ct) =>
+        eventBus.Subscribe<ZakYip.NarrowBeltDiverterSorter.Core.Domain.Feeding.ParcelCreatedFromInfeedEventArgs>(async (busArgs, ct) =>
         {
             try
             {
-                var parcelId = new ZakYip.NarrowBeltDiverterSorter.Core.Domain.ParcelId(busArgs.ParcelId);
-                
                 // 记录包裹创建事件
-                timelineRecorder.RecordEvent(parcelId, "Created", "入口传感器触发");
-                
-                // 转换为 Core 层事件参数
-                var coreArgs = new ZakYip.NarrowBeltDiverterSorter.Core.Domain.Feeding.ParcelCreatedFromInfeedEventArgs
-                {
-                    ParcelId = parcelId,
-                    Barcode = busArgs.Barcode,
-                    InfeedTriggerTime = busArgs.InfeedTriggerTime
-                };
+                timelineRecorder.RecordEvent(busArgs.ParcelId, "Created", "入口传感器触发");
                 
                 // 通知路由运行时处理包裹
                 var routingRuntime = sp.GetRequiredService<ZakYip.NarrowBeltDiverterSorter.Core.Domain.Runtime.IParcelRoutingRuntime>();
                 if (routingRuntime is ZakYip.NarrowBeltDiverterSorter.Execution.Runtime.ParcelRoutingRuntime runtime)
                 {
-                    await runtime.HandleParcelCreatedAsync(coreArgs);
+                    await runtime.HandleParcelCreatedAsync(busArgs);
                 }
                 
-                loadCoordinator.HandleParcelCreatedFromInfeed(null, coreArgs);
+                loadCoordinator.HandleParcelCreatedFromInfeed(null, busArgs);
             }
             catch (Exception ex)
             {
@@ -1661,18 +1640,15 @@ static async Task RunLongRunLoadTestScenarioAsync(string? outputPath, bool reset
         });
         
         // 订阅 IEventBus 的包裹装载事件
-        eventBus.Subscribe<ZakYip.NarrowBeltDiverterSorter.Observability.Events.ParcelLoadedOnCartEventArgs>(async (busArgs, ct) =>
+        eventBus.Subscribe<ZakYip.NarrowBeltDiverterSorter.Core.Domain.Feeding.ParcelLoadedOnCartEventArgs>(async (busArgs, ct) =>
         {
             try
             {
-                var parcelId = new ZakYip.NarrowBeltDiverterSorter.Core.Domain.ParcelId(busArgs.ParcelId);
-                var cartId = new ZakYip.NarrowBeltDiverterSorter.Core.Domain.CartId(busArgs.CartId);
-                
-                parcelLifecycleService.BindCartId(parcelId, cartId, busArgs.LoadedAt);
-                cartLifecycleService.LoadParcel(cartId, parcelId);
+                parcelLifecycleService.BindCartId(busArgs.ParcelId, busArgs.CartId, busArgs.LoadedTime);
+                cartLifecycleService.LoadParcel(busArgs.CartId, busArgs.ParcelId);
                 
                 // 记录上车事件
-                timelineRecorder.RecordEvent(parcelId, "LoadedOnCart", 
+                timelineRecorder.RecordEvent(busArgs.ParcelId, "LoadedOnCart", 
                     $"上车到小车 {busArgs.CartId}");
                 
                 logger.LogInformation(

@@ -4,7 +4,6 @@ using ZakYip.NarrowBeltDiverterSorter.Core.Application;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Feeding;
 using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Configuration;
 using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Domain;
-using ZakYip.NarrowBeltDiverterSorter.Observability.Events;
 
 namespace ZakYip.NarrowBeltDiverterSorter.Host;
 
@@ -40,24 +39,18 @@ public class ParcelLoadCoordinatorWorker : BackgroundService
             _coordinator.SetLogAction(message => _logger.LogInformation(message));
         }
 
-        // 订阅包裹创建事件
-        _eventBus.Subscribe<Observability.Events.ParcelCreatedFromInfeedEventArgs>(async (eventArgs, ct) =>
+        // 订阅包裹创建事件（现在直接使用Core类型）
+        _eventBus.Subscribe<Core.Domain.Feeding.ParcelCreatedFromInfeedEventArgs>(async (eventArgs, ct) =>
         {
-            // 转换为Core事件参数类型
-            var coreEventArgs = new Core.Domain.Feeding.ParcelCreatedFromInfeedEventArgs
-            {
-                ParcelId = new Core.Domain.ParcelId(eventArgs.ParcelId),
-                Barcode = eventArgs.Barcode,
-                InfeedTriggerTime = eventArgs.InfeedTriggerTime
-            };
-            _coordinator.HandleParcelCreatedFromInfeed(this, coreEventArgs);
+            // 直接使用eventArgs，无需转换
+            _coordinator.HandleParcelCreatedFromInfeed(this, eventArgs);
             await Task.CompletedTask;
         });
 
         // 订阅装载完成事件（Bring-up 模式日志）
         if (_enableBringupLogging)
         {
-            _eventBus.Subscribe<Observability.Events.ParcelLoadedOnCartEventArgs>(async (eventArgs, ct) =>
+            _eventBus.Subscribe<Core.Domain.Feeding.ParcelLoadedOnCartEventArgs>(async (eventArgs, ct) =>
             {
                 _logger.LogInformation(
                     "入口触发 ParcelId={ParcelId}, 预计落车 CartId={CartId}",
@@ -67,10 +60,10 @@ public class ParcelLoadCoordinatorWorker : BackgroundService
                 // 记录装载到小车时间线事件
                 _timelineService.Append(new Core.Domain.Parcels.ParcelTimelineEventArgs
                 {
-                    ParcelId = eventArgs.ParcelId,
+                    ParcelId = eventArgs.ParcelId.Value,
                     EventType = ParcelTimelineEventType.LoadedToCart,
-                    OccurredAt = eventArgs.LoadedAt,
-                    CartId = eventArgs.CartId,
+                    OccurredAt = eventArgs.LoadedTime,
+                    CartId = eventArgs.CartId.Value,
                     Note = $"包裹装载到小车 {eventArgs.CartId}"
                 });
 
@@ -80,14 +73,14 @@ public class ParcelLoadCoordinatorWorker : BackgroundService
         else
         {
             // 非 Bring-up 模式也需要记录时间线
-            _eventBus.Subscribe<Observability.Events.ParcelLoadedOnCartEventArgs>(async (eventArgs, ct) =>
+            _eventBus.Subscribe<Core.Domain.Feeding.ParcelLoadedOnCartEventArgs>(async (eventArgs, ct) =>
             {
                 _timelineService.Append(new Core.Domain.Parcels.ParcelTimelineEventArgs
                 {
-                    ParcelId = eventArgs.ParcelId,
+                    ParcelId = eventArgs.ParcelId.Value,
                     EventType = ParcelTimelineEventType.LoadedToCart,
-                    OccurredAt = eventArgs.LoadedAt,
-                    CartId = eventArgs.CartId,
+                    OccurredAt = eventArgs.LoadedTime,
+                    CartId = eventArgs.CartId.Value,
                     Note = $"包裹装载到小车 {eventArgs.CartId}"
                 });
                 await Task.CompletedTask;
