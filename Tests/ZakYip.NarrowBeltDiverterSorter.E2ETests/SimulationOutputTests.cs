@@ -426,25 +426,17 @@ public class SimulationOutputTests
             var cartLifecycleService = sp.GetRequiredService<ICartLifecycleService>();
             
             // 订阅 IEventBus 的包裹创建事件（InfeedSensorMonitor 会自动发布到 EventBus）
-            eventBus.Subscribe<ZakYip.NarrowBeltDiverterSorter.Observability.Events.ParcelCreatedFromInfeedEventArgs>(async (busArgs, ct) =>
+            eventBus.Subscribe<ZakYip.NarrowBeltDiverterSorter.Core.Domain.Feeding.ParcelCreatedFromInfeedEventArgs>(async (busArgs, ct) =>
             {
-                var coreArgs = new ZakYip.NarrowBeltDiverterSorter.Core.Domain.Feeding.ParcelCreatedFromInfeedEventArgs
-                {
-                    ParcelId = new ZakYip.NarrowBeltDiverterSorter.Core.Domain.ParcelId(busArgs.ParcelId),
-                    Barcode = busArgs.Barcode,
-                    InfeedTriggerTime = busArgs.InfeedTriggerTime
-                };
-                await routingWorker.HandleParcelCreatedAsync(coreArgs);
-                loadCoordinator.HandleParcelCreatedFromInfeed(null, coreArgs);
+                await routingWorker.HandleParcelCreatedAsync(busArgs);
+                loadCoordinator.HandleParcelCreatedFromInfeed(null, busArgs);
             });
             
             // 订阅 IEventBus 的包裹装载事件
-            eventBus.Subscribe<ZakYip.NarrowBeltDiverterSorter.Observability.Events.ParcelLoadedOnCartEventArgs>(async (busArgs, ct) =>
+            eventBus.Subscribe<ZakYip.NarrowBeltDiverterSorter.Core.Domain.Feeding.ParcelLoadedOnCartEventArgs>(async (busArgs, ct) =>
             {
-                var parcelId = new ZakYip.NarrowBeltDiverterSorter.Core.Domain.ParcelId(busArgs.ParcelId);
-                var cartId = new ZakYip.NarrowBeltDiverterSorter.Core.Domain.CartId(busArgs.CartId);
-                parcelLifecycleService.BindCartId(parcelId, cartId, busArgs.LoadedAt);
-                cartLifecycleService.LoadParcel(cartId, parcelId);
+                parcelLifecycleService.BindCartId(busArgs.ParcelId, busArgs.CartId, busArgs.LoadedTime);
+                cartLifecycleService.LoadParcel(busArgs.CartId, busArgs.ParcelId);
             });
             
             return monitor;

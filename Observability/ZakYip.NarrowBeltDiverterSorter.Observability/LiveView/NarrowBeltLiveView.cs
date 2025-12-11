@@ -3,6 +3,8 @@ using System.Collections.Concurrent;
 using ZakYip.NarrowBeltDiverterSorter.Core.Abstractions;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.SystemState;
 using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Upstream;
+using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Feeding;
+using ZakYip.NarrowBeltDiverterSorter.Core.Domain.Safety;
 using ZakYip.NarrowBeltDiverterSorter.Observability.Events;
 using ZakYip.NarrowBeltDiverterSorter.Core.Enums;
 using ZakYip.NarrowBeltDiverterSorter.Core.Enums.Domain;
@@ -470,7 +472,7 @@ public class NarrowBeltLiveView : INarrowBeltLiveView, IDisposable
         {
             _lastSortingRequest = new LastSortingRequestSnapshot
             {
-                ParcelId = eventArgs.ParcelId,
+                ParcelId = eventArgs.ParcelId.Value,
                 Barcode = eventArgs.Barcode,
                 CartNumber = null,
                 RequestTime = eventArgs.InfeedTriggerTime

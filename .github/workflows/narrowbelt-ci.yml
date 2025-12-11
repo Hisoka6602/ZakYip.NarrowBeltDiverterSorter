@@ -10,9 +10,45 @@ permissions:
   contents: read
 
 jobs:
+  code-quality-check:
+    name: 代码质量检查
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+      
+    - name: 运行影分身检测（Shadow Clone Detection）
+      run: |
+        echo "🔍 开始影分身代码检测..."
+        chmod +x scripts/detect-shadow-clones.sh
+        ./scripts/detect-shadow-clones.sh
+      continue-on-error: false
+      
+    - name: 检查 UTC 时间使用
+      run: |
+        echo "🔍 检查是否违规使用 UTC 时间..."
+        UTC_COUNT=$(grep -r "DateTime\.UtcNow\|DateTimeOffset\.UtcNow" --include="*.cs" . | grep -v "bin\|obj\|// 边界转换\|// UTC required" | wc -l)
+        if [ $UTC_COUNT -gt 0 ]; then
+          echo "❌ 发现 $UTC_COUNT 处使用UTC时间，违反项目规范！"
+          grep -r "DateTime\.UtcNow\|DateTimeOffset\.UtcNow" --include="*.cs" . | grep -v "bin\|obj\|// 边界转换\|// UTC required"
+          exit 1
+        fi
+        echo "✅ 没有违规使用 UTC 时间"
+      
+    - name: 检查技术债务文档
+      run: |
+        echo "📋 验证技术债务文档存在..."
+        if [ ! -f "docs/Conventions/技术债务.md" ]; then
+          echo "❌ 技术债务文档不存在！"
+          exit 1
+        fi
+        echo "✅ 技术债务文档存在"
+
   build-and-test:
     name: 构建和测试
     runs-on: ubuntu-latest
+    needs: code-quality-check
     
     steps:
     - name: 检出代码

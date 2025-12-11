@@ -104,7 +104,7 @@ public class InfeedSensorMonitor : IIoMonitor
         // 生成条码（这里使用简单的格式，实际应用中可能需要从其他源获取）
         var barcode = $"PARCEL{parcelId.Value:D10}";
 
-        var coreEventArgs = new ParcelCreatedFromInfeedEventArgs
+        var eventArgs = new ParcelCreatedFromInfeedEventArgs
         {
             ParcelId = parcelId,
             Barcode = barcode,
@@ -112,13 +112,7 @@ public class InfeedSensorMonitor : IIoMonitor
         };
 
         // 发布到事件总线（主要事件）
-        var busEventArgs = new Observability.Events.ParcelCreatedFromInfeedEventArgs
-        {
-            ParcelId = parcelId.Value,
-            Barcode = barcode,
-            InfeedTriggerTime = e.DetectionTime
-        };
-        _ = _eventBus.PublishAsync(busEventArgs);
+        _ = _eventBus.PublishAsync(eventArgs);
 
         // 发布传感器触发事件
         var sensorEvent = new Observability.Events.SensorTriggeredEventArgs
