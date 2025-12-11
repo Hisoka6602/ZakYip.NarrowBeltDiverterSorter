@@ -487,9 +487,11 @@ dotnet test --filter "TestCategory=Simulation"
 提交 PR 前，请确认：
 
 - [ ] ✅ **已通读** [技术债务文档](docs/Conventions/技术债务.md)
-- [ ] 已运行 `./scripts/detect-shadow-clones.sh` 检测影分身代码
+- [ ] 已运行 `./scripts/detect-shadow-clones.sh` 检测影分身代码（增强版 v2.0 - 7类检测）
+  - 枚举、接口、DTO、Options、扩展方法、静态类、常量
 - [ ] 已运行 `./check-pr.sh` 完成所有 PR 检查
 - [ ] 已阅读所有规范文档
+- [ ] 已参考 [代码审查检查清单 - 7类检测](docs/Conventions/代码审查检查清单_新增7类检测.md)
 - [ ] 没有引入新的代码重复（影分身）
 - [ ] 新增技术债务已记录到技术债务文档
 - [ ] 高优先级技术债务已全部解决或有明确说明
@@ -507,7 +509,7 @@ dotnet test --filter "TestCategory=Simulation"
 ### 🚫 常见违规提醒
 
 **禁止的行为**：
-- ❌ **复制粘贴代码创建影分身**
+- ❌ **复制粘贴代码创建影分身**（现支持7类检测：枚举/接口/DTO/Options/扩展方法/静态类/常量）
 - ❌ Host 控制器直接依赖 Infrastructure 具体类型
 - ❌ 使用 `DateTime.UtcNow`
 - ❌ 外部调用不使用安全隔离器
