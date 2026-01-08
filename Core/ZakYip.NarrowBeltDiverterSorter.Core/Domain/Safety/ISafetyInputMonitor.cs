@@ -9,6 +9,11 @@ namespace ZakYip.NarrowBeltDiverterSorter.Core.Domain.Safety;
 public interface ISafetyInputMonitor
 {
     /// <summary>
+    /// 安全输入变化事件
+    /// </summary>
+    event EventHandler<SafetyInputChangedEventArgs>? SafetyInputChanged;
+
+    /// <summary>
     /// 启动监控
     /// </summary>
     /// <param name="cancellationToken">取消令牌</param>

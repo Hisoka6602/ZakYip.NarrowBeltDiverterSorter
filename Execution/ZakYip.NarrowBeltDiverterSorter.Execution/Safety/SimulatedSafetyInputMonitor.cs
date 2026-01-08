@@ -15,6 +15,8 @@ public class SimulatedSafetyInputMonitor : ISafetyInputMonitor
     private readonly ConcurrentDictionary<string, bool> _safetyInputStates = new();
     private bool _isMonitoring;
 
+    public event EventHandler<SafetyInputChangedEventArgs>? SafetyInputChanged;
+
     public SimulatedSafetyInputMonitor(ILogger<SimulatedSafetyInputMonitor> logger)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -121,5 +123,7 @@ public class SimulatedSafetyInputMonitor : ISafetyInputMonitor
             IsActive = isActive,
             OccurredAt = DateTimeOffset.Now
         };
+
+        SafetyInputChanged?.Invoke(this, eventArgs);
     }
 }
